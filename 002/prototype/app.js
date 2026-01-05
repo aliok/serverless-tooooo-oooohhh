@@ -407,6 +407,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Generate resources
         const resources = [
             {
+                type: 'function',
+                name: config.name,
+                yaml: generateFunctionYAML(config),
+                metadata: RESOURCE_METADATA.function
+            },
+            {
                 type: 'deployment',
                 name: config.name,
                 yaml: generateDeploymentYAML(config),
@@ -463,12 +469,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Update platform description with resource count
         resourceCount.textContent = resources.length;
-        const apiList = config.networkingMethod === 'none'
-            ? 'Deployment, Service, or KEDA scaling APIs'
-            : 'Deployment, Service, KEDA scaling, or networking APIs';
         platformDescription.innerHTML = `
             The UI composed <strong>${resources.length}</strong> Kubernetes resources from your simple form input.
-            You never had to understand ${apiList}.
+            <br>
+            You created one Function CR, but the platform composed multiple resources: runtime (Deployment, Service),
+            scaling (KEDA), ${config.networkingMethod !== 'none' ? 'and networking (HTTPRoute/Ingress/Route)' : 'without external networking'}.
         `;
 
         // Render resource cards

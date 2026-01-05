@@ -4,6 +4,29 @@
  */
 
 /**
+ * Generate Function CR YAML
+ * @param {Object} config - Configuration object
+ * @param {string} config.name - Function name
+ * @param {string} config.namespace - Namespace
+ * @returns {string} YAML string
+ */
+function generateFunctionYAML(config) {
+    return `apiVersion: serverless.openshift.io/v1alpha1
+kind: Function
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  eventing:
+    subscriptions: []
+    sink:
+      ref:
+        apiVersion: v1
+        kind: Service
+        name: ${config.name}`;
+}
+
+/**
  * Generate Deployment YAML
  * @param {Object} config - Configuration object
  * @param {string} config.name - Function name
@@ -326,6 +349,11 @@ ${tlsYAML}`;
  * Resource metadata for UI display
  */
 const RESOURCE_METADATA = {
+    function: {
+        kind: 'Function',
+        apiVersion: 'serverless.openshift.io/v1alpha1',
+        description: 'The semantic anchor for the function. Defines eventing subscriptions and sink reference. This is the only resource users directly interact with in the conceptual model.'
+    },
     deployment: {
         kind: 'Deployment',
         apiVersion: 'apps/v1',
