@@ -3,7 +3,7 @@ Function CRD includes lots of stuff.
 
 Pros:
 - Good UX for users of the Function platform, instead of an API Soup.
-- Maybe omitting some details that are not relevant for the function user (e.g. broker name).
+- Maybe omitting some details that are not relevant for the function user (e.g. broker name, `initialCooldownPeriod` of KEDA ScaledObject, etc.).
 - Good UI and CLI integration possibilities.
 
 Cons:
