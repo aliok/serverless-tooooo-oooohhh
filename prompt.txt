@@ -1,0 +1,58 @@
+I want to create the design for a new product at Red Hat.
+This new product will replace the existing OpenShift Serverless product.
+OpenShift Serverless has 3 main components: Knative Serving, Knative Eventing, and Knative Functions.
+Instead of using Serving, we will use KEDA for scaling.
+We'll continue using Knative Eventing and Knative Functions.
+
+This new product will be an on-premise version of AWS Lambda / Google Cloud Functions / Azure Functions.
+It will allow users to deploy and run serverless functions on their own infrastructure.
+The product will support multiple runtimes, including Node.js, Python, Go, and Java.
+Users will be able to deploy functions using a CLI, a web console, or a REST API.
+The product will also support event-driven architectures, allowing functions to be triggered by various events, such as HTTP requests, messages from a message queue, or changes to a database.
+The product will include a built-in monitoring and logging system, allowing users to track the performance and health of their functions.
+The product will also include a built-in security system, allowing users to control access to their functions and data.
+The product will be designed to be highly available and scalable, allowing users to run their functions in a distributed environment.
+The product will also include a built-in CI/CD system, allowing users to automate the deployment and management of their functions.
+The product will be designed to be easy to use, with a simple and intuitive user interface.
+The product will also include comprehensive documentation and tutorials, helping users get started quickly.
+The product will be open source, allowing users to contribute to its development and improvement.
+The product will be licensed under the Apache 2.0 license, allowing users to use, modify, and distribute it freely.
+The product will be supported by Red Hat, providing users with access to professional support and services.
+
+It will still run on OpenShift / Kubernetes as the underlying platform. However, not every persona will need to interact with OpenShift directly.
+The main personas for this product will be:
+
+---
+
+1. **Serverless-Containers developer**
+
+**Use-cases:** Enterprise App developers with large production workloads
+
+This developer has workloads scaled up to a size where they need to consider concurrency, refined scaling, orchestration between Functions, and access to Container-level configurations (e.g. StatefulSet to enable persistence). This customer may be best served at the Container level, where Serverless 2.0 will handle Container provisioning & autoscaling and leave the rest to the developer.
+
+---
+
+2. **Function-Power-User developer**
+
+**Use-cases:** Enterprise App developers, stock price adjustors
+
+This developer has complex function use-cases that require deep integration into their enterprise infrastructure. They potentially need to create their own source/sink, handle Function performance limits (runtime limits), and follow proper CI/CD procedures. They prefer Functions CLI but will need Console for Functions monitoring/logs/troubleshooting.
+
+---
+
+3. **Function-Novice developer**
+
+**Use-cases:** Data Scientists, Data processors
+
+This developer expects to upload their function code, add a data source/sink (if needed), hit save-run and be done with Functions. They expect role/permissions, source-control, and other enterprise features to be automatically deployed as part of functions and configured by their OpenShift Admin. They prefer OpenShift Console over CLI.
+
+---
+
+4. **Vibe-Code developer**
+
+**Use-cases:** Gen-Z, Gen-Alpha Devs
+
+This developer expects OpenShift Serverless to create function code, source, and destination for them. The only input is their prompt on what App they want to create.
+
+
+What would you recommend?

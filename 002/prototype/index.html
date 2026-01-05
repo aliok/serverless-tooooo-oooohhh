@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Function Composition UI - Phase 1: Scaling & Runtime</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Serverless Function Platform</h1>
+        <p class="subtitle">Phase 1: Scaling & Runtime - Demonstrating UI as Composition Layer</p>
+    </header>
+
+    <main class="container">
+        <!-- Left Panel: Function Creation Form -->
+        <section class="form-panel">
+            <h2>Create Function</h2>
+            <p class="panel-description">Define your function with simple, high-level configuration</p>
+
+            <form id="functionForm">
+                <fieldset>
+                    <legend>Function Details</legend>
+
+                    <div class="form-group">
+                        <label for="functionName">Function Name</label>
+                        <input type="text" id="functionName" name="functionName"
+                               placeholder="my-function" value="my-function" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="namespace">Namespace</label>
+                        <input type="text" id="namespace" name="namespace"
+                               placeholder="default" value="default" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="containerImage">Container Image</label>
+                        <input type="text" id="containerImage" name="containerImage"
+                               placeholder="registry.example.com/functions/my-function:latest"
+                               value="registry.example.com/functions/my-function:latest" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="containerPort">Container Port</label>
+                        <input type="number" id="containerPort" name="containerPort"
+                               placeholder="8080" value="8080" min="1" max="65535" required>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Scaling Configuration</legend>
+
+                    <!-- Concurrency panel -->
+                    <div id="concurrencyPanel" class="metric-panel active">
+                        <label class="panel-header">
+                            <input type="radio" name="scalingMetric" value="concurrency" checked>
+                            <span class="panel-icon">▼</span>
+                            <span class="panel-title">Concurrency</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="concurrencyTargetValue">Target Concurrent Requests</label>
+                                <input type="number" id="concurrencyTargetValue" name="concurrencyTargetValue"
+                                       placeholder="100" value="100" min="1">
+                                <small class="helper-text">Target number of concurrent requests per instance</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Request Rate panel -->
+                    <div id="requestRatePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="scalingMetric" value="requestRate">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Request Rate</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="requestRateTargetValue">Target Request Rate</label>
+                                <input type="number" id="requestRateTargetValue" name="requestRateTargetValue"
+                                       placeholder="100" value="100" min="1">
+                                <small class="helper-text">Target requests per second</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="requestRateWindow">Aggregation Window</label>
+                                <input type="text" id="requestRateWindow" name="requestRateWindow"
+                                       placeholder="1m" value="1m">
+                                <small class="helper-text">Time window for aggregating metrics (e.g., "1m", "30s")</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="requestRateGranularity">Metric Granularity</label>
+                                <input type="text" id="requestRateGranularity" name="requestRateGranularity"
+                                       placeholder="1s" value="1s">
+                                <small class="helper-text">Granularity for metric calculation (e.g., "1s", "500ms")</small>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <button type="submit" class="btn-primary">Create Function</button>
+            </form>
+        </section>
+
+        <!-- Right Panel: Resources View -->
+        <section class="resources-panel">
+            <h2>Results</h2>
+            <p class="panel-description">See how the UI composes multiple Kubernetes resources</p>
+
+            <!-- User View Section -->
+            <div id="userView" class="user-view" style="display: none;">
+                <h3>What User Thinks</h3>
+                <div class="user-message">
+                    <p id="userMessage"></p>
+                </div>
+            </div>
+
+            <!-- Platform View Section -->
+            <div id="platformView" class="platform-view" style="display: none;">
+                <h3>What UI Creates</h3>
+                <p class="platform-description">
+                    The UI composed <strong>3 Kubernetes resources</strong> from your simple form input.
+                    You never had to understand Deployment, Service, or HTTPScaledObject APIs.
+                </p>
+
+                <div id="resourceCards" class="resource-cards">
+                    <!-- Resource cards will be inserted here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Initial empty state -->
+            <div id="emptyState" class="empty-state">
+                <p>Fill in the form and click "Create Function" to see the composed resources.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>
+            This prototype demonstrates the concept from
+            <a href="../spec/README.md" target="_blank">002/spec/README.md</a>
+        </p>
+    </footer>
+
+    <script src="templates.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
