@@ -10,11 +10,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const emptyState = document.getElementById('emptyState');
     const userMessage = document.getElementById('userMessage');
     const resourceCards = document.getElementById('resourceCards');
+    const resourceCount = document.getElementById('resourceCount');
+    const platformDescription = document.getElementById('platformDescription');
     const scalingMetricRadios = document.querySelectorAll('input[name="scalingMetric"]');
     const concurrencyPanel = document.getElementById('concurrencyPanel');
     const requestRatePanel = document.getElementById('requestRatePanel');
     const scaledObjectPanel = document.getElementById('scaledObjectPanel');
     const triggerTypeSelect = document.getElementById('triggerType');
+    const networkingMethodRadios = document.querySelectorAll('input[name="networkingMethod"]');
+    const noAccessPanel = document.getElementById('noAccessPanel');
+    const gatewayAPIPanel = document.getElementById('gatewayAPIPanel');
+    const ingressPanel = document.getElementById('ingressPanel');
+    const routePanel = document.getElementById('routePanel');
+    const ingressTLSCheckbox = document.getElementById('ingressTLSEnabled');
+    const ingressTLSFields = document.getElementById('ingressTLSFields');
 
     // Handle scaling metric radio button change
     scalingMetricRadios.forEach(radio => {
@@ -71,6 +80,35 @@ document.addEventListener('DOMContentLoaded', function() {
             cronFields.style.display = 'block';
         } else if (this.value === 'custom') {
             customFields.style.display = 'block';
+        }
+    });
+
+    // Handle networking method radio button change
+    networkingMethodRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            noAccessPanel.classList.remove('active');
+            gatewayAPIPanel.classList.remove('active');
+            ingressPanel.classList.remove('active');
+            routePanel.classList.remove('active');
+
+            if (this.value === 'none') {
+                noAccessPanel.classList.add('active');
+            } else if (this.value === 'gateway') {
+                gatewayAPIPanel.classList.add('active');
+            } else if (this.value === 'ingress') {
+                ingressPanel.classList.add('active');
+            } else if (this.value === 'route') {
+                routePanel.classList.add('active');
+            }
+        });
+    });
+
+    // Handle Ingress TLS checkbox
+    ingressTLSCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            ingressTLSFields.style.display = 'block';
+        } else {
+            ingressTLSFields.style.display = 'none';
         }
     });
 
@@ -152,6 +190,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Collect networking configuration
+        const networkingMethod = document.querySelector('input[name="networkingMethod"]:checked').value;
+        let networkingConfig = {
+            method: networkingMethod
+        };
+
+        if (networkingMethod === 'gateway') {
+            networkingConfig.gatewayName = document.getElementById('gatewayName').value.trim();
+            networkingConfig.hostname = document.getElementById('gatewayHostname').value.trim();
+            networkingConfig.path = document.getElementById('gatewayPath').value.trim();
+        } else if (networkingMethod === 'ingress') {
+            networkingConfig.ingressClass = document.getElementById('ingressClass').value.trim();
+            networkingConfig.hostname = document.getElementById('ingressHostname').value.trim();
+            networkingConfig.path = document.getElementById('ingressPath').value.trim();
+            networkingConfig.tlsEnabled = document.getElementById('ingressTLSEnabled').checked;
+            if (networkingConfig.tlsEnabled) {
+                networkingConfig.tlsSecretName = document.getElementById('ingressTLSSecretName').value.trim();
+            }
+        } else if (networkingMethod === 'route') {
+            networkingConfig.hostname = document.getElementById('routeHostname').value.trim();
+            networkingConfig.path = document.getElementById('routePath').value.trim();
+            networkingConfig.tlsTermination = document.getElementById('routeTLSTermination').value;
+        }
+
         // Collect form data
         const formData = {
             name: document.getElementById('functionName').value.trim(),
@@ -159,7 +221,9 @@ document.addEventListener('DOMContentLoaded', function() {
             image: document.getElementById('containerImage').value.trim(),
             containerPort: parseInt(document.getElementById('containerPort').value),
             scalingMetric: scalingMetric,
-            metricConfig: metricConfig
+            metricConfig: metricConfig,
+            networkingMethod: networkingMethod,
+            networkingConfig: networkingConfig
         };
 
         // Validate
@@ -240,6 +304,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Validate networking configuration
+        if (data.networkingMethod === 'gateway') {
+            if (!data.networkingConfig.gatewayName || !data.networkingConfig.path) {
+                alert('Please fill in Gateway name and path');
+                return false;
+            }
+        } else if (data.networkingMethod === 'ingress') {
+            if (!data.networkingConfig.hostname || !data.networkingConfig.path) {
+                alert('Please fill in Ingress hostname and path');
+                return false;
+            }
+            if (data.networkingConfig.tlsEnabled && !data.networkingConfig.tlsSecretName) {
+                alert('Please provide a TLS secret name when TLS is enabled');
+                return false;
+            }
+        } else if (data.networkingMethod === 'route') {
+            if (!data.networkingConfig.path) {
+                alert('Please fill in Route path');
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -289,12 +375,30 @@ document.addEventListener('DOMContentLoaded', function() {
             scalingDescription += `, scaling between <strong>${config.metricConfig.minReplicaCount}</strong> and <strong>${config.metricConfig.maxReplicaCount}</strong> replicas`;
         }
 
+        // Build networking description
+        let networkingDescription = '';
+        if (config.networkingMethod === 'none') {
+            networkingDescription = 'The function is only accessible within the cluster via the Service.';
+        } else if (config.networkingMethod === 'gateway') {
+            const hostnameDesc = config.networkingConfig.hostname ? ` at hostname <strong>${config.networkingConfig.hostname}</strong>` : '';
+            networkingDescription = `The function is exposed externally via <strong>Gateway API (HTTPRoute)</strong>, attached to gateway <strong>${config.networkingConfig.gatewayName}</strong>${hostnameDesc} with path <strong>${config.networkingConfig.path}</strong>.`;
+        } else if (config.networkingMethod === 'ingress') {
+            const tlsDesc = config.networkingConfig.tlsEnabled ? ' with <strong>TLS enabled</strong>' : '';
+            networkingDescription = `The function is exposed externally via <strong>Ingress</strong> at <strong>${config.networkingConfig.hostname}${config.networkingConfig.path}</strong>${tlsDesc}.`;
+        } else if (config.networkingMethod === 'route') {
+            const hostnameDesc = config.networkingConfig.hostname ? ` at <strong>${config.networkingConfig.hostname}</strong>` : ' (auto-generated hostname)';
+            const tlsDesc = config.networkingConfig.tlsTermination !== 'none' ? ` with <strong>${config.networkingConfig.tlsTermination}</strong> TLS termination` : '';
+            networkingDescription = `The function is exposed externally via <strong>OpenShift Route</strong>${hostnameDesc} with path <strong>${config.networkingConfig.path}</strong>${tlsDesc}.`;
+        }
+
         userMessage.innerHTML = `
             You created a Function named <strong>${config.name}</strong> in namespace <strong>${config.namespace}</strong>
             with auto-scaling enabled.
             <br><br>
             The platform will automatically scale your function based on HTTP traffic,
             ${scalingDescription}.
+            <br><br>
+            ${networkingDescription}
         `;
 
         // Show platform view
@@ -332,6 +436,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 metadata: RESOURCE_METADATA.scaledObject
             });
         }
+
+        // Add networking resource based on selected method
+        if (config.networkingMethod === 'gateway') {
+            resources.push({
+                type: 'httpRoute',
+                name: config.name,
+                yaml: generateHTTPRouteYAML(config),
+                metadata: RESOURCE_METADATA.httpRoute
+            });
+        } else if (config.networkingMethod === 'ingress') {
+            resources.push({
+                type: 'ingress',
+                name: config.name,
+                yaml: generateIngressYAML(config),
+                metadata: RESOURCE_METADATA.ingress
+            });
+        } else if (config.networkingMethod === 'route') {
+            resources.push({
+                type: 'route',
+                name: config.name,
+                yaml: generateRouteYAML(config),
+                metadata: RESOURCE_METADATA.route
+            });
+        }
+
+        // Update platform description with resource count
+        resourceCount.textContent = resources.length;
+        const apiList = config.networkingMethod === 'none'
+            ? 'Deployment, Service, or KEDA scaling APIs'
+            : 'Deployment, Service, KEDA scaling, or networking APIs';
+        platformDescription.innerHTML = `
+            The UI composed <strong>${resources.length}</strong> Kubernetes resources from your simple form input.
+            You never had to understand ${apiList}.
+        `;
 
         // Render resource cards
         renderResourceCards(resources, config.name);

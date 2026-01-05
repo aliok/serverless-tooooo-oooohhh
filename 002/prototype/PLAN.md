@@ -3,15 +3,15 @@
 ## Overview
 Create a simple web-based prototype UI that demonstrates the Function composition concept described in `002/spec/README.md`. The UI will be built in phases, with each phase focusing on a specific aspect of the composition.
 
-## Phase 1: Scaling (Runtime + KEDA HTTPScaledObject)
+## Phase 1: Scaling & Runtime ✅ COMPLETED
 
 This phase demonstrates the UI as a composition layer. Users define a Function with scaling preferences, and the UI creates multiple Kubernetes resources.
 
 ### Goals
 1. Demonstrate the UI as the **composition layer** that prevents API soup
 2. Show user perspective: simple "Create Function" form
-3. Show platform perspective: UI creates Deployment, Service, and HTTPScaledObject
-4. Keep it simple and focused on the scaling/runtime aspect only
+3. Show platform perspective: UI creates Deployment, Service, and scaling resources (HTTPScaledObject or ScaledObject)
+4. Support multiple scaling methods: HTTP-based and KEDA triggers
 
 ### Technology Stack
 - **HTML/CSS/JavaScript** - Keep it simple, no build tools required
@@ -31,16 +31,20 @@ A simple "Create Function" form - **this is what the user sees**:
 
 **Scaling Configuration:**
 
-Two collapsible panels with integrated radio buttons in headers:
+*Shared Settings (applies to all scaling methods):*
+- **Min Replica Count** (number input, default: 0)
+- **Max Replica Count** (number input, default: 10)
 
-*Concurrency Panel:*
-- Panel header contains: radio button + collapse icon + "Concurrency"
+Three collapsible panels with integrated radio buttons in headers:
+
+*HTTP Concurrency Panel:*
+- Panel header contains: radio button + collapse icon + "HTTP Concurrency"
 - When selected/clicked: panel expands, shows:
   - **Target Concurrent Requests** (number input, default: 100)
   - Helper text: "Target number of concurrent requests per instance"
 
-*Request Rate Panel:*
-- Panel header contains: radio button + collapse icon + "Request Rate"
+*HTTP Request Rate Panel:*
+- Panel header contains: radio button + collapse icon + "HTTP Request Rate"
 - When selected/clicked: panel expands, shows:
   - **Target Request Rate** (number input, default: 100)
     - Helper text: "Target requests per second"
@@ -48,6 +52,20 @@ Two collapsible panels with integrated radio buttons in headers:
     - Helper text: "Time window for aggregating metrics (e.g., '1m', '30s')"
   - **Metric Granularity** (text input, default: "1s")
     - Helper text: "Granularity for metric calculation (e.g., '1s', '500ms')"
+
+*KEDA Triggers Panel:*
+- Panel header contains: radio button + collapse icon + "KEDA Triggers"
+- When selected/clicked: panel expands, shows:
+  - **Trigger Type** dropdown with options:
+    - CPU
+    - Memory
+    - Prometheus
+    - Kafka
+    - RabbitMQ
+    - Redis
+    - Cron
+    - Custom (define your own)
+  - Trigger-specific fields based on selected type (e.g., CPU utilization %, Kafka topic, custom YAML metadata)
 
 **Create Function** button
 
@@ -71,35 +89,47 @@ Shows 3 resource cards, each expandable:
    - Label: `serverless.openshift.io/function: my-function`
    - Spec: selector, ports, targetPort
 
-3. **HTTPScaledObject** (http.keda.sh/v1alpha1)
-   - Shows: `my-function-http` HTTPScaledObject
-   - Label: `serverless.openshift.io/function: my-function`
-   - Spec: scaleTargetRef, scalingMetric (concurrency)
+3. **Scaling Resource** (varies based on selection)
+   - **HTTPScaledObject** (http.keda.sh/v1alpha1) - for HTTP Concurrency or HTTP Request Rate
+     - Shows: `my-function-http` HTTPScaledObject
+     - Label: `serverless.openshift.io/function: my-function`
+     - Spec: scaleTargetRef, scalingMetric (concurrency or requestRate)
+   - **ScaledObject** (keda.sh/v1alpha1) - for KEDA Triggers
+     - Shows: `my-function-scaledobject` ScaledObject
+     - Label: `serverless.openshift.io/function: my-function`
+     - Spec: scaleTargetRef, triggers (with chosen trigger type and configuration)
 
 Each card:
-- Shows resource type and name
+- Shows resource type, API version, and name
 - Expandable to show full YAML
 - Highlights the label `serverless.openshift.io/function`
-- Shows ownerReference pointing to Function CR (conceptual for Phase 1)
+- Shows purpose/description of the resource
+- Copy YAML button for easy export
 
 ## User Flow (Phase 1)
 
 1. User fills in the "Create Function" form (simple, high-level fields)
-2. User clicks "Create Function"
-3. UI shows:
-   - Top panel: "You created a Function" (user perspective)
+2. User selects scaling method (HTTP Concurrency, HTTP Request Rate, or KEDA Triggers)
+3. User configures method-specific settings (e.g., target value, trigger type)
+4. User clicks "Create Function"
+5. UI shows:
+   - Top panel: "You created a Function" with scaling details (user perspective)
    - Bottom panel: 3 Kubernetes resources that were composed (platform perspective)
-4. User can expand each resource card to see the generated YAML
-5. **Key insight**: User never had to understand Deployment, Service, or HTTPScaledObject APIs
+6. User can expand each resource card to see the generated YAML
+7. User can copy YAML to clipboard
+8. **Key insight**: User never had to understand Deployment, Service, HTTPScaledObject, or ScaledObject APIs
 
 ## Key Design Decisions (Phase 1)
 
 ### What to Include
 - ✅ Simple "Create Function" form (user perspective)
-- ✅ YAML generation for 3 resources: Deployment, Service, HTTPScaledObject
+- ✅ Three scaling method options with radio buttons in collapsible panel headers
+- ✅ Shared min/max replica configuration
+- ✅ YAML generation for 3 resources: Deployment, Service, and scaling resource (HTTPScaledObject or ScaledObject)
+- ✅ Support for 7 KEDA trigger templates + custom trigger option
 - ✅ Clear visual distinction: "What User Thinks" vs "What UI Creates"
-- ✅ Labels and ownerReferences visualization
-- ✅ Expandable resource cards
+- ✅ Labels visualization on all resources
+- ✅ Expandable resource cards with copy-to-clipboard functionality
 - ✅ Demonstrates UI as composition layer
 
 ### What to Exclude (Phase 1)
@@ -157,10 +187,12 @@ Each card:
 
 The Phase 1 prototype successfully demonstrates:
 - ✅ **UI as composition layer**: Simple form creates multiple resources
-- ✅ **Abstraction boundary**: User thinks "Function", platform sees "Deployment + Service + HTTPScaledObject"
-- ✅ **No API soup**: User doesn't need to understand 3 different API groups
-- ✅ **Resource relationships**: All resources share the same label
-- ✅ **Generated YAMLs are valid**: Properly formatted and follow K8s conventions
+- ✅ **Abstraction boundary**: User thinks "Function", platform sees "Deployment + Service + scaling resource"
+- ✅ **No API soup**: User doesn't need to understand 3+ different API groups
+- ✅ **Scaling flexibility**: Supports HTTP-based scaling (concurrency, request rate) and KEDA triggers (CPU, memory, Prometheus, Kafka, RabbitMQ, Redis, cron, custom)
+- ✅ **Resource relationships**: All resources share the same label (`serverless.openshift.io/function`)
+- ✅ **Generated YAMLs are valid**: Properly formatted and follow K8s/KEDA conventions
+- ✅ **User-friendly**: Collapsible panels, helpful text, copy-to-clipboard, clear visual distinction
 
 ## Example Output (Phase 1)
 
@@ -253,10 +285,214 @@ spec:
       granularity: 1s
 ```
 
-## Future Phases (Not in Phase 1)
+---
 
-- **Phase 2**: Build resources (Shipwright Build)
-- **Phase 3**: Runtime resources (Deployment, Service)
-- **Phase 4**: Eventing resources (Function CR, Trigger)
-- **Phase 5**: Networking resources (HTTPRoute)
-- **Phase 6**: Complete composition view with all resources
+## Phase 2: Networking 🚧 IN PROGRESS
+
+This phase adds networking options to expose the function externally. Users can choose different networking approaches, and the UI will compose the appropriate Kubernetes networking resources.
+
+### Goals
+1. Demonstrate multiple networking options (Gateway API, Ingress, OpenShift Route, none)
+2. Show how the same Service can be exposed via different networking mechanisms
+3. Keep networking configuration simple and optional
+4. Generate proper networking resource YAMLs based on user selection
+
+### Networking Options
+
+Users will be able to choose from:
+
+1. **No External Access** (default)
+   - Function is only accessible within the cluster
+   - No additional networking resources created
+   - Service remains ClusterIP type
+
+2. **Gateway API (HTTPRoute)**
+   - Modern Kubernetes-native approach
+   - Creates HTTPRoute resource
+   - Requires Gateway API to be installed
+   - Most flexible and standardized option
+
+3. **Ingress**
+   - Traditional Kubernetes networking
+   - Creates Ingress resource
+   - Works with any Ingress controller (nginx, Traefik, etc.)
+   - Widely supported
+
+4. **OpenShift Route** (if on OpenShift)
+   - OpenShift-specific networking
+   - Creates Route resource
+   - Built-in TLS support
+   - Automatic hostname generation
+
+### UI Components (Phase 2)
+
+Add new section to the form **after** Scaling Configuration:
+
+**Networking Configuration:**
+
+*Networking Method:* (radio buttons in collapsible panels)
+
+- **No External Access** (default, collapsed panel)
+  - Helper text: "Function is only accessible within the cluster"
+  - No additional fields
+
+- **Gateway API (HTTPRoute)**
+  - **Gateway Name** (text input, default: "default-gateway")
+    - Helper text: "Name of the Gateway to attach to"
+  - **Hostname** (text input, optional, e.g., "my-function.example.com")
+    - Helper text: "Optional: custom hostname for the route (leave empty for wildcard)"
+  - **Path** (text input, default: "/")
+    - Helper text: "URL path prefix (e.g., '/', '/api/v1')"
+
+- **Ingress**
+  - **Ingress Class** (text input, optional, e.g., "nginx")
+    - Helper text: "Optional: specify ingress controller class"
+  - **Hostname** (text input, required, e.g., "my-function.example.com")
+    - Helper text: "Hostname for the ingress rule"
+  - **Path** (text input, default: "/")
+    - Helper text: "URL path (e.g., '/', '/api')"
+  - **TLS Enabled** (checkbox)
+    - When checked, shows:
+      - **Secret Name** (text input, e.g., "my-function-tls")
+        - Helper text: "Name of the TLS secret containing cert and key"
+
+- **OpenShift Route**
+  - **Hostname** (text input, optional)
+    - Helper text: "Optional: custom hostname (leave empty for auto-generated)"
+  - **Path** (text input, default: "/")
+    - Helper text: "URL path prefix"
+  - **TLS Termination** (dropdown: "none", "edge", "passthrough", "reencrypt", default: "edge")
+    - Helper text: "TLS termination type"
+
+### Resources Created (Phase 2)
+
+Depending on the networking method selected, the UI will create an additional resource:
+
+**Gateway API HTTPRoute:**
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: my-function
+  namespace: default
+  labels:
+    serverless.openshift.io/function: my-function
+spec:
+  parentRefs:
+    - name: default-gateway
+  hostnames:
+    - my-function.example.com  # optional
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: my-function
+          port: 80
+```
+
+**Ingress:**
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-function
+  namespace: default
+  labels:
+    serverless.openshift.io/function: my-function
+spec:
+  ingressClassName: nginx  # optional
+  tls:  # if TLS enabled
+    - hosts:
+        - my-function.example.com
+      secretName: my-function-tls
+  rules:
+    - host: my-function.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-function
+                port:
+                  number: 80
+```
+
+**OpenShift Route:**
+```yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: my-function
+  namespace: default
+  labels:
+    serverless.openshift.io/function: my-function
+spec:
+  host: my-function.example.com  # optional, auto-generated if empty
+  path: /
+  to:
+    kind: Service
+    name: my-function
+    weight: 100
+  port:
+    targetPort: 80
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+```
+
+### Implementation Steps (Phase 2)
+
+1. **Update `index.html`**
+   - Add new fieldset for "Networking Configuration"
+   - Add 4 radio button panels (No Access, Gateway API, Ingress, OpenShift Route)
+   - Add networking-specific input fields per option
+   - Place after "Scaling Configuration" section
+
+2. **Update `styles.css`**
+   - Reuse existing metric-panel styles for networking panels
+   - Ensure consistent styling with scaling panels
+
+3. **Update `templates.js`**
+   - Add `generateHTTPRouteYAML(config)`
+   - Add `generateIngressYAML(config)`
+   - Add `generateRouteYAML(config)`
+   - Update RESOURCE_METADATA with networking resource descriptions
+
+4. **Update `app.js`**
+   - Add networking panel activation logic (similar to scaling panels)
+   - Collect networking configuration from form
+   - Generate networking resource based on selection
+   - Add networking resource to resource cards (conditionally, only if not "No External Access")
+   - Update user message to mention networking configuration
+   - Add validation for required networking fields
+
+### User Flow (Phase 2)
+
+1. User fills in function details and scaling configuration (Phase 1)
+2. User selects networking method (No Access, Gateway API, Ingress, or OpenShift Route)
+3. User configures networking-specific settings (hostname, path, TLS, etc.)
+4. User clicks "Create Function"
+5. UI shows:
+   - User perspective: "You created a Function exposed via [networking method]"
+   - Platform perspective: 3 or 4 resources (Deployment, Service, Scaling, and optionally Networking)
+6. If networking resource was created, user can expand it to see the YAML
+
+### Success Criteria (Phase 2)
+
+- ✅ **Networking flexibility**: Supports 4 networking options (none, Gateway API, Ingress, OpenShift Route)
+- ✅ **Optional networking**: Networking is opt-in, not required
+- ✅ **Proper resource generation**: Networking resources correctly reference the Service
+- ✅ **Validation**: Required fields validated based on networking method
+- ✅ **Consistent UX**: Networking panels match the scaling panel design
+
+---
+
+## Future Phases
+
+- **Phase 3**: Build resources (Shipwright Build, S2I BuildConfig)
+- **Phase 4**: Eventing resources (Function CR, Knative Trigger)
+- **Phase 5**: Complete composition view with all resource types
+- **Phase 6**: Status aggregation and resource health visualization

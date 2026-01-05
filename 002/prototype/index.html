@@ -322,6 +322,140 @@ awsRegion: us-east-1"></textarea>
                     </div>
                 </fieldset>
 
+                <fieldset>
+                    <legend>Networking Configuration</legend>
+
+                    <div class="scaling-method-label">
+                        <label>Networking Method</label>
+                        <small class="helper-text">Choose how to expose your function externally</small>
+                    </div>
+
+                    <!-- No External Access panel -->
+                    <div id="noAccessPanel" class="metric-panel active">
+                        <label class="panel-header">
+                            <input type="radio" name="networkingMethod" value="none" checked>
+                            <span class="panel-icon">▼</span>
+                            <span class="panel-title">No External Access</span>
+                        </label>
+                        <div class="panel-body">
+                            <p class="helper-text">Function is only accessible within the cluster via the Service.</p>
+                        </div>
+                    </div>
+
+                    <!-- Gateway API panel -->
+                    <div id="gatewayAPIPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="networkingMethod" value="gateway">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Gateway API (HTTPRoute)</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="gatewayName">Gateway Name</label>
+                                <input type="text" id="gatewayName" name="gatewayName"
+                                       placeholder="default-gateway" value="default-gateway">
+                                <small class="helper-text">Name of the Gateway to attach to</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="gatewayHostname">Hostname (optional)</label>
+                                <input type="text" id="gatewayHostname" name="gatewayHostname"
+                                       placeholder="my-function.example.com" value="">
+                                <small class="helper-text">Optional: custom hostname for the route (leave empty for wildcard)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="gatewayPath">Path</label>
+                                <input type="text" id="gatewayPath" name="gatewayPath"
+                                       placeholder="/" value="/">
+                                <small class="helper-text">URL path prefix (e.g., '/', '/api/v1')</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ingress panel -->
+                    <div id="ingressPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="networkingMethod" value="ingress">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Ingress</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="ingressClass">Ingress Class (optional)</label>
+                                <input type="text" id="ingressClass" name="ingressClass"
+                                       placeholder="nginx" value="">
+                                <small class="helper-text">Optional: specify ingress controller class</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ingressHostname">Hostname</label>
+                                <input type="text" id="ingressHostname" name="ingressHostname"
+                                       placeholder="my-function.example.com" value="my-function.example.com">
+                                <small class="helper-text">Hostname for the ingress rule</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ingressPath">Path</label>
+                                <input type="text" id="ingressPath" name="ingressPath"
+                                       placeholder="/" value="/">
+                                <small class="helper-text">URL path (e.g., '/', '/api')</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="ingressTLSEnabled" name="ingressTLSEnabled">
+                                    Enable TLS
+                                </label>
+                            </div>
+
+                            <div id="ingressTLSFields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="ingressTLSSecretName">TLS Secret Name</label>
+                                    <input type="text" id="ingressTLSSecretName" name="ingressTLSSecretName"
+                                           placeholder="my-function-tls" value="my-function-tls">
+                                    <small class="helper-text">Name of the TLS secret containing cert and key</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OpenShift Route panel -->
+                    <div id="routePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="networkingMethod" value="route">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">OpenShift Route</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="routeHostname">Hostname (optional)</label>
+                                <input type="text" id="routeHostname" name="routeHostname"
+                                       placeholder="" value="">
+                                <small class="helper-text">Optional: custom hostname (leave empty for auto-generated)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="routePath">Path</label>
+                                <input type="text" id="routePath" name="routePath"
+                                       placeholder="/" value="/">
+                                <small class="helper-text">URL path prefix</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="routeTLSTermination">TLS Termination</label>
+                                <select id="routeTLSTermination" name="routeTLSTermination">
+                                    <option value="none">None</option>
+                                    <option value="edge" selected>Edge</option>
+                                    <option value="passthrough">Passthrough</option>
+                                    <option value="reencrypt">Re-encrypt</option>
+                                </select>
+                                <small class="helper-text">TLS termination type</small>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
                 <button type="submit" class="btn-primary">Create Function</button>
             </form>
         </section>
@@ -342,8 +476,8 @@ awsRegion: us-east-1"></textarea>
             <!-- Platform View Section -->
             <div id="platformView" class="platform-view" style="display: none;">
                 <h3>What UI Creates</h3>
-                <p class="platform-description">
-                    The UI composed <strong>3 Kubernetes resources</strong> from your simple form input.
+                <p id="platformDescription" class="platform-description">
+                    The UI composed <strong id="resourceCount">3</strong> Kubernetes resources from your simple form input.
                     You never had to understand Deployment, Service, or KEDA scaling APIs.
                 </p>
 

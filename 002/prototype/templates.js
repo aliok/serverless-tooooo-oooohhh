@@ -196,6 +196,133 @@ ${triggerYAML}`;
 }
 
 /**
+ * Generate Gateway API HTTPRoute YAML
+ * @param {Object} config - Configuration object
+ * @param {string} config.name - Function name
+ * @param {string} config.namespace - Namespace
+ * @param {Object} config.networkingConfig - Networking configuration
+ * @returns {string} YAML string
+ */
+function generateHTTPRouteYAML(config) {
+    const nc = config.networkingConfig;
+    let hostnamesYAML = '';
+
+    if (nc.hostname) {
+        hostnamesYAML = `  hostnames:
+    - ${nc.hostname}`;
+    }
+
+    return `apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+  labels:
+    serverless.openshift.io/function: ${config.name}
+spec:
+  parentRefs:
+    - name: ${nc.gatewayName}
+${hostnamesYAML}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: ${nc.path}
+      backendRefs:
+        - name: ${config.name}
+          port: 80`;
+}
+
+/**
+ * Generate Ingress YAML
+ * @param {Object} config - Configuration object
+ * @param {string} config.name - Function name
+ * @param {string} config.namespace - Namespace
+ * @param {Object} config.networkingConfig - Networking configuration
+ * @returns {string} YAML string
+ */
+function generateIngressYAML(config) {
+    const nc = config.networkingConfig;
+    let ingressClassYAML = '';
+    let tlsYAML = '';
+
+    if (nc.ingressClass) {
+        ingressClassYAML = `  ingressClassName: ${nc.ingressClass}`;
+    }
+
+    if (nc.tlsEnabled && nc.tlsSecretName) {
+        tlsYAML = `  tls:
+    - hosts:
+        - ${nc.hostname}
+      secretName: ${nc.tlsSecretName}`;
+    }
+
+    return `apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+  labels:
+    serverless.openshift.io/function: ${config.name}
+spec:
+${ingressClassYAML}
+${tlsYAML}
+  rules:
+    - host: ${nc.hostname}
+      http:
+        paths:
+          - path: ${nc.path}
+            pathType: Prefix
+            backend:
+              service:
+                name: ${config.name}
+                port:
+                  number: 80`;
+}
+
+/**
+ * Generate OpenShift Route YAML
+ * @param {Object} config - Configuration object
+ * @param {string} config.name - Function name
+ * @param {string} config.namespace - Namespace
+ * @param {Object} config.networkingConfig - Networking configuration
+ * @returns {string} YAML string
+ */
+function generateRouteYAML(config) {
+    const nc = config.networkingConfig;
+    let hostYAML = '';
+    let tlsYAML = '';
+
+    if (nc.hostname) {
+        hostYAML = `  host: ${nc.hostname}`;
+    }
+
+    if (nc.tlsTermination && nc.tlsTermination !== 'none') {
+        tlsYAML = `  tls:
+    termination: ${nc.tlsTermination}
+    insecureEdgeTerminationPolicy: Redirect`;
+    }
+
+    return `apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+  labels:
+    serverless.openshift.io/function: ${config.name}
+spec:
+${hostYAML}
+  path: ${nc.path}
+  to:
+    kind: Service
+    name: ${config.name}
+    weight: 100
+  port:
+    targetPort: 80
+${tlsYAML}`;
+}
+
+/**
  * Resource metadata for UI display
  */
 const RESOURCE_METADATA = {
@@ -218,5 +345,20 @@ const RESOURCE_METADATA = {
         kind: 'ScaledObject',
         apiVersion: 'keda.sh/v1alpha1',
         description: 'Configures KEDA ScaledObject with custom triggers. Scales the Deployment based on metrics like CPU, memory, Prometheus, or cron schedules.'
+    },
+    httpRoute: {
+        kind: 'HTTPRoute',
+        apiVersion: 'gateway.networking.k8s.io/v1',
+        description: 'Exposes the function via Gateway API. Provides advanced HTTP routing capabilities including hostname-based routing, path matching, and traffic splitting.'
+    },
+    ingress: {
+        kind: 'Ingress',
+        apiVersion: 'networking.k8s.io/v1',
+        description: 'Exposes the function via Kubernetes Ingress. Works with any Ingress controller (nginx, Traefik, etc.) to provide external HTTP/HTTPS access.'
+    },
+    route: {
+        kind: 'Route',
+        apiVersion: 'route.openshift.io/v1',
+        description: 'Exposes the function via OpenShift Route. Provides automatic hostname generation, built-in TLS termination, and seamless integration with OpenShift routing.'
     }
 };
