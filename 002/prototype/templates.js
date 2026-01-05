@@ -103,6 +103,99 @@ ${scalingMetricYAML}`;
 }
 
 /**
+ * Generate ScaledObject YAML with KEDA triggers
+ * @param {Object} config - Configuration object
+ * @param {string} config.name - Function name
+ * @param {string} config.namespace - Namespace
+ * @param {Object} config.metricConfig - ScaledObject configuration
+ * @returns {string} YAML string
+ */
+function generateScaledObjectYAML(config) {
+    const mc = config.metricConfig;
+    let triggerYAML = '';
+
+    if (mc.triggerType === 'cpu') {
+        triggerYAML = `  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "${mc.triggerConfig.utilization}"`;
+    } else if (mc.triggerType === 'memory') {
+        triggerYAML = `  triggers:
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "${mc.triggerConfig.utilization}"`;
+    } else if (mc.triggerType === 'prometheus') {
+        triggerYAML = `  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: ${mc.triggerConfig.serverAddress}
+        query: ${mc.triggerConfig.query}
+        threshold: "${mc.triggerConfig.threshold}"`;
+    } else if (mc.triggerType === 'kafka') {
+        triggerYAML = `  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: ${mc.triggerConfig.bootstrapServers}
+        consumerGroup: ${mc.triggerConfig.consumerGroup}
+        topic: ${mc.triggerConfig.topic}
+        lagThreshold: "${mc.triggerConfig.lagThreshold}"`;
+    } else if (mc.triggerType === 'rabbitmq') {
+        triggerYAML = `  triggers:
+    - type: rabbitmq
+      metadata:
+        host: ${mc.triggerConfig.host}
+        queueName: ${mc.triggerConfig.queueName}
+        queueLength: "${mc.triggerConfig.queueLength}"`;
+    } else if (mc.triggerType === 'redis') {
+        triggerYAML = `  triggers:
+    - type: redis
+      metadata:
+        address: ${mc.triggerConfig.address}
+        listName: ${mc.triggerConfig.listName}
+        listLength: "${mc.triggerConfig.listLength}"`;
+    } else if (mc.triggerType === 'cron') {
+        triggerYAML = `  triggers:
+    - type: cron
+      metadata:
+        timezone: ${mc.triggerConfig.timezone}
+        start: ${mc.triggerConfig.start}
+        end: ${mc.triggerConfig.end}
+        desiredReplicas: "${mc.triggerConfig.desiredReplicas}"`;
+    } else if (mc.triggerType === 'custom') {
+        // Use custom YAML directly, indenting each line properly
+        const metadataLines = mc.customMetadataYAML
+            .split('\n')
+            .map(line => `        ${line}`)
+            .join('\n');
+
+        triggerYAML = `  triggers:
+    - type: ${mc.customTriggerType}
+      metadata:
+${metadataLines}`;
+    }
+
+    return `apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ${config.name}-scaledobject
+  namespace: ${config.namespace}
+  labels:
+    serverless.openshift.io/function: ${config.name}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ${config.name}
+  minReplicaCount: ${mc.minReplicaCount}
+  maxReplicaCount: ${mc.maxReplicaCount}
+  pollingInterval: 30
+  cooldownPeriod: 300
+${triggerYAML}`;
+}
+
+/**
  * Resource metadata for UI display
  */
 const RESOURCE_METADATA = {
@@ -120,5 +213,10 @@ const RESOURCE_METADATA = {
         kind: 'HTTPScaledObject',
         apiVersion: 'http.keda.sh/v1alpha1',
         description: 'Configures KEDA HTTP Add-on for scaling. Monitors HTTP traffic (concurrency or request rate) and scales the Deployment based on the chosen metric.'
+    },
+    scaledObject: {
+        kind: 'ScaledObject',
+        apiVersion: 'keda.sh/v1alpha1',
+        description: 'Configures KEDA ScaledObject with custom triggers. Scales the Deployment based on metrics like CPU, memory, Prometheus, or cron schedules.'
     }
 };

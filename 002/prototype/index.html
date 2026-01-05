@@ -51,12 +51,34 @@
                 <fieldset>
                     <legend>Scaling Configuration</legend>
 
+                    <!-- Shared replica settings -->
+                    <div class="shared-settings">
+                        <div class="form-group">
+                            <label for="minReplicaCount">Min Replica Count</label>
+                            <input type="number" id="minReplicaCount" name="minReplicaCount"
+                                   placeholder="0" value="0" min="0">
+                            <small class="helper-text">Minimum number of replicas (0 = scale to zero)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxReplicaCount">Max Replica Count</label>
+                            <input type="number" id="maxReplicaCount" name="maxReplicaCount"
+                                   placeholder="10" value="10" min="1">
+                            <small class="helper-text">Maximum number of replicas</small>
+                        </div>
+                    </div>
+
+                    <div class="scaling-method-label">
+                        <label>Scaling Method</label>
+                        <small class="helper-text">Choose how to trigger scaling decisions</small>
+                    </div>
+
                     <!-- Concurrency panel -->
                     <div id="concurrencyPanel" class="metric-panel active">
                         <label class="panel-header">
                             <input type="radio" name="scalingMetric" value="concurrency" checked>
                             <span class="panel-icon">▼</span>
-                            <span class="panel-title">Concurrency</span>
+                            <span class="panel-title">HTTP Concurrency</span>
                         </label>
                         <div class="panel-body">
                             <div class="form-group">
@@ -73,7 +95,7 @@
                         <label class="panel-header">
                             <input type="radio" name="scalingMetric" value="requestRate">
                             <span class="panel-icon">▶</span>
-                            <span class="panel-title">Request Rate</span>
+                            <span class="panel-title">HTTP Request Rate</span>
                         </label>
                         <div class="panel-body">
                             <div class="form-group">
@@ -95,6 +117,206 @@
                                 <input type="text" id="requestRateGranularity" name="requestRateGranularity"
                                        placeholder="1s" value="1s">
                                 <small class="helper-text">Granularity for metric calculation (e.g., "1s", "500ms")</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ScaledObject panel -->
+                    <div id="scaledObjectPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="scalingMetric" value="scaledObject">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">KEDA Triggers</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="triggerType">Trigger Type</label>
+                                <select id="triggerType" name="triggerType">
+                                    <option value="cpu">CPU</option>
+                                    <option value="memory">Memory</option>
+                                    <option value="prometheus">Prometheus</option>
+                                    <option value="kafka">Kafka</option>
+                                    <option value="rabbitmq">RabbitMQ</option>
+                                    <option value="redis">Redis</option>
+                                    <option value="cron">Cron</option>
+                                    <option value="custom">Custom (define your own)</option>
+                                </select>
+                                <small class="helper-text">Choose a template or define a custom trigger</small>
+                            </div>
+
+                            <!-- CPU trigger fields -->
+                            <div id="cpuTriggerFields" class="trigger-fields">
+                                <div class="form-group">
+                                    <label for="cpuUtilization">CPU Utilization (%)</label>
+                                    <input type="number" id="cpuUtilization" name="cpuUtilization"
+                                           placeholder="80" value="80" min="1" max="100">
+                                    <small class="helper-text">Target CPU utilization percentage</small>
+                                </div>
+                            </div>
+
+                            <!-- Memory trigger fields -->
+                            <div id="memoryTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="memoryUtilization">Memory Utilization (%)</label>
+                                    <input type="number" id="memoryUtilization" name="memoryUtilization"
+                                           placeholder="80" value="80" min="1" max="100">
+                                    <small class="helper-text">Target memory utilization percentage</small>
+                                </div>
+                            </div>
+
+                            <!-- Prometheus trigger fields -->
+                            <div id="prometheusTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="prometheusServerAddress">Prometheus Server Address</label>
+                                    <input type="text" id="prometheusServerAddress" name="prometheusServerAddress"
+                                           placeholder="http://prometheus:9090" value="http://prometheus:9090">
+                                    <small class="helper-text">Prometheus server URL</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="prometheusQuery">Prometheus Query</label>
+                                    <input type="text" id="prometheusQuery" name="prometheusQuery"
+                                           placeholder="http_requests_total" value="http_requests_total">
+                                    <small class="helper-text">PromQL query for the metric</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="prometheusThreshold">Threshold</label>
+                                    <input type="number" id="prometheusThreshold" name="prometheusThreshold"
+                                           placeholder="100" value="100" min="1">
+                                    <small class="helper-text">Scale when metric exceeds this value</small>
+                                </div>
+                            </div>
+
+                            <!-- Cron trigger fields -->
+                            <div id="cronTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="cronTimezone">Timezone</label>
+                                    <input type="text" id="cronTimezone" name="cronTimezone"
+                                           placeholder="UTC" value="UTC">
+                                    <small class="helper-text">Timezone for cron schedule (e.g., "UTC", "America/New_York")</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cronStart">Start Schedule</label>
+                                    <input type="text" id="cronStart" name="cronStart"
+                                           placeholder="0 8 * * *" value="0 8 * * *">
+                                    <small class="helper-text">Cron expression for scaling up (e.g., "0 8 * * *" = 8 AM daily)</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cronEnd">End Schedule</label>
+                                    <input type="text" id="cronEnd" name="cronEnd"
+                                           placeholder="0 18 * * *" value="0 18 * * *">
+                                    <small class="helper-text">Cron expression for scaling down (e.g., "0 18 * * *" = 6 PM daily)</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cronDesiredReplicas">Desired Replicas (during active period)</label>
+                                    <input type="number" id="cronDesiredReplicas" name="cronDesiredReplicas"
+                                           placeholder="5" value="5" min="1">
+                                    <small class="helper-text">Number of replicas during active period</small>
+                                </div>
+                            </div>
+
+                            <!-- Kafka trigger fields -->
+                            <div id="kafkaTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="kafkaBootstrapServers">Bootstrap Servers</label>
+                                    <input type="text" id="kafkaBootstrapServers" name="kafkaBootstrapServers"
+                                           placeholder="kafka:9092" value="kafka:9092">
+                                    <small class="helper-text">Kafka bootstrap servers (comma-separated)</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="kafkaTopic">Topic</label>
+                                    <input type="text" id="kafkaTopic" name="kafkaTopic"
+                                           placeholder="my-topic" value="my-topic">
+                                    <small class="helper-text">Kafka topic name</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="kafkaConsumerGroup">Consumer Group</label>
+                                    <input type="text" id="kafkaConsumerGroup" name="kafkaConsumerGroup"
+                                           placeholder="my-consumer-group" value="my-consumer-group">
+                                    <small class="helper-text">Kafka consumer group ID</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="kafkaLagThreshold">Lag Threshold</label>
+                                    <input type="number" id="kafkaLagThreshold" name="kafkaLagThreshold"
+                                           placeholder="10" value="10" min="1">
+                                    <small class="helper-text">Scale when consumer lag exceeds this value</small>
+                                </div>
+                            </div>
+
+                            <!-- RabbitMQ trigger fields -->
+                            <div id="rabbitmqTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="rabbitmqHost">Host URI</label>
+                                    <input type="text" id="rabbitmqHost" name="rabbitmqHost"
+                                           placeholder="amqp://guest:guest@rabbitmq:5672/" value="amqp://guest:guest@rabbitmq:5672/">
+                                    <small class="helper-text">RabbitMQ connection URI</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="rabbitmqQueueName">Queue Name</label>
+                                    <input type="text" id="rabbitmqQueueName" name="rabbitmqQueueName"
+                                           placeholder="my-queue" value="my-queue">
+                                    <small class="helper-text">RabbitMQ queue name</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="rabbitmqQueueLength">Queue Length Threshold</label>
+                                    <input type="number" id="rabbitmqQueueLength" name="rabbitmqQueueLength"
+                                           placeholder="20" value="20" min="1">
+                                    <small class="helper-text">Scale when queue length exceeds this value</small>
+                                </div>
+                            </div>
+
+                            <!-- Redis trigger fields -->
+                            <div id="redisTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="redisAddress">Redis Address</label>
+                                    <input type="text" id="redisAddress" name="redisAddress"
+                                           placeholder="redis:6379" value="redis:6379">
+                                    <small class="helper-text">Redis server address</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="redisListName">List Name</label>
+                                    <input type="text" id="redisListName" name="redisListName"
+                                           placeholder="my-list" value="my-list">
+                                    <small class="helper-text">Redis list name</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="redisListLength">List Length Threshold</label>
+                                    <input type="number" id="redisListLength" name="redisListLength"
+                                           placeholder="5" value="5" min="1">
+                                    <small class="helper-text">Scale when list length exceeds this value</small>
+                                </div>
+                            </div>
+
+                            <!-- Custom trigger fields -->
+                            <div id="customTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="customTriggerType">Custom Trigger Type</label>
+                                    <input type="text" id="customTriggerType" name="customTriggerType"
+                                           placeholder="aws-sqs-queue" value="">
+                                    <small class="helper-text">KEDA scaler type (e.g., "aws-sqs-queue", "azure-queue", "gcp-pubsub")</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customTriggerMetadata">Trigger Metadata (YAML)</label>
+                                    <textarea id="customTriggerMetadata" name="customTriggerMetadata" rows="8" placeholder="queueURL: https://sqs.us-east-1.amazonaws.com/123456/my-queue
+queueLength: &quot;10&quot;
+awsRegion: us-east-1"></textarea>
+                                    <small class="helper-text">
+                                        Write the metadata fields in YAML format (key: value pairs).
+                                        All values are strings. See <a href="https://keda.sh/docs/2.18/scalers/" target="_blank">KEDA scalers</a> for required fields.
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -122,7 +344,7 @@
                 <h3>What UI Creates</h3>
                 <p class="platform-description">
                     The UI composed <strong>3 Kubernetes resources</strong> from your simple form input.
-                    You never had to understand Deployment, Service, or HTTPScaledObject APIs.
+                    You never had to understand Deployment, Service, or KEDA scaling APIs.
                 </p>
 
                 <div id="resourceCards" class="resource-cards">

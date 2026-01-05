@@ -197,6 +197,51 @@ select {
     display: block;
 }
 
+/* Shared Settings */
+.shared-settings {
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.scaling-method-label {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.scaling-method-label label {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #333;
+}
+
+/* Trigger Fields */
+.trigger-fields {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #ddd;
+}
+
+/* Custom Trigger Metadata Textarea */
+textarea {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
 .helper-text {
     display: block;
     font-size: 0.8rem;
