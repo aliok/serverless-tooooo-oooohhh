@@ -59,7 +59,7 @@ Anything that affects execution mechanics belongs in its native API and controll
 ### Responsibility Split
 
 | Component              | Responsibility                           |
-| ---------------------- | ---------------------------------------- |
+|------------------------|------------------------------------------|
 | UI                     | Resource composition, policy application |
 | Function Controller    | Eventing resources only                  |
 | Build Controllers      | Build reconciliation                     |
