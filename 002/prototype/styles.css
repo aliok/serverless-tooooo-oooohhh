@@ -42,7 +42,8 @@ header h1 {
 
 /* Panels */
 .form-panel,
-.resources-panel {
+.resources-panel,
+.list-panel {
     background: white;
     border-radius: 8px;
     padding: 2rem;
@@ -518,4 +519,124 @@ footer a {
 
 footer a:hover {
     text-decoration: underline;
+}
+
+/* List View */
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.list-header h2 {
+    margin: 0;
+}
+
+.functions-list {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.function-item {
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: start;
+    transition: box-shadow 0.2s;
+}
+
+.function-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.function-info h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    color: #1a1a1a;
+}
+
+.function-meta {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.function-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.function-meta-item strong {
+    color: #333;
+}
+
+.function-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-secondary {
+    padding: 0.5rem 1rem;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn-danger {
+    padding: 0.5rem 1rem;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+.btn-small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+/* Form Header */
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.form-header h2 {
+    margin: 0;
+}
+
+/* Empty state for list */
+.functions-list:empty::before {
+    content: "No functions created yet. Click 'Create New Function' to get started.";
+    display: block;
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #999;
+    font-size: 1rem;
 }

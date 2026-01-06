@@ -9,13 +9,31 @@
 <body>
     <header>
         <h1>Serverless Function Platform</h1>
-        <p class="subtitle">Phase 1: Scaling & Runtime - Demonstrating UI as Composition Layer</p>
+        <p class="subtitle">Phase 1 & 2: Scaling, Runtime, and Networking - Demonstrating UI as Composition Layer</p>
     </header>
 
-    <main class="container">
-        <!-- Left Panel: Function Creation Form -->
+    <!-- Function List View -->
+    <div id="listView" class="container">
+        <section class="list-panel">
+            <div class="list-header">
+                <h2>Functions</h2>
+                <button id="createNewBtn" class="btn-primary">Create New Function</button>
+            </div>
+            <p class="panel-description">Manage your serverless functions. Each function is composed of multiple Kubernetes resources.</p>
+
+            <div id="functionsList" class="functions-list">
+                <!-- Function cards will be inserted here -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Function Form View -->
+    <div id="formView" class="container" style="display: none;">
         <section class="form-panel">
-            <h2>Create Function</h2>
+            <div class="form-header">
+                <h2 id="formTitle">Create Function</h2>
+                <button type="button" id="backToListBtn" class="btn-secondary">← Back to List</button>
+            </div>
             <p class="panel-description">Define your function with simple, high-level configuration</p>
 
             <form id="functionForm">
@@ -491,7 +509,7 @@ awsRegion: us-east-1"></textarea>
                 <p>Fill in the form and click "Create Function" to see the composed resources.</p>
             </div>
         </section>
-    </main>
+    </div>
 
     <footer>
         <p>
@@ -501,6 +519,7 @@ awsRegion: us-east-1"></textarea>
     </footer>
 
     <script src="templates.js"></script>
+    <script src="state.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

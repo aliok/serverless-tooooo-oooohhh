@@ -4,7 +4,18 @@
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', function() {
+    // Views
+    const listView = document.getElementById('listView');
+    const formView = document.getElementById('formView');
+
+    // List elements
+    const functionsList = document.getElementById('functionsList');
+    const createNewBtn = document.getElementById('createNewBtn');
+    const backToListBtn = document.getElementById('backToListBtn');
+
+    // Form elements
     const form = document.getElementById('functionForm');
+    const formTitle = document.getElementById('formTitle');
     const userView = document.getElementById('userView');
     const platformView = document.getElementById('platformView');
     const emptyState = document.getElementById('emptyState');
@@ -24,6 +35,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const routePanel = document.getElementById('routePanel');
     const ingressTLSCheckbox = document.getElementById('ingressTLSEnabled');
     const ingressTLSFields = document.getElementById('ingressTLSFields');
+
+    // Initialize - show list view
+    renderFunctionsList();
+
+    // Navigation handlers
+    createNewBtn.addEventListener('click', function() {
+        clearCurrentEditingFunction();
+        showFormView('create');
+    });
+
+    backToListBtn.addEventListener('click', function() {
+        showListView();
+    });
 
     // Handle scaling metric radio button change
     scalingMetricRadios.forEach(radio => {
@@ -231,8 +255,16 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Save function to state
+        saveFunction(formData);
+
         // Generate resources
         generateAndDisplayResources(formData);
+
+        // Scroll to results
+        setTimeout(() => {
+            platformView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
     });
 
     /**
@@ -584,5 +616,185 @@ document.addEventListener('DOMContentLoaded', function() {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    /**
+     * Show list view
+     */
+    function showListView() {
+        listView.style.display = 'block';
+        formView.style.display = 'none';
+        renderFunctionsList();
+        resetForm();
+    }
+
+    /**
+     * Show form view
+     */
+    function showFormView(mode) {
+        listView.style.display = 'none';
+        formView.style.display = 'block';
+
+        if (mode === 'create') {
+            formTitle.textContent = 'Create Function';
+            resetForm();
+        } else if (mode === 'edit') {
+            formTitle.textContent = 'Edit Function';
+            loadFunctionIntoForm(getCurrentEditingFunction());
+        }
+
+        // Hide results initially
+        userView.style.display = 'none';
+        platformView.style.display = 'none';
+        emptyState.style.display = 'block';
+    }
+
+    /**
+     * Reset form to default values
+     */
+    function resetForm() {
+        form.reset();
+        // Reset to defaults
+        document.getElementById('functionName').value = 'my-function';
+        document.getElementById('namespace').value = 'default';
+        document.getElementById('containerImage').value = 'registry.example.com/functions/my-function:latest';
+        document.getElementById('containerPort').value = '8080';
+        document.getElementById('minReplicaCount').value = '0';
+        document.getElementById('maxReplicaCount').value = '10';
+
+        // Reset panels
+        concurrencyPanel.classList.add('active');
+        requestRatePanel.classList.remove('active');
+        scaledObjectPanel.classList.remove('active');
+        noAccessPanel.classList.add('active');
+        gatewayAPIPanel.classList.remove('active');
+        ingressPanel.classList.remove('active');
+        routePanel.classList.remove('active');
+    }
+
+    /**
+     * Load function data into form for editing
+     */
+    function loadFunctionIntoForm(functionData) {
+        if (!functionData) return;
+
+        document.getElementById('functionName').value = functionData.name;
+        document.getElementById('namespace').value = functionData.namespace;
+        document.getElementById('containerImage').value = functionData.image;
+        document.getElementById('containerPort').value = functionData.containerPort;
+        document.getElementById('minReplicaCount').value = functionData.metricConfig.minReplicaCount;
+        document.getElementById('maxReplicaCount').value = functionData.metricConfig.maxReplicaCount;
+
+        // Set scaling metric
+        const scalingRadio = document.querySelector(`input[name="scalingMetric"][value="${functionData.scalingMetric}"]`);
+        if (scalingRadio) {
+            scalingRadio.checked = true;
+            scalingRadio.dispatchEvent(new Event('change'));
+        }
+
+        // Load metric config
+        if (functionData.scalingMetric === 'concurrency') {
+            document.getElementById('concurrencyTargetValue').value = functionData.metricConfig.targetValue;
+        } else if (functionData.scalingMetric === 'requestRate') {
+            document.getElementById('requestRateTargetValue').value = functionData.metricConfig.targetValue;
+            document.getElementById('requestRateWindow').value = functionData.metricConfig.window;
+            document.getElementById('requestRateGranularity').value = functionData.metricConfig.granularity;
+        }
+
+        // Set networking method
+        const networkingRadio = document.querySelector(`input[name="networkingMethod"][value="${functionData.networkingMethod}"]`);
+        if (networkingRadio) {
+            networkingRadio.checked = true;
+            networkingRadio.dispatchEvent(new Event('change'));
+        }
+
+        // Load networking config
+        if (functionData.networkingMethod === 'gateway') {
+            document.getElementById('gatewayName').value = functionData.networkingConfig.gatewayName || 'default-gateway';
+            document.getElementById('gatewayHostname').value = functionData.networkingConfig.hostname || '';
+            document.getElementById('gatewayPath').value = functionData.networkingConfig.path || '/';
+        } else if (functionData.networkingMethod === 'ingress') {
+            document.getElementById('ingressClass').value = functionData.networkingConfig.ingressClass || '';
+            document.getElementById('ingressHostname').value = functionData.networkingConfig.hostname || '';
+            document.getElementById('ingressPath').value = functionData.networkingConfig.path || '/';
+            document.getElementById('ingressTLSEnabled').checked = functionData.networkingConfig.tlsEnabled || false;
+            if (functionData.networkingConfig.tlsEnabled) {
+                ingressTLSFields.style.display = 'block';
+                document.getElementById('ingressTLSSecretName').value = functionData.networkingConfig.tlsSecretName || '';
+            }
+        } else if (functionData.networkingMethod === 'route') {
+            document.getElementById('routeHostname').value = functionData.networkingConfig.hostname || '';
+            document.getElementById('routePath').value = functionData.networkingConfig.path || '/';
+            document.getElementById('routeTLSTermination').value = functionData.networkingConfig.tlsTermination || 'edge';
+        }
+    }
+
+    /**
+     * Render functions list
+     */
+    function renderFunctionsList() {
+        const functions = getFunctions();
+        functionsList.innerHTML = '';
+
+        functions.forEach(func => {
+            const item = document.createElement('div');
+            item.className = 'function-item';
+
+            const info = document.createElement('div');
+            info.className = 'function-info';
+
+            const scalingDesc = func.scalingMetric === 'concurrency' ? 'Concurrency' :
+                              func.scalingMetric === 'requestRate' ? 'Request Rate' : 'KEDA Triggers';
+            const networkingDesc = func.networkingMethod === 'none' ? 'No external access' :
+                                 func.networkingMethod === 'gateway' ? 'Gateway API' :
+                                 func.networkingMethod === 'ingress' ? 'Ingress' : 'OpenShift Route';
+
+            info.innerHTML = `
+                <h3>${func.name}</h3>
+                <div class="function-meta">
+                    <div class="function-meta-item">
+                        <strong>Namespace:</strong> ${func.namespace}
+                    </div>
+                    <div class="function-meta-item">
+                        <strong>Scaling:</strong> ${scalingDesc}
+                    </div>
+                    <div class="function-meta-item">
+                        <strong>Networking:</strong> ${networkingDesc}
+                    </div>
+                    <div class="function-meta-item">
+                        <strong>Image:</strong> ${func.image}
+                    </div>
+                </div>
+            `;
+
+            const actions = document.createElement('div');
+            actions.className = 'function-actions';
+
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn-secondary btn-small';
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', () => {
+                setCurrentEditingFunction(func);
+                showFormView('edit');
+            });
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn-danger btn-small';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', () => {
+                if (confirm(`Are you sure you want to delete function "${func.name}"?`)) {
+                    deleteFunction(func.id);
+                    renderFunctionsList();
+                }
+            });
+
+            actions.appendChild(editBtn);
+            actions.appendChild(deleteBtn);
+
+            item.appendChild(info);
+            item.appendChild(actions);
+
+            functionsList.appendChild(item);
+        });
     }
 });
