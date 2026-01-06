@@ -670,13 +670,17 @@ awsRegion: us-east-1"></textarea>
         </section>
     </div>
 
-    <!-- Function Detail View -->
+    <!-- Function Detail View (Read-Only) -->
     <div id="detailView" class="container" style="display: none;">
         <section class="detail-panel">
             <div class="detail-header">
                 <div>
                     <button type="button" id="backToListFromDetailBtn" class="btn-secondary">← Back to List</button>
                     <h2 id="detailFunctionName"></h2>
+                </div>
+                <div class="detail-actions">
+                    <button type="button" id="editFunctionBtn" class="btn-secondary">Edit Function</button>
+                    <button type="button" id="manageSubscriptionsBtn" class="btn-primary">Manage Event Subscriptions</button>
                 </div>
             </div>
 
@@ -700,6 +704,26 @@ awsRegion: us-east-1"></textarea>
                         <span class="info-label">Networking:</span>
                         <span id="detailNetworking"></span>
                     </div>
+                </div>
+            </div>
+
+            <div class="event-subscriptions-summary">
+                <h3>Event Subscriptions</h3>
+                <div id="subscriptionsSummary" class="subscriptions-summary">
+                    <p id="subscriptionsSummaryText">No event subscriptions configured.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Subscriptions Management View -->
+    <div id="subscriptionsView" class="container" style="display: none;">
+        <section class="detail-panel">
+            <div class="detail-header">
+                <div>
+                    <button type="button" id="backToDetailFromSubscriptionsBtn" class="btn-secondary">← Back to Function</button>
+                    <h2>Manage Event Subscriptions</h2>
+                    <p class="subtitle" id="subscriptionsViewFunctionName"></p>
                 </div>
             </div>
 

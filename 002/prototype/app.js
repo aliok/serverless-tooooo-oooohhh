@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const listView = document.getElementById('listView');
     const formView = document.getElementById('formView');
     const detailView = document.getElementById('detailView');
+    const subscriptionsView = document.getElementById('subscriptionsView');
 
     // List elements
     const functionsTableBody = document.getElementById('functionsTableBody');
@@ -59,6 +60,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const detailImage = document.getElementById('detailImage');
     const detailScaling = document.getElementById('detailScaling');
     const detailNetworking = document.getElementById('detailNetworking');
+    const editFunctionBtn = document.getElementById('editFunctionBtn');
+    const manageSubscriptionsBtn = document.getElementById('manageSubscriptionsBtn');
+    const subscriptionsSummaryText = document.getElementById('subscriptionsSummaryText');
+
+    // Subscriptions view elements
+    const backToDetailFromSubscriptionsBtn = document.getElementById('backToDetailFromSubscriptionsBtn');
+    const subscriptionsViewFunctionName = document.getElementById('subscriptionsViewFunctionName');
     const addSubscriptionBtn = document.getElementById('addSubscriptionBtn');
     const subscriptionsList = document.getElementById('subscriptionsList');
     const emptySubscriptions = document.getElementById('emptySubscriptions');
@@ -93,6 +101,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     backToListFromDetailBtn.addEventListener('click', function() {
         showListView();
+    });
+
+    backToDetailFromSubscriptionsBtn.addEventListener('click', function() {
+        if (currentDetailFunction) {
+            showDetailView(currentDetailFunction);
+        }
+    });
+
+    editFunctionBtn.addEventListener('click', function() {
+        if (currentDetailFunction) {
+            setCurrentEditingFunction(currentDetailFunction);
+            showFormView('edit');
+        }
+    });
+
+    manageSubscriptionsBtn.addEventListener('click', function() {
+        if (currentDetailFunction) {
+            showSubscriptionsView(currentDetailFunction);
+        }
     });
 
     // Create function button handler (after rendering)
@@ -327,8 +354,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Save to state
         saveFunction(currentDetailFunction);
 
-        // Refresh detail view
-        renderDetailView(currentDetailFunction);
+        // Refresh subscriptions view
+        renderEventSubscriptions(currentDetailFunction);
 
         // Close dialog
         closeSubscriptionDialog();
@@ -926,6 +953,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function showListView() {
         listView.style.display = 'block';
         formView.style.display = 'none';
+        detailView.style.display = 'none';
+        subscriptionsView.style.display = 'none';
         renderFunctionsList();
         resetForm();
     }
@@ -936,6 +965,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function showFormView(mode) {
         listView.style.display = 'none';
         formView.style.display = 'block';
+        detailView.style.display = 'none';
+        subscriptionsView.style.display = 'none';
 
         if (mode === 'create') {
             formTitle.textContent = 'Create Function';
@@ -1193,8 +1224,7 @@ document.addEventListener('DOMContentLoaded', function() {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 const func = getFunction(this.dataset.id);
-                setCurrentEditingFunction(func);
-                showFormView('edit');
+                showDetailView(func);
             });
         });
 
@@ -1209,9 +1239,24 @@ document.addEventListener('DOMContentLoaded', function() {
         listView.style.display = 'none';
         formView.style.display = 'none';
         detailView.style.display = 'block';
+        subscriptionsView.style.display = 'none';
 
         currentDetailFunction = functionData;
         renderDetailView(functionData);
+    }
+
+    /**
+     * Show subscriptions management view
+     */
+    function showSubscriptionsView(functionData) {
+        listView.style.display = 'none';
+        formView.style.display = 'none';
+        detailView.style.display = 'none';
+        subscriptionsView.style.display = 'block';
+
+        currentDetailFunction = functionData;
+        subscriptionsViewFunctionName.textContent = `Function: ${functionData.name}`;
+        renderEventSubscriptions(functionData);
     }
 
     /**
@@ -1246,8 +1291,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         detailNetworking.textContent = networkingDesc;
 
-        // Render event subscriptions
-        renderEventSubscriptions(functionData);
+        // Render event subscriptions summary
+        if (!functionData.eventSubscriptions || functionData.eventSubscriptions.length === 0) {
+            subscriptionsSummaryText.textContent = 'No event subscriptions configured.';
+        } else {
+            const count = functionData.eventSubscriptions.length;
+            const types = functionData.eventSubscriptions.map(s => s.eventType).join(', ');
+            subscriptionsSummaryText.textContent = `${count} subscription${count > 1 ? 's' : ''}: ${types}`;
+        }
     }
 
     /**
@@ -1290,7 +1341,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirm('Are you sure you want to remove this event subscription?')) {
             currentDetailFunction.eventSubscriptions.splice(index, 1);
             saveFunction(currentDetailFunction);
-            renderDetailView(currentDetailFunction);
+            renderEventSubscriptions(currentDetailFunction);
         }
     }
 

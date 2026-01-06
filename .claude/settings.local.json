@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nImplement Phase 1 prototype UI for serverless function composition\n\nAdd web-based prototype demonstrating UI as composition layer for serverless\nfunctions. Users interact with a simple \"Create Function\" form while the UI\ncomposes multiple Kubernetes resources behind the scenes.\n\nPhase 1 focuses on scaling/runtime resources:\n- Deployment (apps/v1) - runtime workload starting at 0 replicas\n- Service (v1) - stable network endpoint\n- HTTPScaledObject (http.keda.sh/v1alpha1) - KEDA scaling configuration\n\nFeatures:\n- Radio button UI with collapsible panels for scaling metric selection\n- Support for both concurrency and requestRate metrics per KEDA v0.11.1 spec\n- Live YAML generation showing composed resources\n- Visual distinction between user perspective and platform perspective\n- All resources labeled with serverless.openshift.io/function\n\nThe prototype demonstrates how the UI prevents \"API soup\" by providing a\nsingle conceptual interface while composing multiple platform resources.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "WebFetch(domain:keda.sh)",
+      "Bash(git commit:*)"
     ]
   }
 }
