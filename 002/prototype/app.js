@@ -33,6 +33,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const platformDescription = document.getElementById('platformDescription');
     const createFunctionBtn = document.getElementById('createFunctionBtn');
     const cancelCreateBtn = document.getElementById('cancelCreateBtn');
+    const buildMethodRadios = document.querySelectorAll('input[name="buildMethod"]');
+    const noBuildPanel = document.getElementById('noBuildPanel');
+    const shipwrightBuildPanel = document.getElementById('shipwrightBuildPanel');
+    const s2iBuildPanel = document.getElementById('s2iBuildPanel');
     const scalingMetricRadios = document.querySelectorAll('input[name="scalingMetric"]');
     const concurrencyPanel = document.getElementById('concurrencyPanel');
     const requestRatePanel = document.getElementById('requestRatePanel');
@@ -110,6 +114,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             renderFunctionsList();
+        });
+    });
+
+    // Handle build method radio button change
+    buildMethodRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            noBuildPanel.classList.remove('active');
+            shipwrightBuildPanel.classList.remove('active');
+            s2iBuildPanel.classList.remove('active');
+
+            if (this.value === 'none') {
+                noBuildPanel.classList.add('active');
+            } else if (this.value === 'shipwright') {
+                shipwrightBuildPanel.classList.add('active');
+            } else if (this.value === 's2i') {
+                s2iBuildPanel.classList.add('active');
+            }
         });
     });
 
@@ -302,12 +323,31 @@ document.addEventListener('DOMContentLoaded', function() {
             networkingConfig.tlsTermination = document.getElementById('routeTLSTermination').value;
         }
 
+        // Collect build configuration
+        const buildMethod = document.querySelector('input[name="buildMethod"]:checked').value;
+        let buildConfig = {
+            method: buildMethod
+        };
+
+        if (buildMethod === 'shipwright') {
+            buildConfig.gitURL = document.getElementById('shipwrightGitURL').value.trim();
+            buildConfig.gitRevision = document.getElementById('shipwrightGitRevision').value.trim();
+            buildConfig.strategy = document.getElementById('shipwrightStrategy').value;
+        } else if (buildMethod === 's2i') {
+            buildConfig.gitURL = document.getElementById('s2iGitURL').value.trim();
+            buildConfig.gitRevision = document.getElementById('s2iGitRevision').value.trim();
+            buildConfig.builderImage = document.getElementById('s2iBuilderImage').value;
+            buildConfig.outputImageStream = document.getElementById('s2iOutputImageStream').value.trim();
+        }
+
         // Collect form data
         const formData = {
             name: document.getElementById('functionName').value.trim(),
             namespace: document.getElementById('namespace').value.trim(),
             image: document.getElementById('containerImage').value.trim(),
             containerPort: parseInt(document.getElementById('containerPort').value),
+            buildMethod: buildMethod,
+            buildConfig: buildConfig,
             scalingMetric: scalingMetric,
             metricConfig: metricConfig,
             networkingMethod: networkingMethod,
@@ -432,6 +472,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Validate build configuration
+        if (data.buildMethod === 'shipwright') {
+            if (!data.buildConfig.gitURL) {
+                alert('Please provide a Git URL for Shipwright build');
+                return false;
+            }
+        } else if (data.buildMethod === 's2i') {
+            if (!data.buildConfig.gitURL) {
+                alert('Please provide a Git URL for S2I build');
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -481,6 +534,16 @@ document.addEventListener('DOMContentLoaded', function() {
             scalingDescription += `, scaling between <strong>${config.metricConfig.minReplicaCount}</strong> and <strong>${config.metricConfig.maxReplicaCount}</strong> replicas`;
         }
 
+        // Build build description
+        let buildDescription = '';
+        if (config.buildMethod === 'none') {
+            buildDescription = 'The function uses the pre-built container image you provided.';
+        } else if (config.buildMethod === 'shipwright') {
+            buildDescription = `The function will be built from source using <strong>Shipwright Build</strong> with the <strong>${config.buildConfig.strategy}</strong> strategy from <strong>${config.buildConfig.gitURL}</strong>.`;
+        } else if (config.buildMethod === 's2i') {
+            buildDescription = `The function will be built from source using <strong>OpenShift S2I</strong> with the <strong>${config.buildConfig.builderImage}</strong> builder image from <strong>${config.buildConfig.gitURL}</strong>.`;
+        }
+
         // Build networking description
         let networkingDescription = '';
         if (config.networkingMethod === 'none') {
@@ -501,6 +564,8 @@ document.addEventListener('DOMContentLoaded', function() {
             You created a Function named <strong>${config.name}</strong> in namespace <strong>${config.namespace}</strong>
             with auto-scaling enabled.
             <br><br>
+            ${buildDescription}
+            <br><br>
             The platform will automatically scale your function based on HTTP traffic,
             ${scalingDescription}.
             <br><br>
@@ -517,7 +582,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 name: config.name,
                 yaml: generateFunctionYAML(config),
                 metadata: RESOURCE_METADATA.function
-            },
+            }
+        ];
+
+        // Add build resource based on selected method
+        if (config.buildMethod === 'shipwright') {
+            resources.push({
+                type: 'shipwrightBuild',
+                name: `${config.name}-build`,
+                yaml: generateShipwrightBuildYAML(config),
+                metadata: RESOURCE_METADATA.shipwrightBuild
+            });
+        } else if (config.buildMethod === 's2i') {
+            resources.push({
+                type: 's2iBuildConfig',
+                name: `${config.name}-build`,
+                yaml: generateS2IBuildConfigYAML(config),
+                metadata: RESOURCE_METADATA.s2iBuildConfig
+            });
+        }
+
+        // Add runtime resources
+        resources.push(
             {
                 type: 'deployment',
                 name: config.name,
@@ -530,7 +616,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 yaml: generateServiceYAML(config),
                 metadata: RESOURCE_METADATA.service
             }
-        ];
+        );
 
         // Add scaling resource based on selected metric
         if (config.scalingMetric === 'concurrency' || config.scalingMetric === 'requestRate') {
@@ -575,11 +661,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Update platform description with resource count
         resourceCount.textContent = resources.length;
+        const buildPart = config.buildMethod !== 'none' ? `build (${config.buildMethod === 'shipwright' ? 'Shipwright' : 'S2I BuildConfig'}), ` : '';
+        const networkingPart = config.networkingMethod !== 'none' ? 'and networking (HTTPRoute/Ingress/Route)' : 'without external networking';
         platformDescription.innerHTML = `
             The UI composed <strong>${resources.length}</strong> Kubernetes resources from your simple form input.
             <br>
-            You created one Function CR, but the platform composed multiple resources: runtime (Deployment, Service),
-            scaling (KEDA), ${config.networkingMethod !== 'none' ? 'and networking (HTTPRoute/Ingress/Route)' : 'without external networking'}.
+            You created one Function CR, but the platform composed multiple resources: ${buildPart}runtime (Deployment, Service),
+            scaling (KEDA), ${networkingPart}.
         `;
 
         // Render resource cards
@@ -751,6 +839,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('maxReplicaCount').value = '10';
 
         // Reset panels
+        noBuildPanel.classList.add('active');
+        shipwrightBuildPanel.classList.remove('active');
+        s2iBuildPanel.classList.remove('active');
         concurrencyPanel.classList.add('active');
         requestRatePanel.classList.remove('active');
         scaledObjectPanel.classList.remove('active');
@@ -772,6 +863,25 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('containerPort').value = functionData.containerPort;
         document.getElementById('minReplicaCount').value = functionData.metricConfig.minReplicaCount;
         document.getElementById('maxReplicaCount').value = functionData.metricConfig.maxReplicaCount;
+
+        // Set build method
+        const buildRadio = document.querySelector(`input[name="buildMethod"][value="${functionData.buildMethod}"]`);
+        if (buildRadio) {
+            buildRadio.checked = true;
+            buildRadio.dispatchEvent(new Event('change'));
+        }
+
+        // Load build config
+        if (functionData.buildMethod === 'shipwright') {
+            document.getElementById('shipwrightGitURL').value = functionData.buildConfig.gitURL || '';
+            document.getElementById('shipwrightGitRevision').value = functionData.buildConfig.gitRevision || 'main';
+            document.getElementById('shipwrightStrategy').value = functionData.buildConfig.strategy || 'nodejs';
+        } else if (functionData.buildMethod === 's2i') {
+            document.getElementById('s2iGitURL').value = functionData.buildConfig.gitURL || '';
+            document.getElementById('s2iGitRevision').value = functionData.buildConfig.gitRevision || 'main';
+            document.getElementById('s2iBuilderImage').value = functionData.buildConfig.builderImage || 'nodejs:16-ubi8';
+            document.getElementById('s2iOutputImageStream').value = functionData.buildConfig.outputImageStream || '';
+        }
 
         // Set scaling metric
         const scalingRadio = document.querySelector(`input[name="scalingMetric"][value="${functionData.scalingMetric}"]`);

@@ -107,6 +107,111 @@
                 </fieldset>
 
                 <fieldset>
+                    <legend>Build Configuration</legend>
+
+                    <div class="scaling-method-label">
+                        <label>Build Method</label>
+                        <small class="helper-text">Choose how to build your function container image</small>
+                    </div>
+
+                    <!-- No Build panel (default - user provides image) -->
+                    <div id="noBuildPanel" class="metric-panel active">
+                        <label class="panel-header">
+                            <input type="radio" name="buildMethod" value="none" checked>
+                            <span class="panel-icon">▼</span>
+                            <span class="panel-title">No Build (Use Existing Image)</span>
+                        </label>
+                        <div class="panel-body">
+                            <p class="helper-text">Use the container image specified above. No build will be performed.</p>
+                        </div>
+                    </div>
+
+                    <!-- Shipwright Build panel -->
+                    <div id="shipwrightBuildPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="buildMethod" value="shipwright">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Shipwright Build</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="shipwrightGitURL">Git URL</label>
+                                <input type="text" id="shipwrightGitURL" name="shipwrightGitURL"
+                                       placeholder="https://github.com/example/my-function" value="https://github.com/example/my-function">
+                                <small class="helper-text">Git repository containing your function source code</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="shipwrightGitRevision">Git Revision</label>
+                                <input type="text" id="shipwrightGitRevision" name="shipwrightGitRevision"
+                                       placeholder="main" value="main">
+                                <small class="helper-text">Branch, tag, or commit SHA to build from</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="shipwrightStrategy">Build Strategy</label>
+                                <select id="shipwrightStrategy" name="shipwrightStrategy">
+                                    <option value="nodejs">Node.js</option>
+                                    <option value="python">Python</option>
+                                    <option value="go">Go</option>
+                                    <option value="java">Java</option>
+                                    <option value="ruby">Ruby</option>
+                                    <option value="php">PHP</option>
+                                    <option value="dotnet">dotNET</option>
+                                </select>
+                                <small class="helper-text">BuildStrategy to use for building the image</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OpenShift S2I BuildConfig panel -->
+                    <div id="s2iBuildPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="buildMethod" value="s2i">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">OpenShift S2I (Source-to-Image)</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="s2iGitURL">Git URL</label>
+                                <input type="text" id="s2iGitURL" name="s2iGitURL"
+                                       placeholder="https://github.com/example/my-function" value="https://github.com/example/my-function">
+                                <small class="helper-text">Git repository containing your function source code</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="s2iGitRevision">Git Revision</label>
+                                <input type="text" id="s2iGitRevision" name="s2iGitRevision"
+                                       placeholder="main" value="main">
+                                <small class="helper-text">Branch, tag, or commit SHA to build from</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="s2iBuilderImage">Builder Image</label>
+                                <select id="s2iBuilderImage" name="s2iBuilderImage">
+                                    <option value="nodejs:16-ubi8">Node.js 16</option>
+                                    <option value="nodejs:18-ubi8">Node.js 18</option>
+                                    <option value="python:3.9-ubi8">Python 3.9</option>
+                                    <option value="python:3.11-ubi8">Python 3.11</option>
+                                    <option value="golang:1.20-ubi8">Go 1.20</option>
+                                    <option value="java:11">Java 11</option>
+                                    <option value="java:17">Java 17</option>
+                                    <option value="ruby:3.0-ubi8">Ruby 3.0</option>
+                                </select>
+                                <small class="helper-text">S2I builder image for your runtime</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="s2iOutputImageStream">Output ImageStream Tag</label>
+                                <input type="text" id="s2iOutputImageStream" name="s2iOutputImageStream"
+                                       placeholder="my-function:latest" value="">
+                                <small class="helper-text">ImageStreamTag where the built image will be pushed (defaults to function-name:latest)</small>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
                     <legend>Scaling Configuration</legend>
 
                     <!-- Shared replica settings -->

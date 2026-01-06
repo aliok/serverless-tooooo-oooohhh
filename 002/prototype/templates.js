@@ -22,6 +22,88 @@ spec:
 }
 
 /**
+ * Generate Shipwright Build YAML
+ * @param {Object} config - Configuration object
+ * @param {string} config.name - Function name
+ * @param {string} config.namespace - Namespace
+ * @param {string} config.image - Output container image
+ * @param {Object} config.buildConfig - Build configuration
+ * @returns {string} YAML string
+ */
+function generateShipwrightBuildYAML(config) {
+    const buildConfig = config.buildConfig || {};
+    return `apiVersion: shipwright.io/v1beta1
+kind: Build
+metadata:
+  name: ${config.name}-build
+  namespace: ${config.namespace}
+  labels:
+    serverless.openshift.io/function: ${config.name}
+  ownerReferences:
+    - apiVersion: serverless.openshift.io/v1alpha1
+      kind: Function
+      name: ${config.name}
+      uid: <generated-by-apiserver>
+      controller: false
+      blockOwnerDeletion: true
+spec:
+  source:
+    git:
+      url: ${buildConfig.gitURL}
+      revision: ${buildConfig.gitRevision || 'main'}
+  strategy:
+    name: ${buildConfig.strategy}
+  output:
+    image: ${config.image}`;
+}
+
+/**
+ * Generate OpenShift S2I BuildConfig YAML
+ * @param {Object} config - Configuration object
+ * @param {string} config.name - Function name
+ * @param {string} config.namespace - Namespace
+ * @param {Object} config.buildConfig - Build configuration
+ * @returns {string} YAML string
+ */
+function generateS2IBuildConfigYAML(config) {
+    const buildConfig = config.buildConfig || {};
+    const outputImageStreamTag = buildConfig.outputImageStream || `${config.name}:latest`;
+
+    return `apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: ${config.name}-build
+  namespace: ${config.namespace}
+  labels:
+    serverless.openshift.io/function: ${config.name}
+  ownerReferences:
+    - apiVersion: serverless.openshift.io/v1alpha1
+      kind: Function
+      name: ${config.name}
+      uid: <generated-by-apiserver>
+      controller: false
+      blockOwnerDeletion: true
+spec:
+  runPolicy: Serial
+  source:
+    git:
+      uri: ${buildConfig.gitURL}
+      ref: ${buildConfig.gitRevision || 'main'}
+  strategy:
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: ${buildConfig.builderImage}
+  output:
+    to:
+      kind: ImageStreamTag
+      name: ${outputImageStreamTag}
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange`;
+}
+
+/**
  * Generate Deployment YAML
  * @param {Object} config - Configuration object
  * @param {string} config.name - Function name
@@ -449,5 +531,15 @@ const RESOURCE_METADATA = {
         kind: 'Route',
         apiVersion: 'route.openshift.io/v1',
         description: 'Exposes the function via OpenShift Route. Provides automatic hostname generation, built-in TLS termination, and seamless integration with OpenShift routing.'
+    },
+    shipwrightBuild: {
+        kind: 'Build',
+        apiVersion: 'shipwright.io/v1beta1',
+        description: 'Builds the function container image from source code using Shipwright. Takes source from Git repository and produces the container image specified in the function configuration.'
+    },
+    s2iBuildConfig: {
+        kind: 'BuildConfig',
+        apiVersion: 'build.openshift.io/v1',
+        description: 'Builds the function container image using OpenShift Source-to-Image (S2I). Automatically detects the source code language and builds a runnable container image.'
     }
 };

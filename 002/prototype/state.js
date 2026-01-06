@@ -10,6 +10,10 @@ let functions = [
         namespace: 'default',
         image: 'registry.example.com/functions/example-function:latest',
         containerPort: 8080,
+        buildMethod: 'none',
+        buildConfig: {
+            method: 'none'
+        },
         scalingMetric: 'concurrency',
         metricConfig: {
             minReplicaCount: 0,
