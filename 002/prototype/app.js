@@ -62,7 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const editFunctionBtn = document.getElementById('editFunctionBtn');
     const manageSubscriptionsBtn = document.getElementById('manageSubscriptionsBtn');
     const subscriptionsSummaryText = document.getElementById('subscriptionsSummaryText');
-    const showResourcesBtn = document.getElementById('showResourcesBtn');
     const detailPlatformView = document.getElementById('detailPlatformView');
     const detailResourceCount = document.getElementById('detailResourceCount');
     const detailPlatformDescription = document.getElementById('detailPlatformDescription');
@@ -121,21 +120,6 @@ document.addEventListener('DOMContentLoaded', function() {
     manageSubscriptionsBtn.addEventListener('click', function() {
         if (currentDetailFunction) {
             showSubscriptionsView(currentDetailFunction);
-        }
-    });
-
-    showResourcesBtn.addEventListener('click', function() {
-        if (currentDetailFunction) {
-            if (detailPlatformView.style.display === 'none') {
-                // Show and render resources
-                renderDetailResources(currentDetailFunction);
-                detailPlatformView.style.display = 'block';
-                showResourcesBtn.textContent = 'Hide Resources';
-            } else {
-                // Hide resources
-                detailPlatformView.style.display = 'none';
-                showResourcesBtn.textContent = 'Show Resources';
-            }
         }
     });
 
@@ -1265,10 +1249,8 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDetailFunction = functionData;
         renderDetailView(functionData);
 
-        // Auto-show and render resources
+        // Auto-render resources
         renderDetailResources(functionData);
-        detailPlatformView.style.display = 'block';
-        showResourcesBtn.textContent = 'Hide Resources';
     }
 
     /**
