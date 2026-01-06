@@ -518,11 +518,11 @@ awsRegion: us-east-1"></textarea>
                     </div>
                 </fieldset>
 
-                <button type="submit" class="btn-primary">Create Function</button>
+                <button type="submit" class="btn-primary">Render Resources</button>
             </form>
         </section>
 
-        <!-- Right Panel: Resources View -->
+        <!-- Resources View -->
         <section class="resources-panel">
             <h2>Results</h2>
             <p class="panel-description">See how the UI composes multiple Kubernetes resources</p>
@@ -546,11 +546,16 @@ awsRegion: us-east-1"></textarea>
                 <div id="resourceCards" class="resource-cards">
                     <!-- Resource cards will be inserted here by JavaScript -->
                 </div>
+
+                <div class="create-actions">
+                    <button id="createFunctionBtn" class="btn-primary" style="display: none;">Create Function</button>
+                    <button id="cancelCreateBtn" class="btn-secondary" style="display: none;">Cancel</button>
+                </div>
             </div>
 
             <!-- Initial empty state -->
             <div id="emptyState" class="empty-state">
-                <p>Fill in the form and click "Create Function" to see the composed resources.</p>
+                <p>Fill in the form and click "Render Resources" to see the composed resources.</p>
             </div>
         </section>
     </div>

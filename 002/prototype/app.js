@@ -31,6 +31,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const resourceCards = document.getElementById('resourceCards');
     const resourceCount = document.getElementById('resourceCount');
     const platformDescription = document.getElementById('platformDescription');
+    const createFunctionBtn = document.getElementById('createFunctionBtn');
+    const cancelCreateBtn = document.getElementById('cancelCreateBtn');
     const scalingMetricRadios = document.querySelectorAll('input[name="scalingMetric"]');
     const concurrencyPanel = document.getElementById('concurrencyPanel');
     const requestRatePanel = document.getElementById('requestRatePanel');
@@ -44,6 +46,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const ingressTLSCheckbox = document.getElementById('ingressTLSEnabled');
     const ingressTLSFields = document.getElementById('ingressTLSFields');
 
+    // Store last rendered function data
+    let lastRenderedFunction = null;
+
     // Initialize - show list view
     renderFunctionsList();
 
@@ -54,6 +59,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     backToListBtn.addEventListener('click', function() {
+        showListView();
+    });
+
+    // Create function button handler (after rendering)
+    createFunctionBtn.addEventListener('click', function() {
+        if (lastRenderedFunction) {
+            saveFunction(lastRenderedFunction);
+            showListView();
+        }
+    });
+
+    // Cancel create button handler
+    cancelCreateBtn.addEventListener('click', function() {
         showListView();
     });
 
@@ -301,11 +319,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Save function to state
-        saveFunction(formData);
+        // Store for later creation
+        lastRenderedFunction = formData;
 
         // Generate resources
         generateAndDisplayResources(formData);
+
+        // Show create/cancel buttons
+        createFunctionBtn.style.display = 'inline-block';
+        cancelCreateBtn.style.display = 'inline-block';
 
         // Scroll to results
         setTimeout(() => {
@@ -693,6 +715,13 @@ document.addEventListener('DOMContentLoaded', function() {
         userView.style.display = 'none';
         platformView.style.display = 'none';
         emptyState.style.display = 'block';
+
+        // Hide create/cancel buttons
+        createFunctionBtn.style.display = 'none';
+        cancelCreateBtn.style.display = 'none';
+
+        // Clear last rendered function
+        lastRenderedFunction = null;
     }
 
     /**

@@ -711,3 +711,17 @@ footer a:hover {
     border-top: none;
     background-color: #fafafa;
 }
+
+/* Create actions */
+.create-actions {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e0e0e0;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.create-actions button {
+    min-width: 200px;
+}
