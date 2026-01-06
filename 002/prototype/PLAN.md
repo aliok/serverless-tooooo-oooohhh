@@ -663,8 +663,248 @@ The Function controller will create Knative Trigger resources based on this spec
 
 ---
 
+## Phase 5: Event Sources and Brokers Management
+
+This phase adds CRUD functionality for Event Sources and Brokers, creating a complete event-driven architecture management experience.
+
+### Goals
+1. Enable users to manage Brokers (Knative Eventing infrastructure)
+2. Enable users to manage Event Sources (producers of CloudEvents)
+3. Replace manual broker name input with dropdown selection
+4. Show relationship between Event Sources → Brokers → Functions
+5. Provide visual management similar to AWS Lambda triggers
+
+### Data Model
+
+**Broker:**
+```javascript
+{
+  id: 'default-broker',
+  name: 'default',
+  namespace: 'default',
+  deliveryConfig: {
+    retry: 3,
+    backoffPolicy: 'exponential', // or 'linear'
+    backoffDelay: '1s'
+  },
+  createdAt: '...'
+}
+```
+
+**Event Source:**
+```javascript
+{
+  id: 'github-webhook-1',
+  name: 'github-webhook',
+  namespace: 'default',
+  type: 'github', // github, slack, kafka, etc.
+  broker: 'default', // which broker to send events to
+  config: {
+    // Type-specific configuration
+    // For GitHub: repo URL, webhook secret, event types
+    // For Kafka: bootstrap servers, topics, consumer group
+    // etc.
+  },
+  eventTypes: ['com.github.push', 'com.github.pull_request'],
+  createdAt: '...'
+}
+```
+
+### UI Structure
+
+**Navigation:**
+- Add tabs/sections for: Functions | Brokers | Event Sources
+- Allow users to switch between managing different resources
+
+**Brokers List View:**
+- Table showing: Name, Namespace, Event Sources Count, Functions Count, Actions
+- Create Broker button
+- Edit/Delete buttons per row
+- Click broker name to view details
+
+**Broker Detail View:**
+- Broker overview (name, namespace, delivery config)
+- List of Event Sources sending to this broker
+- List of Functions subscribed to this broker
+- Composed resources (Broker CR, maybe ConfigMap for delivery)
+
+**Broker Form (Create/Edit):**
+- Name, Namespace
+- Delivery configuration (retry, backoff policy, backoff delay)
+- Auto-generate Broker CR YAML
+
+**Event Sources List View:**
+- Table showing: Name, Type, Broker, Event Types, Actions
+- Create Event Source button
+- Edit/Delete buttons per row
+- Click event source name to view details
+
+**Event Source Detail View:**
+- Event source overview (name, type, broker, config)
+- Event types produced
+- Functions that subscribe to these event types
+- Composed resources (varies by type: GitHubSource, KafkaSource, etc.)
+
+**Event Source Form (Create/Edit):**
+- Name, Namespace
+- Type (dropdown: GitHub, Slack, Kafka, RabbitMQ, Cron, etc.)
+- Broker (dropdown: select from existing brokers)
+- Type-specific configuration fields
+- Event types (multi-select or text input)
+- Auto-generate Event Source CR YAML
+
+### Event Subscription Workflow Changes
+
+**Before (Phase 4):**
+- User types broker name manually
+- User selects/types event type
+- UI creates Function CR with subscriptions
+
+**After (Phase 5):**
+- User selects broker from dropdown (populated from existing brokers)
+- User selects/types event type
+- UI shows which Event Sources produce these event types
+- UI creates Function CR with subscriptions
+
+### Implementation Steps
+
+1. **Update `state.js`**
+   - Add brokers array with sample data
+   - Add eventSources array with sample data
+   - Add CRUD functions for brokers
+   - Add CRUD functions for event sources
+
+2. **Create navigation/tabs**
+   - Add tab navigation to switch between Functions/Brokers/Event Sources
+   - Update routing to show appropriate view
+
+3. **Implement Brokers CRUD**
+   - Create brokers list view (HTML + CSS)
+   - Create broker form view (HTML + CSS)
+   - Create broker detail view (HTML + CSS)
+   - Add JavaScript handlers for CRUD operations
+   - Add Broker CR YAML generator in templates.js
+
+4. **Implement Event Sources CRUD**
+   - Create event sources list view (HTML + CSS)
+   - Create event source form view (HTML + CSS)
+   - Create event source detail view (HTML + CSS)
+   - Add JavaScript handlers for CRUD operations
+   - Add Event Source CR YAML generators (GitHubSource, KafkaSource, etc.) in templates.js
+
+5. **Update Event Subscription UI**
+   - Change broker input to dropdown
+   - Populate dropdown from existing brokers
+   - Show warning if no brokers exist
+   - Add "Create Broker" quick link
+
+6. **Update Function Detail View**
+   - Show which Event Sources are connected
+   - Show broker information for each subscription
+   - Update diagram to show full flow: Event Source → Broker → Function
+
+### Event Source Types
+
+Support these common event source types:
+
+1. **GitHub Source**
+   - Repository URL
+   - Webhook secret
+   - Event types (push, pull_request, issues, etc.)
+
+2. **Kafka Source**
+   - Bootstrap servers
+   - Topics
+   - Consumer group
+
+3. **Slack Source**
+   - Webhook URL
+   - Event types (message, reaction, etc.)
+
+4. **Cron Source**
+   - Schedule (cron expression)
+   - Data payload
+
+5. **Custom Source**
+   - User-defined YAML configuration
+
+### Resources Generated
+
+**Broker CR:**
+```yaml
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: default
+  namespace: default
+spec:
+  delivery:
+    retry: 3
+    backoffPolicy: exponential
+    backoffDelay: 1s
+```
+
+**GitHub Source CR:**
+```yaml
+apiVersion: sources.knative.dev/v1
+kind: GitHubSource
+metadata:
+  name: github-webhook
+  namespace: default
+spec:
+  eventTypes:
+    - push
+    - pull_request
+  repository: username/repo
+  accessToken:
+    secretKeyRef:
+      name: github-secret
+      key: accessToken
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: default
+```
+
+**Kafka Source CR:**
+```yaml
+apiVersion: sources.knative.dev/v1beta1
+kind: KafkaSource
+metadata:
+  name: kafka-source
+  namespace: default
+spec:
+  consumerGroup: my-consumer-group
+  bootstrapServers:
+    - kafka:9092
+  topics:
+    - my-topic
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: default
+```
+
+### Success Criteria
+
+- ✅ **Brokers CRUD**: Create, list, view, edit, and delete brokers
+- ✅ **Event Sources CRUD**: Create, list, view, edit, and delete event sources
+- ✅ **Broker dropdown**: Event subscription form uses dropdown instead of text input
+- ✅ **Event source types**: Support at least 5 event source types
+- ✅ **Proper YAML generation**: Generate valid Knative Eventing CRs
+- ✅ **Visual relationships**: Show connections between Event Sources, Brokers, and Functions
+- ✅ **Navigation**: Easy switching between managing different resource types
+
+---
+
 ## Future Phases
 
-- **Phase 5**: Complete composition view with all resource types
-- **Phase 6**: Status aggregation and resource health visualization
-- **Phase 7**: Advanced features (secrets, configmaps, volumes, environment variables)
+- **Phase 6**: Complete composition view with all resource types
+- **Phase 7**: Status aggregation and resource health visualization
+- **Phase 8**: Advanced features (secrets, configmaps, volumes, environment variables)
+
+
+TODO: 
+- Ok, now... Let's do this... In the triggers section, we shouldn't show events in a dropdown directly. Instead, we should show sources / brokers first. Then the event types they publish in their status. Since we don't actually have any  
