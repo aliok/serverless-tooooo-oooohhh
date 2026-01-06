@@ -687,30 +687,49 @@ awsRegion: us-east-1"></textarea>
             <div id="functionOverview" class="function-overview">
                 <h3>Function Overview</h3>
 
-                <div class="overview-info">
-                    <div class="info-row">
-                        <span class="info-label">Namespace:</span>
-                        <span id="detailNamespace"></span>
+                <!-- AWS Lambda-style diagram -->
+                <div class="function-diagram">
+                    <!-- Event Sources (Triggers) -->
+                    <div class="diagram-column diagram-sources">
+                        <div id="eventSourcesList" class="source-items">
+                            <!-- Event source boxes will be inserted here -->
+                        </div>
+                        <button type="button" id="addTriggerBtn" class="diagram-add-btn">+ Add trigger</button>
                     </div>
-                    <div class="info-row">
-                        <span class="info-label">Image:</span>
-                        <code id="detailImage"></code>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Scaling:</span>
-                        <span id="detailScaling"></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Networking:</span>
-                        <span id="detailNetworking"></span>
-                    </div>
-                </div>
-            </div>
 
-            <div class="event-subscriptions-summary">
-                <h3>Event Subscriptions</h3>
-                <div id="subscriptionsSummary" class="subscriptions-summary">
-                    <p id="subscriptionsSummaryText">No event subscriptions configured.</p>
+                    <!-- Function (Center) -->
+                    <div class="diagram-column diagram-function">
+                        <div class="function-box">
+                            <div class="function-icon">λ</div>
+                            <div class="function-name" id="diagramFunctionName"></div>
+                            <div class="function-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">Namespace:</span>
+                                    <span id="detailNamespace"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Image:</span>
+                                    <code id="detailImage"></code>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Scaling:</span>
+                                    <span id="detailScaling"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Networking:</span>
+                                    <span id="detailNetworking"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Destinations (Right) -->
+                    <div class="diagram-column diagram-destinations">
+                        <div id="destinationsList" class="destination-items">
+                            <!-- Destination boxes will be inserted here (future use) -->
+                        </div>
+                        <button type="button" id="addDestinationBtn" class="diagram-add-btn" disabled style="opacity: 0.5; cursor: not-allowed;">+ Add destination</button>
+                    </div>
                 </div>
             </div>
 

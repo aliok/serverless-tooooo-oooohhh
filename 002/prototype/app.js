@@ -68,6 +68,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const detailResourceCount = document.getElementById('detailResourceCount');
     const detailPlatformDescription = document.getElementById('detailPlatformDescription');
     const detailResourceCards = document.getElementById('detailResourceCards');
+    const diagramFunctionName = document.getElementById('diagramFunctionName');
+    const eventSourcesList = document.getElementById('eventSourcesList');
+    const destinationsList = document.getElementById('destinationsList');
+    const addTriggerBtn = document.getElementById('addTriggerBtn');
 
     // Subscriptions view elements
     const backToDetailFromSubscriptionsBtn = document.getElementById('backToDetailFromSubscriptionsBtn');
@@ -139,6 +143,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 detailPlatformView.style.display = 'none';
                 showResourcesBtn.textContent = 'Show Resources';
             }
+        }
+    });
+
+    addTriggerBtn.addEventListener('click', function() {
+        if (currentDetailFunction) {
+            showSubscriptionsView(currentDetailFunction);
         }
     });
 
@@ -1287,6 +1297,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function renderDetailView(functionData) {
         detailFunctionName.textContent = functionData.name;
+        diagramFunctionName.textContent = functionData.name;
         detailNamespace.textContent = functionData.namespace;
         detailImage.textContent = functionData.image;
 
@@ -1314,6 +1325,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         detailNetworking.textContent = networkingDesc;
 
+        // Render event sources in diagram
+        renderEventSources(functionData);
+
         // Render event subscriptions summary
         if (!functionData.eventSubscriptions || functionData.eventSubscriptions.length === 0) {
             subscriptionsSummaryText.textContent = 'No event subscriptions configured.';
@@ -1322,6 +1336,42 @@ document.addEventListener('DOMContentLoaded', function() {
             const types = functionData.eventSubscriptions.map(s => s.eventType).join(', ');
             subscriptionsSummaryText.textContent = `${count} subscription${count > 1 ? 's' : ''}: ${types}`;
         }
+    }
+
+    /**
+     * Render event sources (triggers) in diagram
+     */
+    function renderEventSources(functionData) {
+        eventSourcesList.innerHTML = '';
+
+        if (!functionData.eventSubscriptions || functionData.eventSubscriptions.length === 0) {
+            return;
+        }
+
+        // Group subscriptions by broker
+        const brokerMap = {};
+        functionData.eventSubscriptions.forEach(sub => {
+            if (!brokerMap[sub.broker]) {
+                brokerMap[sub.broker] = [];
+            }
+            brokerMap[sub.broker].push(sub.eventType);
+        });
+
+        // Create a source box for each broker
+        Object.entries(brokerMap).forEach(([broker, eventTypes]) => {
+            const sourceBox = document.createElement('div');
+            sourceBox.className = 'source-box';
+
+            sourceBox.innerHTML = `
+                <div class="source-icon">📨</div>
+                <div class="source-info">
+                    <div class="source-name">${broker}</div>
+                    <div class="source-details">${eventTypes.join(', ')}</div>
+                </div>
+            `;
+
+            eventSourcesList.appendChild(sourceBox);
+        });
     }
 
     /**
