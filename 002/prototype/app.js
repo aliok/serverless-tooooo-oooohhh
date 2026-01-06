@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const formView = document.getElementById('formView');
     const detailView = document.getElementById('detailView');
     const subscriptionsView = document.getElementById('subscriptionsView');
+    const brokerDetailView = document.getElementById('brokerDetailView');
+    const eventSourceDetailView = document.getElementById('eventSourceDetailView');
     const brokersListView = document.getElementById('brokersListView');
     const eventSourcesListView = document.getElementById('eventSourcesListView');
 
@@ -120,6 +122,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const subscriptionEventType = document.getElementById('subscriptionEventType');
     const customEventTypeField = document.getElementById('customEventTypeField');
     const saveSubscriptionBtn = document.getElementById('saveSubscriptionBtn');
+
+    // Broker detail view elements
+    const backToBrokersListFromDetailBtn = document.getElementById('backToBrokersListFromDetailBtn');
+    const editBrokerFromDetailBtn = document.getElementById('editBrokerFromDetailBtn');
+    const detailBrokerName = document.getElementById('detailBrokerName');
+    const diagramBrokerName = document.getElementById('diagramBrokerName');
+    const detailBrokerNamespace = document.getElementById('detailBrokerNamespace');
+    const detailBrokerRetry = document.getElementById('detailBrokerRetry');
+    const detailBrokerBackoffPolicy = document.getElementById('detailBrokerBackoffPolicy');
+    const detailBrokerEventTypes = document.getElementById('detailBrokerEventTypes');
+    const brokerEventSourcesList = document.getElementById('brokerEventSourcesList');
+    const brokerFunctionsList = document.getElementById('brokerFunctionsList');
+    const brokerDetailResourceCount = document.getElementById('brokerDetailResourceCount');
+    const brokerDetailPlatformDescription = document.getElementById('brokerDetailPlatformDescription');
+    const brokerDetailResourceCards = document.getElementById('brokerDetailResourceCards');
+
+    // Event Source detail view elements
+    const backToEventSourcesListFromDetailBtn = document.getElementById('backToEventSourcesListFromDetailBtn');
+    const editEventSourceFromDetailBtn = document.getElementById('editEventSourceFromDetailBtn');
+    const detailEventSourceName = document.getElementById('detailEventSourceName');
+    const diagramEventSourceName = document.getElementById('diagramEventSourceName');
+    const detailEventSourceType = document.getElementById('detailEventSourceType');
+    const detailEventSourceNamespace = document.getElementById('detailEventSourceNamespace');
+    const detailEventSourceBroker = document.getElementById('detailEventSourceBroker');
+    const detailEventSourceEventTypes = document.getElementById('detailEventSourceEventTypes');
+    const eventSourceExternalSource = document.getElementById('eventSourceExternalSource');
+    const eventSourceTargetBroker = document.getElementById('eventSourceTargetBroker');
+    const eventSourceDetailResourceCount = document.getElementById('eventSourceDetailResourceCount');
+    const eventSourceDetailPlatformDescription = document.getElementById('eventSourceDetailPlatformDescription');
+    const eventSourceDetailResourceCards = document.getElementById('eventSourceDetailResourceCards');
 
     // Store last rendered function data
     let lastRenderedFunction = null;
@@ -234,6 +266,32 @@ document.addEventListener('DOMContentLoaded', function() {
     addTriggerBtn.addEventListener('click', function() {
         if (currentDetailFunction) {
             showSubscriptionsView(currentDetailFunction);
+        }
+    });
+
+    // Broker detail view navigation handlers
+    backToBrokersListFromDetailBtn.addEventListener('click', function() {
+        showBrokersList();
+    });
+
+    editBrokerFromDetailBtn.addEventListener('click', function() {
+        const brokerData = getCurrentEditingBroker();
+        if (brokerData) {
+            setCurrentEditingBroker(brokerData);
+            showBrokerFormView('edit');
+        }
+    });
+
+    // Event Source detail view navigation handlers
+    backToEventSourcesListFromDetailBtn.addEventListener('click', function() {
+        showEventSourcesList();
+    });
+
+    editEventSourceFromDetailBtn.addEventListener('click', function() {
+        const eventSourceData = getCurrentEditingEventSource();
+        if (eventSourceData) {
+            setCurrentEditingEventSource(eventSourceData);
+            showEventSourceFormView('edit');
         }
     });
 
@@ -1115,8 +1173,12 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        brokerDetailView.style.display = 'none';
+        eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
+        brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
+        eventSourceFormView.style.display = 'none';
         renderFunctionsList();
         resetForm();
     }
@@ -1129,8 +1191,12 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        brokerDetailView.style.display = 'none';
+        eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'block';
+        brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
+        eventSourceFormView.style.display = 'none';
         renderBrokersList();
     }
 
@@ -1142,6 +1208,8 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        brokerDetailView.style.display = 'none';
+        eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
         brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'block';
@@ -1157,6 +1225,8 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        brokerDetailView.style.display = 'none';
+        eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
         brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
@@ -1379,8 +1449,11 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        brokerDetailView.style.display = 'none';
+        eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
+        eventSourceFormView.style.display = 'none';
         brokerFormView.style.display = 'block';
 
         if (mode === 'create') {
@@ -1407,6 +1480,12 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'block';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        brokerDetailView.style.display = 'none';
+        eventSourceDetailView.style.display = 'none';
+        brokersListView.style.display = 'none';
+        brokerFormView.style.display = 'none';
+        eventSourcesListView.style.display = 'none';
+        eventSourceFormView.style.display = 'none';
 
         if (mode === 'create') {
             formTitle.textContent = 'Create Function';
@@ -1795,7 +1874,7 @@ document.addEventListener('DOMContentLoaded', function() {
             brokersTableBody.appendChild(row);
         });
 
-        // Add event listeners for edit/delete buttons
+        // Add event listeners for edit/delete buttons and broker name links
         document.querySelectorAll('.edit-broker-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -1813,6 +1892,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     deleteBroker(broker.id);
                     renderBrokersList();
                 }
+            });
+        });
+
+        document.querySelectorAll('.broker-name-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const broker = getBroker(this.dataset.id);
+                showBrokerDetailView(broker);
             });
         });
     }
@@ -1865,7 +1952,7 @@ document.addEventListener('DOMContentLoaded', function() {
             eventSourcesTableBody.appendChild(row);
         });
 
-        // Add event listeners for edit/delete buttons
+        // Add event listeners for edit/delete buttons and event source name links
         document.querySelectorAll('.edit-event-source-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -1885,6 +1972,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+
+        document.querySelectorAll('.event-source-name-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const eventSource = getEventSource(this.dataset.id);
+                showEventSourceDetailView(eventSource);
+            });
+        });
     }
 
     /**
@@ -1895,6 +1990,10 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'block';
         subscriptionsView.style.display = 'none';
+        brokersListView.style.display = 'none';
+        brokerFormView.style.display = 'none';
+        eventSourcesListView.style.display = 'none';
+        eventSourceFormView.style.display = 'none';
 
         currentDetailFunction = functionData;
         renderDetailView(functionData);
@@ -1911,6 +2010,10 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'block';
+        brokersListView.style.display = 'none';
+        brokerFormView.style.display = 'none';
+        eventSourcesListView.style.display = 'none';
+        eventSourceFormView.style.display = 'none';
 
         currentDetailFunction = functionData;
         subscriptionsViewFunctionName.textContent = `Function: ${functionData.name}`;
@@ -1938,6 +2041,50 @@ document.addEventListener('DOMContentLoaded', function() {
             option.textContent = `${broker.name} (${broker.namespace})`;
             dropdown.appendChild(option);
         });
+    }
+
+    /**
+     * Show broker detail view
+     */
+    function showBrokerDetailView(brokerData) {
+        listView.style.display = 'none';
+        formView.style.display = 'none';
+        detailView.style.display = 'none';
+        subscriptionsView.style.display = 'none';
+        brokerDetailView.style.display = 'block';
+        eventSourceDetailView.style.display = 'none';
+        brokersListView.style.display = 'none';
+        brokerFormView.style.display = 'none';
+        eventSourcesListView.style.display = 'none';
+        eventSourceFormView.style.display = 'none';
+
+        // Set current editing broker so edit button works
+        setCurrentEditingBroker(brokerData);
+
+        renderBrokerDetailView(brokerData);
+        renderBrokerDetailResources(brokerData);
+    }
+
+    /**
+     * Show event source detail view
+     */
+    function showEventSourceDetailView(eventSourceData) {
+        listView.style.display = 'none';
+        formView.style.display = 'none';
+        detailView.style.display = 'none';
+        subscriptionsView.style.display = 'none';
+        brokerDetailView.style.display = 'none';
+        eventSourceDetailView.style.display = 'block';
+        brokersListView.style.display = 'none';
+        brokerFormView.style.display = 'none';
+        eventSourcesListView.style.display = 'none';
+        eventSourceFormView.style.display = 'none';
+
+        // Set current editing event source so edit button works
+        setCurrentEditingEventSource(eventSourceData);
+
+        renderEventSourceDetailView(eventSourceData);
+        renderEventSourceDetailResources(eventSourceData);
     }
 
     /**
@@ -2171,6 +2318,174 @@ document.addEventListener('DOMContentLoaded', function() {
             saveFunction(currentDetailFunction);
             renderEventSubscriptions(currentDetailFunction);
         }
+    }
+
+    /**
+     * Render broker detail view content
+     */
+    function renderBrokerDetailView(brokerData) {
+        detailBrokerName.textContent = brokerData.name;
+        diagramBrokerName.textContent = brokerData.name;
+        detailBrokerNamespace.textContent = brokerData.namespace;
+        detailBrokerRetry.textContent = brokerData.deliveryConfig.retry;
+        detailBrokerBackoffPolicy.textContent = brokerData.deliveryConfig.backoffPolicy;
+
+        // Get event types from connected event sources
+        const eventSources = getEventSources().filter(es => es.broker === brokerData.name);
+        const allEventTypes = eventSources.flatMap(es => es.eventTypes);
+        const uniqueEventTypes = [...new Set(allEventTypes)];
+
+        if (uniqueEventTypes.length > 0) {
+            detailBrokerEventTypes.textContent = uniqueEventTypes.join(', ');
+        } else {
+            detailBrokerEventTypes.textContent = 'None';
+        }
+
+        // Render event sources list
+        brokerEventSourcesList.innerHTML = '';
+        if (eventSources.length === 0) {
+            brokerEventSourcesList.innerHTML = '<p class="empty-list">No event sources connected to this broker.</p>';
+        } else {
+            eventSources.forEach(source => {
+                const sourceBox = document.createElement('div');
+                sourceBox.className = 'source-box';
+                const typeDisplayName = source.type.charAt(0).toUpperCase() + source.type.slice(1);
+                sourceBox.innerHTML = `
+                    <div class="source-icon">⚡</div>
+                    <div class="source-info">
+                        <div class="source-name">${source.name}</div>
+                        <div class="source-details">${typeDisplayName} Source</div>
+                    </div>
+                `;
+                brokerEventSourcesList.appendChild(sourceBox);
+            });
+        }
+
+        // Render subscribed functions list
+        brokerFunctionsList.innerHTML = '';
+        const functions = getFunctions().filter(f =>
+            f.eventSubscriptions && f.eventSubscriptions.some(sub => sub.broker === brokerData.name)
+        );
+
+        if (functions.length === 0) {
+            brokerFunctionsList.innerHTML = '<p class="empty-list">No functions subscribed to this broker.</p>';
+        } else {
+            functions.forEach(func => {
+                const funcBox = document.createElement('div');
+                funcBox.className = 'destination-box';
+                funcBox.innerHTML = `
+                    <div class="destination-icon">λ</div>
+                    <div class="destination-info">
+                        <div class="destination-name">${func.name}</div>
+                        <div class="destination-details">${func.namespace}</div>
+                    </div>
+                `;
+                brokerFunctionsList.appendChild(funcBox);
+            });
+        }
+    }
+
+    /**
+     * Render broker detail resources
+     */
+    function renderBrokerDetailResources(brokerData) {
+        const resource = {
+            type: 'broker',
+            name: brokerData.name,
+            yaml: generateBrokerYAML(brokerData),
+            metadata: RESOURCE_METADATA.broker
+        };
+
+        brokerDetailResourceCount.textContent = '1';
+        brokerDetailPlatformDescription.innerHTML = `
+            The UI composed <strong>1</strong> Kubernetes resource from your broker configuration.
+            <br>
+            This Broker routes CloudEvents from Event Sources to Functions based on event types.
+        `;
+
+        brokerDetailResourceCards.innerHTML = '';
+        const card = createResourceCard(resource, brokerData.name, 0);
+        brokerDetailResourceCards.appendChild(card);
+    }
+
+    /**
+     * Render event source detail view content
+     */
+    function renderEventSourceDetailView(eventSourceData) {
+        detailEventSourceName.textContent = eventSourceData.name;
+        diagramEventSourceName.textContent = eventSourceData.name;
+        const typeDisplayName = eventSourceData.type.charAt(0).toUpperCase() + eventSourceData.type.slice(1);
+        detailEventSourceType.textContent = typeDisplayName;
+        detailEventSourceNamespace.textContent = eventSourceData.namespace;
+        detailEventSourceBroker.textContent = eventSourceData.broker;
+        detailEventSourceEventTypes.textContent = eventSourceData.eventTypes.join(', ');
+
+        // Render external source
+        eventSourceExternalSource.innerHTML = '';
+        const externalBox = document.createElement('div');
+        externalBox.className = 'source-box';
+
+        let externalSourceName = '';
+        if (eventSourceData.type === 'github') {
+            externalSourceName = `GitHub: ${eventSourceData.config.repository}`;
+        } else if (eventSourceData.type === 'kafka') {
+            externalSourceName = `Kafka: ${eventSourceData.config.topics.join(', ')}`;
+        } else if (eventSourceData.type === 'slack') {
+            externalSourceName = 'Slack Events';
+        } else if (eventSourceData.type === 'cron') {
+            externalSourceName = `Cron: ${eventSourceData.config.schedule}`;
+        }
+
+        externalBox.innerHTML = `
+            <div class="source-icon">📡</div>
+            <div class="source-info">
+                <div class="source-name">${externalSourceName}</div>
+                <div class="source-details">External Event Source</div>
+            </div>
+        `;
+        eventSourceExternalSource.appendChild(externalBox);
+
+        // Render target broker
+        eventSourceTargetBroker.innerHTML = '';
+        const brokerBox = document.createElement('div');
+        brokerBox.className = 'destination-box';
+        brokerBox.innerHTML = `
+            <div class="destination-icon">📨</div>
+            <div class="destination-info">
+                <div class="destination-name">${eventSourceData.broker}</div>
+                <div class="destination-details">Knative Broker</div>
+            </div>
+        `;
+        eventSourceTargetBroker.appendChild(brokerBox);
+    }
+
+    /**
+     * Render event source detail resources
+     */
+    function renderEventSourceDetailResources(eventSourceData) {
+        const resourceType = `${eventSourceData.type}Source`;
+        const resource = {
+            type: resourceType,
+            name: eventSourceData.name,
+            yaml: generateEventSourceYAML(eventSourceData),
+            metadata: RESOURCE_METADATA[resourceType] || {
+                kind: `${eventSourceData.type.charAt(0).toUpperCase() + eventSourceData.type.slice(1)}Source`,
+                apiVersion: 'sources.knative.dev/v1',
+                description: `Produces CloudEvents from ${eventSourceData.type} to the ${eventSourceData.broker} Broker.`
+            }
+        };
+
+        eventSourceDetailResourceCount.textContent = '1';
+        const typeDisplayName = eventSourceData.type.charAt(0).toUpperCase() + eventSourceData.type.slice(1);
+        eventSourceDetailPlatformDescription.innerHTML = `
+            The UI composed <strong>1</strong> Kubernetes resource from your event source configuration.
+            <br>
+            This ${typeDisplayName} Source produces CloudEvents and sends them to the <strong>${eventSourceData.broker}</strong> Broker.
+        `;
+
+        eventSourceDetailResourceCards.innerHTML = '';
+        const card = createResourceCard(resource, eventSourceData.name, 0);
+        eventSourceDetailResourceCards.appendChild(card);
     }
 
 });

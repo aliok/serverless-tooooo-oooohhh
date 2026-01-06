@@ -820,6 +820,160 @@ awsRegion: us-east-1"></textarea>
         </section>
     </div>
 
+    <!-- Broker Detail View -->
+    <div id="brokerDetailView" class="container" style="display: none;">
+        <section class="detail-panel">
+            <div class="detail-header">
+                <div>
+                    <button type="button" id="backToBrokersListFromDetailBtn" class="btn-secondary">← Back to List</button>
+                    <h2 id="detailBrokerName"></h2>
+                </div>
+                <div class="detail-actions">
+                    <button type="button" id="editBrokerFromDetailBtn" class="btn-secondary">Edit Broker</button>
+                </div>
+            </div>
+
+            <div class="function-overview">
+                <h3>Broker Overview</h3>
+
+                <div class="function-diagram">
+                    <!-- Event Sources (Left) -->
+                    <div class="diagram-column diagram-sources">
+                        <h4>Event Sources</h4>
+                        <div id="brokerEventSourcesList" class="source-items">
+                            <!-- Event source boxes will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Broker (Center) -->
+                    <div class="diagram-column diagram-function">
+                        <div class="function-box">
+                            <div class="function-icon">📨</div>
+                            <div class="function-name" id="diagramBrokerName"></div>
+                            <div class="function-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">Namespace:</span>
+                                    <span id="detailBrokerNamespace"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Retry:</span>
+                                    <span id="detailBrokerRetry"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Backoff Policy:</span>
+                                    <span id="detailBrokerBackoffPolicy"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Event Types:</span>
+                                    <span id="detailBrokerEventTypes"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Functions (Right) -->
+                    <div class="diagram-column diagram-destinations">
+                        <h4>Subscribed Functions</h4>
+                        <div id="brokerFunctionsList" class="destination-items">
+                            <!-- Function boxes will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-resources-section">
+                <h3>Composed Resources</h3>
+
+                <div id="brokerDetailPlatformView" class="platform-view">
+                    <p id="brokerDetailPlatformDescription" class="platform-description">
+                        The UI composed <strong id="brokerDetailResourceCount">1</strong> Kubernetes resource from your broker configuration.
+                    </p>
+
+                    <div id="brokerDetailResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Source Detail View -->
+    <div id="eventSourceDetailView" class="container" style="display: none;">
+        <section class="detail-panel">
+            <div class="detail-header">
+                <div>
+                    <button type="button" id="backToEventSourcesListFromDetailBtn" class="btn-secondary">← Back to List</button>
+                    <h2 id="detailEventSourceName"></h2>
+                </div>
+                <div class="detail-actions">
+                    <button type="button" id="editEventSourceFromDetailBtn" class="btn-secondary">Edit Event Source</button>
+                </div>
+            </div>
+
+            <div class="function-overview">
+                <h3>Event Source Overview</h3>
+
+                <div class="function-diagram">
+                    <!-- Source (Left) -->
+                    <div class="diagram-column diagram-sources">
+                        <h4>External Source</h4>
+                        <div id="eventSourceExternalSource" class="source-items">
+                            <!-- External source box will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Event Source (Center) -->
+                    <div class="diagram-column diagram-function">
+                        <div class="function-box">
+                            <div class="function-icon">⚡</div>
+                            <div class="function-name" id="diagramEventSourceName"></div>
+                            <div class="function-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">Type:</span>
+                                    <span id="detailEventSourceType"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Namespace:</span>
+                                    <span id="detailEventSourceNamespace"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Target Broker:</span>
+                                    <span id="detailEventSourceBroker"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Event Types:</span>
+                                    <code id="detailEventSourceEventTypes"></code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Broker (Right) -->
+                    <div class="diagram-column diagram-destinations">
+                        <h4>Target Broker</h4>
+                        <div id="eventSourceTargetBroker" class="destination-items">
+                            <!-- Target broker box will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-resources-section">
+                <h3>Composed Resources</h3>
+
+                <div id="eventSourceDetailPlatformView" class="platform-view">
+                    <p id="eventSourceDetailPlatformDescription" class="platform-description">
+                        The UI composed <strong id="eventSourceDetailResourceCount">1</strong> Kubernetes resource from your event source configuration.
+                    </p>
+
+                    <div id="eventSourceDetailResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
     <!-- Brokers List View -->
     <div id="brokersListView" class="container" style="display: none;">
         <section class="list-panel">
