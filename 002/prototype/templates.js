@@ -536,13 +536,31 @@ function generateBrokerYAML(config) {
 ${lines}`;
     }
 
+    // Get all event types from event sources that send to this broker
+    const eventSources = getEventSources().filter(es => es.broker === config.name);
+    const allEventTypes = eventSources.flatMap(es => es.eventTypes);
+    const uniqueEventTypes = [...new Set(allEventTypes)];
+
+    let statusYAML = '';
+    if (uniqueEventTypes.length > 0) {
+        statusYAML = `status:
+  # Event types being routed through this broker
+  observedEventTypes:
+    - ${uniqueEventTypes.join('\n    - ')}`;
+    } else {
+        statusYAML = `status:
+  # No event sources connected yet
+  observedEventTypes: []`;
+    }
+
     return `apiVersion: eventing.knative.dev/v1
 kind: Broker
 metadata:
   name: ${config.name}
   namespace: ${config.namespace}
 spec:
-${deliveryYAML}`;
+${deliveryYAML}
+${statusYAML}`;
 }
 
 /**
@@ -593,7 +611,12 @@ spec:
     ref:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
-      name: ${config.broker}`;
+      name: ${config.broker}
+status:
+  # Event types produced by this source
+  observedEventTypes:
+    - ${config.eventTypes.join('\n    - ')}
+  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
 }
 
 /**
@@ -617,7 +640,12 @@ spec:
     ref:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
-      name: ${config.broker}`;
+      name: ${config.broker}
+status:
+  # Event types produced by this source (derived from topics)
+  observedEventTypes:
+    - ${config.eventTypes.join('\n    - ')}
+  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
 }
 
 /**
@@ -642,7 +670,12 @@ spec:
     ref:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
-      name: ${config.broker}`;
+      name: ${config.broker}
+status:
+  # Event types produced by this source
+  observedEventTypes:
+    - ${config.eventTypes.join('\n    - ')}
+  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
 }
 
 /**
@@ -666,7 +699,12 @@ ${dataYAML}
     ref:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
-      name: ${config.broker}`;
+      name: ${config.broker}
+status:
+  # Event types produced by this source
+  observedEventTypes:
+    - ${config.eventTypes.join('\n    - ')}
+  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
 }
 
 /**
