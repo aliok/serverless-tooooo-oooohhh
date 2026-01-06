@@ -287,7 +287,7 @@ spec:
 
 ---
 
-## Phase 2: Networking 🚧 IN PROGRESS
+## Phase 2: Networking ✅ COMPLETED
 
 This phase adds networking options to expose the function externally. Users can choose different networking approaches, and the UI will compose the appropriate Kubernetes networking resources.
 
@@ -490,9 +490,70 @@ spec:
 
 ---
 
+## Phase 3: Build Resources ✅ COMPLETED
+
+This phase adds support for building functions from source code using either Shipwright Build or OpenShift Source-to-Image (S2I).
+
+### Goals
+1. Support building functions from source instead of requiring pre-built images
+2. Demonstrate multiple build system options (Shipwright, S2I)
+3. Show how build resources compose alongside runtime resources
+4. Make image derivation clear based on build method
+
+### Build Options
+
+Users can choose from three build methods:
+
+1. **No Build** (default)
+   - Use pre-built container image
+   - User provides container image URL directly
+   - No build resources created
+
+2. **Shipwright Build**
+   - Cloud-native build system
+   - Git URL and revision
+   - Build strategy selection (Node.js, Python, Go, Java, Ruby, PHP, .NET)
+   - Output image specification
+
+3. **OpenShift S2I (Source-to-Image)**
+   - OpenShift-native build system
+   - Git URL and revision
+   - Builder image selection
+   - Output to ImageStreamTag
+   - Auto-constructs internal registry image reference
+
+### Implementation
+
+**New YAML Generators:**
+- `generateShipwrightBuildYAML()` - Shipwright Build resources
+- `generateS2IBuildConfigYAML()` - OpenShift BuildConfig resources
+
+**Image Configuration:**
+- Each build method manages its own image specification
+- No Build: Container Image field (user-provided)
+- Shipwright: Output Image field (build output destination)
+- S2I: ImageStreamTag → auto-constructs internal registry reference
+
+**Resources Created:**
+Depending on build method, adds either:
+- Shipwright Build CR, or
+- OpenShift BuildConfig CR
+
+Both include proper ownerReferences to Function CR.
+
+### Success Criteria
+
+- ✅ **Multiple build methods**: Supports no build, Shipwright, and S2I
+- ✅ **Image derivation**: Image comes from build output, not separate config
+- ✅ **Proper resource generation**: Build resources correctly reference source and output
+- ✅ **Validation**: Required fields validated based on build method
+- ✅ **Consistent UX**: Build panels match scaling/networking panel design
+- ✅ **Edit workflow**: Build configuration preserved on edit
+
+---
+
 ## Future Phases
 
-- **Phase 3**: Build resources (Shipwright Build, S2I BuildConfig)
-- **Phase 4**: Eventing resources (Function CR, Knative Trigger)
+- **Phase 4**: Eventing resources (Knative Trigger, event subscriptions)
 - **Phase 5**: Complete composition view with all resource types
 - **Phase 6**: Status aggregation and resource health visualization
