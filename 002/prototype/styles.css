@@ -56,8 +56,15 @@ header h1 {
     gap: 2rem;
 }
 
-.form-panel form > button {
+.form-panel form > button,
+.form-panel form > .form-actions {
     grid-column: 1 / -1;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-start;
 }
 
 @media (max-width: 900px) {

@@ -625,44 +625,47 @@ awsRegion: us-east-1"></textarea>
                     </div>
                 </fieldset>
 
-                <button type="submit" class="btn-primary">Render Resources</button>
+                <div class="form-actions">
+                    <button type="button" id="createFunctionDirectBtn" class="btn-primary">Create Function</button>
+                    <button type="submit" class="btn-secondary">Preview Resources</button>
+                </div>
             </form>
-        </section>
 
-        <!-- Resources View -->
-        <section class="resources-panel">
-            <h2>Results</h2>
-            <p class="panel-description">See how the UI composes multiple Kubernetes resources</p>
+            <!-- Resources Preview (optional) -->
+            <div class="resources-preview" style="margin-top: 2rem;">
+                <h2>Resource Preview <span style="font-size: 0.9rem; color: #666; font-weight: normal;">(optional)</span></h2>
+                <p class="panel-description">See how the UI composes multiple Kubernetes resources</p>
 
-            <!-- User View Section -->
-            <div id="userView" class="user-view" style="display: none;">
-                <h3>What User Thinks</h3>
-                <div class="user-message">
-                    <p id="userMessage"></p>
-                </div>
-            </div>
-
-            <!-- Platform View Section -->
-            <div id="platformView" class="platform-view" style="display: none;">
-                <h3>What UI Creates</h3>
-                <p id="platformDescription" class="platform-description">
-                    The UI composed <strong id="resourceCount">3</strong> Kubernetes resources from your simple form input.
-                    You never had to understand Deployment, Service, or KEDA scaling APIs.
-                </p>
-
-                <div id="resourceCards" class="resource-cards">
-                    <!-- Resource cards will be inserted here by JavaScript -->
+                <!-- User View Section -->
+                <div id="userView" class="user-view" style="display: none;">
+                    <h3>What User Thinks</h3>
+                    <div class="user-message">
+                        <p id="userMessage"></p>
+                    </div>
                 </div>
 
-                <div class="create-actions">
-                    <button id="createFunctionBtn" class="btn-primary" style="display: none;">Create Function</button>
-                    <button id="cancelCreateBtn" class="btn-secondary" style="display: none;">Cancel</button>
-                </div>
-            </div>
+                <!-- Platform View Section -->
+                <div id="platformView" class="platform-view" style="display: none;">
+                    <h3>What UI Creates</h3>
+                    <p id="platformDescription" class="platform-description">
+                        The UI composed <strong id="resourceCount">3</strong> Kubernetes resources from your simple form input.
+                        You never had to understand Deployment, Service, or KEDA scaling APIs.
+                    </p>
 
-            <!-- Initial empty state -->
-            <div id="emptyState" class="empty-state">
-                <p>Fill in the form and click "Render Resources" to see the composed resources.</p>
+                    <div id="resourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+
+                    <div class="create-actions">
+                        <button id="createFunctionBtn" class="btn-primary" style="display: none;">Create Function</button>
+                        <button id="cancelCreateBtn" class="btn-secondary" style="display: none;">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Initial empty state -->
+                <div id="emptyState" class="empty-state">
+                    <p>Click "Preview Resources" to see the Kubernetes resources that will be created.</p>
+                </div>
             </div>
         </section>
     </div>

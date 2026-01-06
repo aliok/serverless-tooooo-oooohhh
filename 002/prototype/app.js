@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const resourceCount = document.getElementById('resourceCount');
     const platformDescription = document.getElementById('platformDescription');
     const createFunctionBtn = document.getElementById('createFunctionBtn');
+    const createFunctionDirectBtn = document.getElementById('createFunctionDirectBtn');
     const cancelCreateBtn = document.getElementById('cancelCreateBtn');
     const buildMethodRadios = document.querySelectorAll('input[name="buildMethod"]');
     const noBuildPanel = document.getElementById('noBuildPanel');
@@ -104,6 +105,24 @@ document.addEventListener('DOMContentLoaded', function() {
             saveFunction(lastRenderedFunction);
             showDetailView(lastRenderedFunction);
         }
+    });
+
+    // Direct create function button handler (without rendering)
+    createFunctionDirectBtn.addEventListener('click', function() {
+        // Collect form data without rendering
+        const formData = collectFormData();
+
+        // Validate
+        if (!validateForm(formData)) {
+            return;
+        }
+
+        // Initialize eventSubscriptions
+        formData.eventSubscriptions = [];
+
+        // Save and show detail view
+        saveFunction(formData);
+        showDetailView(formData);
     });
 
     // Cancel create button handler
@@ -315,10 +334,10 @@ document.addEventListener('DOMContentLoaded', function() {
         closeSubscriptionDialog();
     });
 
-    // Handle form submission
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-
+    /**
+     * Collect form data into an object
+     */
+    function collectFormData() {
         const scalingMetric = document.querySelector('input[name="scalingMetric"]:checked').value;
 
         // Collect shared replica settings
@@ -461,6 +480,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentEditing && currentEditing.id) {
             formData.id = currentEditing.id;
         }
+
+        return formData;
+    }
+
+    // Handle form submission (preview resources)
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = collectFormData();
 
         // Validate
         if (!validateForm(formData)) {
