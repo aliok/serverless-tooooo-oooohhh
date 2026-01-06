@@ -514,9 +514,190 @@ ${tlsYAML}`;
 }
 
 /**
+ * Generate Broker YAML
+ * @param {Object} config - Configuration object
+ * @param {string} config.name - Broker name
+ * @param {string} config.namespace - Namespace
+ * @param {Object} config.deliveryConfig - Delivery configuration
+ * @returns {string} YAML string
+ */
+function generateBrokerYAML(config) {
+    const dc = config.deliveryConfig || {};
+    let deliveryYAML = '';
+
+    if (dc.retry || dc.backoffPolicy || dc.backoffDelay) {
+        const retryLine = dc.retry ? `    retry: ${dc.retry}` : '';
+        const backoffPolicyLine = dc.backoffPolicy ? `    backoffPolicy: ${dc.backoffPolicy}` : '';
+        const backoffDelayLine = dc.backoffDelay ? `    backoffDelay: ${dc.backoffDelay}` : '';
+
+        const lines = [retryLine, backoffPolicyLine, backoffDelayLine].filter(line => line).join('\n');
+
+        deliveryYAML = `  delivery:
+${lines}`;
+    }
+
+    return `apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+${deliveryYAML}`;
+}
+
+/**
+ * Generate Event Source YAML (unified function for all types)
+ * @param {Object} config - Configuration object
+ * @param {string} config.name - Event source name
+ * @param {string} config.namespace - Namespace
+ * @param {string} config.type - Event source type (github, kafka, slack, cron)
+ * @param {string} config.broker - Target broker name
+ * @param {Object} config.config - Type-specific configuration
+ * @param {Array} config.eventTypes - Event types
+ * @returns {string} YAML string
+ */
+function generateEventSourceYAML(config) {
+    if (config.type === 'github') {
+        return generateGitHubSourceYAML(config);
+    } else if (config.type === 'kafka') {
+        return generateKafkaSourceYAML(config);
+    } else if (config.type === 'slack') {
+        return generateSlackSourceYAML(config);
+    } else if (config.type === 'cron') {
+        return generateCronSourceYAML(config);
+    }
+    return '# Unknown event source type';
+}
+
+/**
+ * Generate GitHub Source YAML
+ */
+function generateGitHubSourceYAML(config) {
+    const eventTypes = config.eventTypes.map(t => t.replace('com.github.', '')).join(', ');
+
+    return `apiVersion: sources.knative.dev/v1
+kind: GitHubSource
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  eventTypes:
+    - ${config.eventTypes.map(t => t.replace('com.github.', '')).join('\n    - ')}
+  owner: ${config.config.repository.split('/')[0]}
+  repository: ${config.config.repository.split('/')[1]}
+  accessToken:
+    secretKeyRef:
+      name: ${config.config.accessTokenSecret}
+      key: accessToken
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: ${config.broker}`;
+}
+
+/**
+ * Generate Kafka Source YAML
+ */
+function generateKafkaSourceYAML(config) {
+    const topics = config.config.topics || [];
+
+    return `apiVersion: sources.knative.dev/v1beta1
+kind: KafkaSource
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  consumerGroup: ${config.config.consumerGroup}
+  bootstrapServers:
+    - ${config.config.bootstrapServers}
+  topics:
+    - ${topics.join('\n    - ')}
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: ${config.broker}`;
+}
+
+/**
+ * Generate Slack Source YAML
+ */
+function generateSlackSourceYAML(config) {
+    return `apiVersion: sources.knative.dev/v1alpha1
+kind: SlackSource
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  signingSecret:
+    secretKeyRef:
+      name: ${config.config.webhookURLSecret}
+      key: signingSecret
+  token:
+    secretKeyRef:
+      name: ${config.config.webhookURLSecret}
+      key: token
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: ${config.broker}`;
+}
+
+/**
+ * Generate Cron Source YAML
+ */
+function generateCronSourceYAML(config) {
+    let dataYAML = '';
+    if (config.config.data) {
+        dataYAML = `  data: '${config.config.data}'`;
+    }
+
+    return `apiVersion: sources.knative.dev/v1
+kind: PingSource
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  schedule: "${config.config.schedule}"
+${dataYAML}
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: ${config.broker}`;
+}
+
+/**
  * Resource metadata for UI display
  */
 const RESOURCE_METADATA = {
+    broker: {
+        kind: 'Broker',
+        apiVersion: 'eventing.knative.dev/v1',
+        description: 'Routes CloudEvents from Event Sources to Functions. Provides delivery guarantees including retry policies and backoff configuration for reliable event delivery.'
+    },
+    githubSource: {
+        kind: 'GitHubSource',
+        apiVersion: 'sources.knative.dev/v1',
+        description: 'Produces CloudEvents from GitHub webhooks. Connects to a GitHub repository and forwards push, pull request, and other events to the Broker.'
+    },
+    kafkaSource: {
+        kind: 'KafkaSource',
+        apiVersion: 'sources.knative.dev/v1beta1',
+        description: 'Produces CloudEvents from Kafka topics. Consumes messages from Kafka and converts them to CloudEvents for routing through the Broker.'
+    },
+    slackSource: {
+        kind: 'SlackSource',
+        apiVersion: 'sources.knative.dev/v1alpha1',
+        description: 'Produces CloudEvents from Slack webhooks. Receives Slack events (messages, reactions) and forwards them to the Broker as CloudEvents.'
+    },
+    cronSource: {
+        kind: 'PingSource',
+        apiVersion: 'sources.knative.dev/v1',
+        description: 'Produces CloudEvents on a cron schedule. Sends periodic events to the Broker based on a cron expression, useful for scheduled tasks.'
+    },
     function: {
         kind: 'Function',
         apiVersion: 'serverless.openshift.io/v1alpha1',

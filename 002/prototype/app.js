@@ -36,6 +36,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const eventSourceCountSpan = document.getElementById('eventSourceCount');
     const createNewEventSourceBtn = document.getElementById('createNewEventSourceBtn');
 
+    // Event Source form elements
+    const eventSourceFormView = document.getElementById('eventSourceFormView');
+    const eventSourceForm = document.getElementById('eventSourceForm');
+    const eventSourceFormTitle = document.getElementById('eventSourceFormTitle');
+    const backToEventSourcesListBtn = document.getElementById('backToEventSourcesListBtn');
+    const saveEventSourceBtn = document.getElementById('saveEventSourceBtn');
+    const eventSourcePlatformView = document.getElementById('eventSourcePlatformView');
+    const eventSourcePlatformDescription = document.getElementById('eventSourcePlatformDescription');
+    const eventSourceResourceCards = document.getElementById('eventSourceResourceCards');
+    const eventSourceTypeRadios = document.querySelectorAll('input[name="eventSourceType"]');
+    const githubSourcePanel = document.getElementById('githubSourcePanel');
+    const kafkaSourcePanel = document.getElementById('kafkaSourcePanel');
+    const slackSourcePanel = document.getElementById('slackSourcePanel');
+    const cronSourcePanel = document.getElementById('cronSourcePanel');
+
+    // Broker form elements
+    const brokerFormView = document.getElementById('brokerFormView');
+    const brokerForm = document.getElementById('brokerForm');
+    const brokerFormTitle = document.getElementById('brokerFormTitle');
+    const backToBrokersListBtn = document.getElementById('backToBrokersListBtn');
+    const saveBrokerBtn = document.getElementById('saveBrokerBtn');
+    const brokerPlatformView = document.getElementById('brokerPlatformView');
+    const brokerPlatformDescription = document.getElementById('brokerPlatformDescription');
+    const brokerResourceCards = document.getElementById('brokerResourceCards');
+
     // Sorting state
     let currentSort = { column: 'name', direction: 'asc' };
     let searchQuery = '';
@@ -137,6 +162,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
     backToListFromDetailBtn.addEventListener('click', function() {
         showListView();
+    });
+
+    // Broker navigation handlers
+    createNewBrokerBtn.addEventListener('click', function() {
+        clearCurrentEditingBroker();
+        showBrokerFormView('create');
+    });
+
+    backToBrokersListBtn.addEventListener('click', function() {
+        showBrokersList();
+    });
+
+    saveBrokerBtn.addEventListener('click', function() {
+        const brokerData = collectBrokerFormData();
+
+        // Validate
+        if (!brokerData.name || !brokerData.namespace) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        // Save and show list
+        saveBroker(brokerData);
+        showBrokersList();
+    });
+
+    // Event Source navigation handlers
+    createNewEventSourceBtn.addEventListener('click', function() {
+        clearCurrentEditingEventSource();
+        showEventSourceFormView('create');
+    });
+
+    backToEventSourcesListBtn.addEventListener('click', function() {
+        showEventSourcesList();
+    });
+
+    saveEventSourceBtn.addEventListener('click', function() {
+        const eventSourceData = collectEventSourceFormData();
+
+        // Validate
+        if (!eventSourceData.name || !eventSourceData.namespace || !eventSourceData.broker) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        // Save and show list
+        saveEventSource(eventSourceData);
+        showEventSourcesList();
     });
 
     backToDetailFromSubscriptionsBtn.addEventListener('click', function() {
@@ -324,6 +397,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Handle event source type radio button change
+    eventSourceTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            githubSourcePanel.classList.remove('active');
+            kafkaSourcePanel.classList.remove('active');
+            slackSourcePanel.classList.remove('active');
+            cronSourcePanel.classList.remove('active');
+
+            if (this.value === 'github') {
+                githubSourcePanel.classList.add('active');
+            } else if (this.value === 'kafka') {
+                kafkaSourcePanel.classList.add('active');
+            } else if (this.value === 'slack') {
+                slackSourcePanel.classList.add('active');
+            } else if (this.value === 'cron') {
+                cronSourcePanel.classList.add('active');
+            }
+        });
+    });
+
     // Handle event type dropdown change
     subscriptionEventType.addEventListener('change', function() {
         if (this.value === 'custom') {
@@ -373,7 +466,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Reset form
         subscriptionForm.reset();
-        document.getElementById('subscriptionBroker').value = 'default';
         customEventTypeField.style.display = 'none';
     });
 
@@ -565,6 +657,40 @@ document.addEventListener('DOMContentLoaded', function() {
         input.addEventListener('change', function() {
             // Immediate update on change (for radio buttons, checkboxes, selects)
             updateResourcePreview();
+        });
+    });
+
+    // Auto-update broker resources on form input changes
+    const brokerFormInputs = brokerForm.querySelectorAll('input, select, textarea');
+    brokerFormInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            // Debounce the update
+            clearTimeout(input.updateTimeout);
+            input.updateTimeout = setTimeout(() => {
+                updateBrokerResourcePreview();
+            }, 500);
+        });
+
+        input.addEventListener('change', function() {
+            // Immediate update on change (for radio buttons, checkboxes, selects)
+            updateBrokerResourcePreview();
+        });
+    });
+
+    // Auto-update event source resources on form input changes
+    const eventSourceFormInputs = eventSourceForm.querySelectorAll('input, select, textarea');
+    eventSourceFormInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            // Debounce the update
+            clearTimeout(input.updateTimeout);
+            input.updateTimeout = setTimeout(() => {
+                updateEventSourceResourcePreview();
+            }, 500);
+        });
+
+        input.addEventListener('change', function() {
+            // Immediate update on change (for radio buttons, checkboxes, selects)
+            updateEventSourceResourcePreview();
         });
     });
 
@@ -1017,8 +1143,260 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
         brokersListView.style.display = 'none';
+        brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'block';
+        eventSourceFormView.style.display = 'none';
         renderEventSourcesList();
+    }
+
+    /**
+     * Show event source form view
+     */
+    function showEventSourceFormView(mode) {
+        listView.style.display = 'none';
+        formView.style.display = 'none';
+        detailView.style.display = 'none';
+        subscriptionsView.style.display = 'none';
+        brokersListView.style.display = 'none';
+        brokerFormView.style.display = 'none';
+        eventSourcesListView.style.display = 'none';
+        eventSourceFormView.style.display = 'block';
+
+        if (mode === 'create') {
+            eventSourceFormTitle.textContent = 'Create Event Source';
+            saveEventSourceBtn.textContent = 'Create Event Source';
+            resetEventSourceForm();
+        } else if (mode === 'edit') {
+            eventSourceFormTitle.textContent = 'Edit Event Source';
+            saveEventSourceBtn.textContent = 'Save Event Source';
+            loadEventSourceIntoForm(getCurrentEditingEventSource());
+        }
+
+        // Populate broker dropdown
+        populateBrokerDropdown();
+
+        // Trigger initial resource preview
+        setTimeout(() => {
+            updateEventSourceResourcePreview();
+        }, 100);
+    }
+
+    /**
+     * Populate broker dropdown with existing brokers
+     */
+    function populateBrokerDropdown() {
+        const dropdown = document.getElementById('eventSourceBroker');
+        const brokers = getBrokers();
+
+        // Clear existing options except first
+        dropdown.innerHTML = '<option value="">Select a broker...</option>';
+
+        // Add broker options
+        brokers.forEach(broker => {
+            const option = document.createElement('option');
+            option.value = broker.name;
+            option.textContent = `${broker.name} (${broker.namespace})`;
+            dropdown.appendChild(option);
+        });
+    }
+
+    /**
+     * Collect event source form data into an object
+     */
+    function collectEventSourceFormData() {
+        const eventSourceType = document.querySelector('input[name="eventSourceType"]:checked').value;
+        let config = {};
+        let eventTypes = [];
+
+        // Collect type-specific config
+        if (eventSourceType === 'github') {
+            config = {
+                repository: document.getElementById('githubRepository').value.trim(),
+                accessTokenSecret: document.getElementById('githubAccessTokenSecret').value.trim()
+            };
+            const eventTypesStr = document.getElementById('githubEventTypes').value.trim();
+            eventTypes = eventTypesStr.split(',').map(t => `com.github.${t.trim()}`);
+        } else if (eventSourceType === 'kafka') {
+            config = {
+                bootstrapServers: document.getElementById('kafkaBootstrapServers').value.trim(),
+                topics: document.getElementById('kafkaTopics').value.trim().split(',').map(t => t.trim()),
+                consumerGroup: document.getElementById('kafkaConsumerGroup').value.trim()
+            };
+            // Kafka event types are derived from topics
+            eventTypes = config.topics.map(topic => `com.kafka.${topic}`);
+        } else if (eventSourceType === 'slack') {
+            config = {
+                webhookURLSecret: document.getElementById('slackWebhookURL').value.trim()
+            };
+            const eventTypesStr = document.getElementById('slackEventTypes').value.trim();
+            eventTypes = eventTypesStr.split(',').map(t => `com.slack.${t.trim()}`);
+        } else if (eventSourceType === 'cron') {
+            config = {
+                schedule: document.getElementById('cronSchedule').value.trim(),
+                data: document.getElementById('cronData').value.trim()
+            };
+            eventTypes = ['com.cron.scheduled'];
+        }
+
+        const formData = {
+            name: document.getElementById('eventSourceName').value.trim(),
+            namespace: document.getElementById('eventSourceNamespace').value.trim(),
+            type: eventSourceType,
+            broker: document.getElementById('eventSourceBroker').value,
+            config: config,
+            eventTypes: eventTypes
+        };
+
+        // If editing, preserve the ID
+        const currentEditing = getCurrentEditingEventSource();
+        if (currentEditing && currentEditing.id) {
+            formData.id = currentEditing.id;
+        }
+
+        return formData;
+    }
+
+    /**
+     * Reset event source form to default values
+     */
+    function resetEventSourceForm() {
+        document.getElementById('eventSourceName').value = 'my-event-source';
+        document.getElementById('eventSourceNamespace').value = 'default';
+        document.getElementById('eventSourceBroker').value = '';
+
+        // Reset to GitHub as default
+        const githubRadio = document.querySelector('input[name="eventSourceType"][value="github"]');
+        if (githubRadio) {
+            githubRadio.checked = true;
+            githubRadio.dispatchEvent(new Event('change'));
+        }
+
+        // Reset GitHub fields
+        document.getElementById('githubRepository').value = 'username/repo';
+        document.getElementById('githubAccessTokenSecret').value = 'github-secret';
+        document.getElementById('githubEventTypes').value = 'push,pull_request';
+
+        // Reset Kafka fields
+        document.getElementById('kafkaBootstrapServers').value = 'kafka:9092';
+        document.getElementById('kafkaTopics').value = 'my-topic';
+        document.getElementById('kafkaConsumerGroup').value = 'my-consumer-group';
+
+        // Reset Slack fields
+        document.getElementById('slackWebhookURL').value = 'slack-webhook-secret';
+        document.getElementById('slackEventTypes').value = 'message,reaction_added';
+
+        // Reset Cron fields
+        document.getElementById('cronSchedule').value = '*/5 * * * *';
+        document.getElementById('cronData').value = '';
+    }
+
+    /**
+     * Load event source data into form for editing
+     */
+    function loadEventSourceIntoForm(eventSourceData) {
+        if (!eventSourceData) return;
+
+        document.getElementById('eventSourceName').value = eventSourceData.name;
+        document.getElementById('eventSourceNamespace').value = eventSourceData.namespace;
+        document.getElementById('eventSourceBroker').value = eventSourceData.broker;
+
+        // Set type radio
+        const typeRadio = document.querySelector(`input[name="eventSourceType"][value="${eventSourceData.type}"]`);
+        if (typeRadio) {
+            typeRadio.checked = true;
+            typeRadio.dispatchEvent(new Event('change'));
+        }
+
+        // Load type-specific config
+        if (eventSourceData.type === 'github') {
+            document.getElementById('githubRepository').value = eventSourceData.config.repository || '';
+            document.getElementById('githubAccessTokenSecret').value = eventSourceData.config.accessTokenSecret || '';
+            // Extract event types (remove com.github. prefix)
+            const eventTypes = eventSourceData.eventTypes.map(t => t.replace('com.github.', '')).join(',');
+            document.getElementById('githubEventTypes').value = eventTypes;
+        } else if (eventSourceData.type === 'kafka') {
+            document.getElementById('kafkaBootstrapServers').value = eventSourceData.config.bootstrapServers || '';
+            document.getElementById('kafkaTopics').value = (eventSourceData.config.topics || []).join(',');
+            document.getElementById('kafkaConsumerGroup').value = eventSourceData.config.consumerGroup || '';
+        } else if (eventSourceData.type === 'slack') {
+            document.getElementById('slackWebhookURL').value = eventSourceData.config.webhookURLSecret || '';
+            // Extract event types (remove com.slack. prefix)
+            const eventTypes = eventSourceData.eventTypes.map(t => t.replace('com.slack.', '')).join(',');
+            document.getElementById('slackEventTypes').value = eventTypes;
+        } else if (eventSourceData.type === 'cron') {
+            document.getElementById('cronSchedule').value = eventSourceData.config.schedule || '';
+            document.getElementById('cronData').value = eventSourceData.config.data || '';
+        }
+    }
+
+    /**
+     * Update event source resource preview
+     */
+    function updateEventSourceResourcePreview() {
+        const formData = collectEventSourceFormData();
+
+        // Basic validation (don't show validation errors during auto-update)
+        if (!formData.name || !formData.namespace || !formData.broker) {
+            eventSourcePlatformView.style.display = 'none';
+            return;
+        }
+
+        // Show platform view
+        eventSourcePlatformView.style.display = 'block';
+
+        // Generate resource (will use type-specific YAML generators)
+        const resourceType = `${formData.type}Source`;
+        const resource = {
+            type: resourceType,
+            name: formData.name,
+            yaml: generateEventSourceYAML(formData),
+            metadata: RESOURCE_METADATA[resourceType] || {
+                kind: `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}Source`,
+                apiVersion: 'sources.knative.dev/v1',
+                description: `Produces CloudEvents from ${formData.type} to the ${formData.broker} Broker.`
+            }
+        };
+
+        // Update platform description
+        const typeDisplayName = formData.type.charAt(0).toUpperCase() + formData.type.slice(1);
+        eventSourcePlatformDescription.innerHTML = `
+            The UI composed <strong>1</strong> Kubernetes resource from your event source configuration.
+            <br>
+            You created a <strong>${typeDisplayName} Source</strong> that will send CloudEvents to the <strong>${formData.broker}</strong> Broker.
+        `;
+
+        // Render resource card
+        eventSourceResourceCards.innerHTML = '';
+        const card = createResourceCard(resource, formData.name, 0);
+        eventSourceResourceCards.appendChild(card);
+    }
+
+    /**
+     * Show broker form view
+     */
+    function showBrokerFormView(mode) {
+        listView.style.display = 'none';
+        formView.style.display = 'none';
+        detailView.style.display = 'none';
+        subscriptionsView.style.display = 'none';
+        brokersListView.style.display = 'none';
+        eventSourcesListView.style.display = 'none';
+        brokerFormView.style.display = 'block';
+
+        if (mode === 'create') {
+            brokerFormTitle.textContent = 'Create Broker';
+            saveBrokerBtn.textContent = 'Create Broker';
+            resetBrokerForm();
+        } else if (mode === 'edit') {
+            brokerFormTitle.textContent = 'Edit Broker';
+            saveBrokerBtn.textContent = 'Save Broker';
+            loadBrokerIntoForm(getCurrentEditingBroker());
+        }
+
+        // Trigger initial resource preview
+        setTimeout(() => {
+            updateBrokerResourcePreview();
+        }, 100);
     }
 
     /**
@@ -1154,6 +1532,89 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('routePath').value = functionData.networkingConfig.path || '/';
             document.getElementById('routeTLSTermination').value = functionData.networkingConfig.tlsTermination || 'edge';
         }
+    }
+
+    /**
+     * Collect broker form data into an object
+     */
+    function collectBrokerFormData() {
+        const formData = {
+            name: document.getElementById('brokerName').value.trim(),
+            namespace: document.getElementById('brokerNamespace').value.trim(),
+            deliveryConfig: {
+                retry: parseInt(document.getElementById('brokerRetry').value),
+                backoffPolicy: document.getElementById('brokerBackoffPolicy').value,
+                backoffDelay: document.getElementById('brokerBackoffDelay').value.trim()
+            }
+        };
+
+        // If editing, preserve the ID
+        const currentEditing = getCurrentEditingBroker();
+        if (currentEditing && currentEditing.id) {
+            formData.id = currentEditing.id;
+        }
+
+        return formData;
+    }
+
+    /**
+     * Reset broker form to default values
+     */
+    function resetBrokerForm() {
+        document.getElementById('brokerName').value = 'default';
+        document.getElementById('brokerNamespace').value = 'default';
+        document.getElementById('brokerRetry').value = '3';
+        document.getElementById('brokerBackoffPolicy').value = 'exponential';
+        document.getElementById('brokerBackoffDelay').value = '1s';
+    }
+
+    /**
+     * Load broker data into form for editing
+     */
+    function loadBrokerIntoForm(brokerData) {
+        if (!brokerData) return;
+
+        document.getElementById('brokerName').value = brokerData.name;
+        document.getElementById('brokerNamespace').value = brokerData.namespace;
+        document.getElementById('brokerRetry').value = brokerData.deliveryConfig.retry;
+        document.getElementById('brokerBackoffPolicy').value = brokerData.deliveryConfig.backoffPolicy;
+        document.getElementById('brokerBackoffDelay').value = brokerData.deliveryConfig.backoffDelay;
+    }
+
+    /**
+     * Update broker resource preview
+     */
+    function updateBrokerResourcePreview() {
+        const formData = collectBrokerFormData();
+
+        // Basic validation (don't show validation errors during auto-update)
+        if (!formData.name || !formData.namespace) {
+            brokerPlatformView.style.display = 'none';
+            return;
+        }
+
+        // Show platform view
+        brokerPlatformView.style.display = 'block';
+
+        // Generate resource
+        const resource = {
+            type: 'broker',
+            name: formData.name,
+            yaml: generateBrokerYAML(formData),
+            metadata: RESOURCE_METADATA.broker
+        };
+
+        // Update platform description
+        brokerPlatformDescription.innerHTML = `
+            The UI composed <strong>1</strong> Kubernetes resource from your broker configuration.
+            <br>
+            You created a Knative Eventing Broker that will route CloudEvents from Event Sources to Functions.
+        `;
+
+        // Render resource card
+        brokerResourceCards.innerHTML = '';
+        const card = createResourceCard(resource, formData.name, 0);
+        brokerResourceCards.appendChild(card);
     }
 
     /**
@@ -1335,6 +1796,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Add event listeners for edit/delete buttons
+        document.querySelectorAll('.edit-broker-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const broker = getBroker(this.dataset.id);
+                setCurrentEditingBroker(broker);
+                showBrokerFormView('edit');
+            });
+        });
+
         document.querySelectorAll('.delete-broker-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -1396,6 +1866,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Add event listeners for edit/delete buttons
+        document.querySelectorAll('.edit-event-source-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const eventSource = getEventSource(this.dataset.id);
+                setCurrentEditingEventSource(eventSource);
+                showEventSourceFormView('edit');
+            });
+        });
+
         document.querySelectorAll('.delete-event-source-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -1435,7 +1914,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
         currentDetailFunction = functionData;
         subscriptionsViewFunctionName.textContent = `Function: ${functionData.name}`;
+
+        // Populate broker dropdown in subscription form
+        populateSubscriptionBrokerDropdown();
+
         renderEventSubscriptions(functionData);
+    }
+
+    /**
+     * Populate subscription broker dropdown with existing brokers
+     */
+    function populateSubscriptionBrokerDropdown() {
+        const dropdown = document.getElementById('subscriptionBroker');
+        const brokers = getBrokers();
+
+        // Clear existing options except first
+        dropdown.innerHTML = '<option value="">Select a broker...</option>';
+
+        // Add broker options
+        brokers.forEach(broker => {
+            const option = document.createElement('option');
+            option.value = broker.name;
+            option.textContent = `${broker.name} (${broker.namespace})`;
+            dropdown.appendChild(option);
+        });
     }
 
     /**

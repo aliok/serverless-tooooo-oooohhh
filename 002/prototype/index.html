@@ -779,8 +779,10 @@ awsRegion: us-east-1"></textarea>
                     <form id="subscriptionForm" class="subscription-form-inline">
                         <div class="form-group">
                             <label for="subscriptionBroker">Broker Name</label>
-                            <input type="text" id="subscriptionBroker" name="subscriptionBroker"
-                                   placeholder="default" value="default" required>
+                            <select id="subscriptionBroker" name="subscriptionBroker" required>
+                                <option value="">Select a broker...</option>
+                                <!-- Will be populated dynamically from brokers list -->
+                            </select>
                             <small class="helper-text">Knative Broker to subscribe to</small>
                         </div>
 
@@ -892,6 +894,258 @@ awsRegion: us-east-1"></textarea>
                 </table>
                 <div id="emptyEventSourcesState" class="empty-table-state" style="display: none;">
                     <p>No event sources found. Click "Create event source" to get started.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Broker Form View -->
+    <div id="brokerFormView" class="container" style="display: none;">
+        <section class="form-panel">
+            <div class="form-header">
+                <h2 id="brokerFormTitle">Create Broker</h2>
+                <button type="button" id="backToBrokersListBtn" class="btn-secondary">← Back to List</button>
+            </div>
+            <p class="panel-description">Configure a Knative Eventing Broker for routing CloudEvents</p>
+
+            <form id="brokerForm">
+                <fieldset>
+                    <legend>Broker Details</legend>
+
+                    <div class="form-group">
+                        <label for="brokerName">Broker Name</label>
+                        <input type="text" id="brokerName" name="brokerName"
+                               placeholder="default" value="default" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="brokerNamespace">Namespace</label>
+                        <input type="text" id="brokerNamespace" name="brokerNamespace"
+                               placeholder="default" value="default" required>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Delivery Configuration</legend>
+
+                    <div class="form-group">
+                        <label for="brokerRetry">Retry Attempts</label>
+                        <input type="number" id="brokerRetry" name="brokerRetry"
+                               placeholder="3" value="3" min="0" max="10">
+                        <small class="helper-text">Number of times to retry failed deliveries</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="brokerBackoffPolicy">Backoff Policy</label>
+                        <select id="brokerBackoffPolicy" name="brokerBackoffPolicy">
+                            <option value="exponential">Exponential</option>
+                            <option value="linear">Linear</option>
+                        </select>
+                        <small class="helper-text">Strategy for increasing delay between retries</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="brokerBackoffDelay">Backoff Delay</label>
+                        <input type="text" id="brokerBackoffDelay" name="brokerBackoffDelay"
+                               placeholder="1s" value="1s">
+                        <small class="helper-text">Initial delay between retries (e.g., "1s", "500ms")</small>
+                    </div>
+                </fieldset>
+
+                <div class="form-actions">
+                    <button type="button" id="saveBrokerBtn" class="btn-primary">Create Broker</button>
+                </div>
+            </form>
+
+            <!-- Resources Preview -->
+            <div class="resources-preview" style="margin-top: 2rem;">
+                <h2>Composed Resources</h2>
+                <p class="panel-description">Live preview of Kubernetes resources that will be created</p>
+
+                <!-- Platform View Section -->
+                <div id="brokerPlatformView" class="platform-view" style="display: none;">
+                    <h3>What UI Creates</h3>
+                    <p id="brokerPlatformDescription" class="platform-description"></p>
+
+                    <div id="brokerResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Source Form View -->
+    <div id="eventSourceFormView" class="container" style="display: none;">
+        <section class="form-panel">
+            <div class="form-header">
+                <h2 id="eventSourceFormTitle">Create Event Source</h2>
+                <button type="button" id="backToEventSourcesListBtn" class="btn-secondary">← Back to List</button>
+            </div>
+            <p class="panel-description">Configure an Event Source to produce CloudEvents to a Broker</p>
+
+            <form id="eventSourceForm">
+                <fieldset>
+                    <legend>Event Source Details</legend>
+
+                    <div class="form-group">
+                        <label for="eventSourceName">Event Source Name</label>
+                        <input type="text" id="eventSourceName" name="eventSourceName"
+                               placeholder="my-event-source" value="my-event-source" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventSourceNamespace">Namespace</label>
+                        <input type="text" id="eventSourceNamespace" name="eventSourceNamespace"
+                               placeholder="default" value="default" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventSourceBroker">Target Broker</label>
+                        <select id="eventSourceBroker" name="eventSourceBroker" required>
+                            <option value="">Select a broker...</option>
+                            <!-- Will be populated dynamically from brokers list -->
+                        </select>
+                        <small class="helper-text">The Broker where events will be sent</small>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Event Source Type</legend>
+
+                    <div class="scaling-method-label">
+                        <label>Source Type</label>
+                        <small class="helper-text">Choose the type of event source</small>
+                    </div>
+
+                    <!-- GitHub Source Panel -->
+                    <div id="githubSourcePanel" class="metric-panel active">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSourceType" value="github" checked>
+                            <span class="panel-icon">▼</span>
+                            <span class="panel-title">GitHub Source</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="githubRepository">Repository</label>
+                                <input type="text" id="githubRepository" name="githubRepository"
+                                       placeholder="username/repo" value="username/repo">
+                                <small class="helper-text">GitHub repository (owner/repo)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="githubAccessTokenSecret">Access Token Secret</label>
+                                <input type="text" id="githubAccessTokenSecret" name="githubAccessTokenSecret"
+                                       placeholder="github-secret" value="github-secret">
+                                <small class="helper-text">Kubernetes Secret containing GitHub access token</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="githubEventTypes">Event Types (comma-separated)</label>
+                                <input type="text" id="githubEventTypes" name="githubEventTypes"
+                                       placeholder="push,pull_request" value="push,pull_request">
+                                <small class="helper-text">GitHub webhook event types (e.g., push, pull_request, issues)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kafka Source Panel -->
+                    <div id="kafkaSourcePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSourceType" value="kafka">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Kafka Source</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="kafkaBootstrapServers">Bootstrap Servers</label>
+                                <input type="text" id="kafkaBootstrapServers" name="kafkaBootstrapServers"
+                                       placeholder="kafka:9092" value="kafka:9092">
+                                <small class="helper-text">Kafka bootstrap servers (comma-separated)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kafkaTopics">Topics (comma-separated)</label>
+                                <input type="text" id="kafkaTopics" name="kafkaTopics"
+                                       placeholder="my-topic" value="my-topic">
+                                <small class="helper-text">Kafka topics to consume from</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kafkaConsumerGroup">Consumer Group</label>
+                                <input type="text" id="kafkaConsumerGroup" name="kafkaConsumerGroup"
+                                       placeholder="my-consumer-group" value="my-consumer-group">
+                                <small class="helper-text">Kafka consumer group ID</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slack Source Panel -->
+                    <div id="slackSourcePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSourceType" value="slack">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Slack Source</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="slackWebhookURL">Webhook URL Secret</label>
+                                <input type="text" id="slackWebhookURL" name="slackWebhookURL"
+                                       placeholder="slack-webhook-secret" value="slack-webhook-secret">
+                                <small class="helper-text">Kubernetes Secret containing Slack webhook URL</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="slackEventTypes">Event Types (comma-separated)</label>
+                                <input type="text" id="slackEventTypes" name="slackEventTypes"
+                                       placeholder="message,reaction_added" value="message,reaction_added">
+                                <small class="helper-text">Slack event types to subscribe to</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cron Source Panel -->
+                    <div id="cronSourcePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSourceType" value="cron">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Cron Source</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="cronSchedule">Schedule</label>
+                                <input type="text" id="cronSchedule" name="cronSchedule"
+                                       placeholder="*/5 * * * *" value="*/5 * * * *">
+                                <small class="helper-text">Cron expression (e.g., "*/5 * * * *" = every 5 minutes)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cronData">Data Payload</label>
+                                <textarea id="cronData" name="cronData" rows="4" placeholder='{"message": "Hello from cron!"}'></textarea>
+                                <small class="helper-text">JSON data to send with each cron event</small>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="form-actions">
+                    <button type="button" id="saveEventSourceBtn" class="btn-primary">Create Event Source</button>
+                </div>
+            </form>
+
+            <!-- Resources Preview -->
+            <div class="resources-preview" style="margin-top: 2rem;">
+                <h2>Composed Resources</h2>
+                <p class="panel-description">Live preview of Kubernetes resources that will be created</p>
+
+                <!-- Platform View Section -->
+                <div id="eventSourcePlatformView" class="platform-view" style="display: none;">
+                    <h3>What UI Creates</h3>
+                    <p id="eventSourcePlatformDescription" class="platform-description"></p>
+
+                    <div id="eventSourceResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
                 </div>
             </div>
         </section>
