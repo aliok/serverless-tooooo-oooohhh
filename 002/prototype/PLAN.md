@@ -554,34 +554,52 @@ Both include proper ownerReferences to Function CR.
 
 ## Phase 4: Eventing Configuration ✅ COMPLETED
 
-This phase adds support for CloudEvents subscriptions via Knative Eventing.
+This phase adds support for CloudEvents subscriptions via Knative Eventing, using an AWS Lambda-style post-creation workflow.
 
 ### Goals
 1. Enable functions to subscribe to CloudEvents from Knative Brokers
 2. Demonstrate the separation of concerns: UI creates Function CR, controller creates Triggers
-3. Keep eventing configuration simple and optional
-4. Show how the Function controller manages eventing infrastructure
+3. Add event subscriptions AFTER function creation (like AWS Lambda triggers)
+4. Provide dropdown selection of common event types
+5. Show how the Function controller manages eventing infrastructure
 
-### Eventing Options
+### User Flow
 
-Users can optionally enable CloudEvents subscriptions:
+1. **Create Function** - Function is created without event subscriptions
+2. **View Function Details** - After creation, user sees function detail view
+3. **Add Event Subscriptions** - User clicks "Add event subscription" button
+4. **Select Event Type** - Dialog shows dropdown with common event types or custom input
+5. **Manage Subscriptions** - Add/remove subscriptions from detail view
 
-1. **Event Subscriptions Disabled** (default)
-   - Function does not subscribe to any events
-   - No eventing configuration in Function CR
-   - Function can still be invoked via HTTP
-
-2. **Event Subscriptions Enabled**
-   - Subscribe to specific CloudEvent types from a Knative Broker
-   - Broker name specification
-   - Event types (one per line in textarea)
-   - Function CR declares subscriptions in `spec.eventing.subscriptions`
-   - **Function controller creates Knative Triggers** based on subscriptions
+This matches the AWS Lambda pattern where triggers are added after function creation.
 
 ### Implementation
 
+**New Views:**
+- **Function Detail View** - Shows function overview and event subscriptions
+  - Function name, namespace, image
+  - Scaling and networking configuration
+  - Event subscriptions section with "Add event subscription" button
+  - List of current subscriptions with remove buttons
+
+**Event Subscription Dialog:**
+- Broker name input
+- Event type dropdown with common types:
+  - GitHub events (push, pull_request)
+  - Slack events (message, reaction)
+  - Stripe events (payment.succeeded, payment.failed)
+  - Example events (order.created, order.updated, user.registered)
+  - Custom (user-provided event type)
+- Custom event type input (shown when "Custom" selected)
+
+**State Management:**
+- Functions now have `eventSubscriptions` array: `[{broker, eventType}, ...]`
+- Removed previous `eventingEnabled` and `eventingConfig` fields
+- Event subscriptions can be added/removed after function creation
+
 **Updated YAML Generators:**
-- `generateFunctionYAML()` - Now includes `spec.eventing.subscriptions` section
+- `generateFunctionYAML()` - Groups subscriptions by broker and generates Function CR
+- Function CR aggregates event types by broker
 
 **Key Architectural Decision:**
 The UI does NOT create Knative Trigger resources. Instead:
@@ -599,22 +617,32 @@ This follows the Kubernetes operator pattern where the controller is responsible
 
 ### UI Components
 
-**Eventing Configuration fieldset:**
-- **Enable Event Subscriptions** checkbox (default: unchecked)
-- When enabled, shows:
-  - **Broker Name** (text input, default: "default")
-  - **Event Types** (textarea, one per line)
+**Function Detail View:**
+- Function overview section
+- Event Subscriptions section with:
+  - "Add event subscription" button
+  - List of current subscriptions
+  - Remove button for each subscription
+
+**Add Event Subscription Dialog:**
+- **Broker Name** (text input, default: "default")
+- **Event Type** (dropdown with predefined options + custom)
+- **Custom Event Type** (text input, shown when "Custom" selected)
 
 ### Success Criteria
 
-- ✅ **Optional eventing**: Eventing is opt-in, not required
+- ✅ **Post-creation workflow**: Event subscriptions added after function creation
+- ✅ **AWS Lambda-style UX**: Matches familiar pattern of adding triggers
+- ✅ **Event type selection**: Dropdown with common types, option for custom
 - ✅ **Proper separation of concerns**: UI creates Function CR, controller creates Triggers
 - ✅ **Function CR format**: Correctly declares event subscriptions in spec.eventing
-- ✅ **Validation**: Required fields validated when eventing enabled
-- ✅ **Consistent UX**: Eventing checkbox and fields match existing design patterns
-- ✅ **User clarity**: UI clearly explains that controller will create Triggers
+- ✅ **Subscription management**: Add and remove subscriptions
+- ✅ **Duplicate prevention**: Prevents adding duplicate subscriptions
+- ✅ **Real-time updates**: Function CR YAML updates immediately
 
 ### Example Function CR with Eventing
+
+Creating a function and adding two event subscriptions (GitHub push and Slack message):
 
 ```yaml
 apiVersion: serverless.openshift.io/v1alpha1
