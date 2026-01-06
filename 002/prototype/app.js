@@ -76,18 +76,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Subscriptions view elements
     const backToDetailFromSubscriptionsBtn = document.getElementById('backToDetailFromSubscriptionsBtn');
     const subscriptionsViewFunctionName = document.getElementById('subscriptionsViewFunctionName');
-    const addSubscriptionBtn = document.getElementById('addSubscriptionBtn');
     const subscriptionsList = document.getElementById('subscriptionsList');
     const emptySubscriptions = document.getElementById('emptySubscriptions');
-
-    // Dialog elements
-    const addSubscriptionDialog = document.getElementById('addSubscriptionDialog');
-    const closeDialogBtn = document.getElementById('closeDialogBtn');
     const subscriptionForm = document.getElementById('subscriptionForm');
     const subscriptionEventType = document.getElementById('subscriptionEventType');
     const customEventTypeField = document.getElementById('customEventTypeField');
     const saveSubscriptionBtn = document.getElementById('saveSubscriptionBtn');
-    const cancelSubscriptionBtn = document.getElementById('cancelSubscriptionBtn');
 
     // Store last rendered function data
     let lastRenderedFunction = null;
@@ -329,19 +323,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Handle event subscription dialog
-    addSubscriptionBtn.addEventListener('click', function() {
-        openSubscriptionDialog();
-    });
-
-    closeDialogBtn.addEventListener('click', function() {
-        closeSubscriptionDialog();
-    });
-
-    cancelSubscriptionBtn.addEventListener('click', function() {
-        closeSubscriptionDialog();
-    });
-
     // Handle event type dropdown change
     subscriptionEventType.addEventListener('change', function() {
         if (this.value === 'custom') {
@@ -351,8 +332,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Handle save subscription
-    saveSubscriptionBtn.addEventListener('click', function() {
+    // Handle subscription form submission
+    subscriptionForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
         const broker = document.getElementById('subscriptionBroker').value.trim();
         let eventType = subscriptionEventType.value;
 
@@ -387,8 +370,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Refresh subscriptions view
         renderEventSubscriptions(currentDetailFunction);
 
-        // Close dialog
-        closeSubscriptionDialog();
+        // Reset form
+        subscriptionForm.reset();
+        document.getElementById('subscriptionBroker').value = 'default';
+        customEventTypeField.style.display = 'none';
     });
 
     /**
@@ -544,11 +529,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle form submission (preview resources)
     form.addEventListener('submit', function(e) {
         e.preventDefault();
+        updateResourcePreview();
+    });
 
+    /**
+     * Update resource preview in form view
+     */
+    function updateResourcePreview() {
         const formData = collectFormData();
 
-        // Validate
-        if (!validateForm(formData)) {
+        // Basic validation (don't show validation errors during auto-update)
+        if (!formData.name || !formData.namespace || !formData.image) {
             return;
         }
 
@@ -561,11 +552,23 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show create/cancel buttons
         createFunctionBtn.style.display = 'inline-block';
         cancelCreateBtn.style.display = 'inline-block';
+    }
 
-        // Scroll to results
-        setTimeout(() => {
-            platformView.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
+    // Auto-update resources on form input changes
+    const formInputs = form.querySelectorAll('input, select, textarea');
+    formInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            // Debounce the update
+            clearTimeout(input.updateTimeout);
+            input.updateTimeout = setTimeout(() => {
+                updateResourcePreview();
+            }, 500);
+        });
+
+        input.addEventListener('change', function() {
+            // Immediate update on change (for radio buttons, checkboxes, selects)
+            updateResourcePreview();
+        });
     });
 
     /**
@@ -1273,9 +1276,10 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDetailFunction = functionData;
         renderDetailView(functionData);
 
-        // Reset resources section
-        detailPlatformView.style.display = 'none';
-        showResourcesBtn.textContent = 'Show Resources';
+        // Auto-show and render resources
+        renderDetailResources(functionData);
+        detailPlatformView.style.display = 'block';
+        showResourcesBtn.textContent = 'Hide Resources';
     }
 
     /**
@@ -1525,23 +1529,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    /**
-     * Open subscription dialog
-     */
-    function openSubscriptionDialog() {
-        // Reset form
-        document.getElementById('subscriptionBroker').value = 'default';
-        subscriptionEventType.value = '';
-        customEventTypeField.style.display = 'none';
-        document.getElementById('customEventType').value = '';
-
-        addSubscriptionDialog.style.display = 'flex';
-    }
-
-    /**
-     * Close subscription dialog
-     */
-    function closeSubscriptionDialog() {
-        addSubscriptionDialog.style.display = 'none';
-    }
 });

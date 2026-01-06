@@ -765,67 +765,56 @@ awsRegion: us-east-1"></textarea>
             </div>
 
             <div id="eventSubscriptionsSection" class="event-subscriptions-section">
-                <div class="section-header">
-                    <h3>Event Subscriptions</h3>
-                    <button id="addSubscriptionBtn" class="btn-primary">+ Add event subscription</button>
-                </div>
+                <h3>Current Subscriptions</h3>
 
                 <div id="subscriptionsList" class="subscriptions-list">
                     <div id="emptySubscriptions" class="empty-subscriptions">
-                        <p>No event subscriptions configured. Click "Add event subscription" to subscribe to CloudEvents from a Knative Broker.</p>
+                        <p>No event subscriptions configured. Add one below.</p>
                     </div>
+                </div>
+
+                <div class="add-subscription-section">
+                    <h3>Add Event Subscription</h3>
+                    <form id="subscriptionForm" class="subscription-form-inline">
+                        <div class="form-group">
+                            <label for="subscriptionBroker">Broker Name</label>
+                            <input type="text" id="subscriptionBroker" name="subscriptionBroker"
+                                   placeholder="default" value="default" required>
+                            <small class="helper-text">Knative Broker to subscribe to</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="subscriptionEventType">Event Type</label>
+                            <select id="subscriptionEventType" name="subscriptionEventType" required>
+                                <option value="">Select an event type...</option>
+                                <option value="com.github.push">com.github.push</option>
+                                <option value="com.github.pull_request">com.github.pull_request</option>
+                                <option value="com.slack.message">com.slack.message</option>
+                                <option value="com.slack.reaction">com.slack.reaction</option>
+                                <option value="com.stripe.payment.succeeded">com.stripe.payment.succeeded</option>
+                                <option value="com.stripe.payment.failed">com.stripe.payment.failed</option>
+                                <option value="com.example.order.created">com.example.order.created</option>
+                                <option value="com.example.order.updated">com.example.order.updated</option>
+                                <option value="com.example.user.registered">com.example.user.registered</option>
+                                <option value="custom">Custom (enter below)</option>
+                            </select>
+                            <small class="helper-text">Select a common event type or choose "Custom" to enter your own</small>
+                        </div>
+
+                        <div id="customEventTypeField" class="form-group" style="display: none;">
+                            <label for="customEventType">Custom Event Type</label>
+                            <input type="text" id="customEventType" name="customEventType"
+                                   placeholder="com.myapp.myevent">
+                            <small class="helper-text">Enter your custom CloudEvent type</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" id="saveSubscriptionBtn" class="btn-primary">Add Subscription</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </section>
-    </div>
-
-    <!-- Add Event Subscription Dialog -->
-    <div id="addSubscriptionDialog" class="dialog-overlay" style="display: none;">
-        <div class="dialog">
-            <div class="dialog-header">
-                <h3>Add Event Subscription</h3>
-                <button id="closeDialogBtn" class="close-btn">×</button>
-            </div>
-            <div class="dialog-body">
-                <form id="subscriptionForm">
-                    <div class="form-group">
-                        <label for="subscriptionBroker">Broker Name</label>
-                        <input type="text" id="subscriptionBroker" name="subscriptionBroker"
-                               placeholder="default" value="default" required>
-                        <small class="helper-text">Knative Broker to subscribe to</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="subscriptionEventType">Event Type</label>
-                        <select id="subscriptionEventType" name="subscriptionEventType" required>
-                            <option value="">Select an event type...</option>
-                            <option value="com.github.push">com.github.push</option>
-                            <option value="com.github.pull_request">com.github.pull_request</option>
-                            <option value="com.slack.message">com.slack.message</option>
-                            <option value="com.slack.reaction">com.slack.reaction</option>
-                            <option value="com.stripe.payment.succeeded">com.stripe.payment.succeeded</option>
-                            <option value="com.stripe.payment.failed">com.stripe.payment.failed</option>
-                            <option value="com.example.order.created">com.example.order.created</option>
-                            <option value="com.example.order.updated">com.example.order.updated</option>
-                            <option value="com.example.user.registered">com.example.user.registered</option>
-                            <option value="custom">Custom (enter below)</option>
-                        </select>
-                        <small class="helper-text">Select a common event type or choose "Custom" to enter your own</small>
-                    </div>
-
-                    <div id="customEventTypeField" class="form-group" style="display: none;">
-                        <label for="customEventType">Custom Event Type</label>
-                        <input type="text" id="customEventType" name="customEventType"
-                               placeholder="com.myapp.myevent">
-                        <small class="helper-text">Enter your custom CloudEvent type</small>
-                    </div>
-                </form>
-            </div>
-            <div class="dialog-footer">
-                <button id="cancelSubscriptionBtn" class="btn-secondary">Cancel</button>
-                <button id="saveSubscriptionBtn" class="btn-primary">Add Subscription</button>
-            </div>
-        </div>
     </div>
 
     <footer>
