@@ -552,8 +552,91 @@ Both include proper ownerReferences to Function CR.
 
 ---
 
+## Phase 4: Eventing Configuration ✅ COMPLETED
+
+This phase adds support for CloudEvents subscriptions via Knative Eventing.
+
+### Goals
+1. Enable functions to subscribe to CloudEvents from Knative Brokers
+2. Demonstrate the separation of concerns: UI creates Function CR, controller creates Triggers
+3. Keep eventing configuration simple and optional
+4. Show how the Function controller manages eventing infrastructure
+
+### Eventing Options
+
+Users can optionally enable CloudEvents subscriptions:
+
+1. **Event Subscriptions Disabled** (default)
+   - Function does not subscribe to any events
+   - No eventing configuration in Function CR
+   - Function can still be invoked via HTTP
+
+2. **Event Subscriptions Enabled**
+   - Subscribe to specific CloudEvent types from a Knative Broker
+   - Broker name specification
+   - Event types (one per line in textarea)
+   - Function CR declares subscriptions in `spec.eventing.subscriptions`
+   - **Function controller creates Knative Triggers** based on subscriptions
+
+### Implementation
+
+**Updated YAML Generators:**
+- `generateFunctionYAML()` - Now includes `spec.eventing.subscriptions` section
+
+**Key Architectural Decision:**
+The UI does NOT create Knative Trigger resources. Instead:
+- The UI creates the Function CR with event subscriptions declared
+- The Function controller watches Function CRs
+- The controller creates/manages Knative Triggers to route events from the broker to the function
+
+This follows the Kubernetes operator pattern where the controller is responsible for managing lower-level resources based on the higher-level Function CR specification.
+
+**Resources Created by UI:**
+- Function CR with `spec.eventing.subscriptions` populated
+
+**Resources Created by Function Controller:**
+- Knative Trigger(s) (one per subscription, managed by controller)
+
+### UI Components
+
+**Eventing Configuration fieldset:**
+- **Enable Event Subscriptions** checkbox (default: unchecked)
+- When enabled, shows:
+  - **Broker Name** (text input, default: "default")
+  - **Event Types** (textarea, one per line)
+
+### Success Criteria
+
+- ✅ **Optional eventing**: Eventing is opt-in, not required
+- ✅ **Proper separation of concerns**: UI creates Function CR, controller creates Triggers
+- ✅ **Function CR format**: Correctly declares event subscriptions in spec.eventing
+- ✅ **Validation**: Required fields validated when eventing enabled
+- ✅ **Consistent UX**: Eventing checkbox and fields match existing design patterns
+- ✅ **User clarity**: UI clearly explains that controller will create Triggers
+
+### Example Function CR with Eventing
+
+```yaml
+apiVersion: serverless.openshift.io/v1alpha1
+kind: Function
+metadata:
+  name: my-function
+  namespace: default
+spec:
+  eventing:
+    subscriptions:
+      - broker: default
+        eventTypes:
+          - com.github.push
+          - com.slack.message
+```
+
+The Function controller will create Knative Trigger resources based on this specification to route CloudEvents from the "default" broker to the function for the specified event types.
+
+---
+
 ## Future Phases
 
-- **Phase 4**: Eventing resources (Knative Trigger, event subscriptions)
 - **Phase 5**: Complete composition view with all resource types
 - **Phase 6**: Status aggregation and resource health visualization
+- **Phase 7**: Advanced features (secrets, configmaps, volumes, environment variables)
