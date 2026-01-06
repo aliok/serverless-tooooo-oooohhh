@@ -32,9 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const resourceCards = document.getElementById('resourceCards');
     const resourceCount = document.getElementById('resourceCount');
     const platformDescription = document.getElementById('platformDescription');
-    const createFunctionBtn = document.getElementById('createFunctionBtn');
     const createFunctionDirectBtn = document.getElementById('createFunctionDirectBtn');
-    const cancelCreateBtn = document.getElementById('cancelCreateBtn');
     const buildMethodRadios = document.querySelectorAll('input[name="buildMethod"]');
     const noBuildPanel = document.getElementById('noBuildPanel');
     const shipwrightBuildPanel = document.getElementById('shipwrightBuildPanel');
@@ -129,19 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Create function button handler (after rendering)
-    createFunctionBtn.addEventListener('click', function() {
-        if (lastRenderedFunction) {
-            // Initialize eventSubscriptions if not present
-            if (!lastRenderedFunction.eventSubscriptions) {
-                lastRenderedFunction.eventSubscriptions = [];
-            }
-            saveFunction(lastRenderedFunction);
-            showDetailView(lastRenderedFunction);
-        }
-    });
-
-    // Direct create function button handler (without rendering)
+    // Create/Save function button handler
     createFunctionDirectBtn.addEventListener('click', function() {
         // Collect form data without rendering
         const formData = collectFormData();
@@ -157,11 +143,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Save and show detail view
         saveFunction(formData);
         showDetailView(formData);
-    });
-
-    // Cancel create button handler
-    cancelCreateBtn.addEventListener('click', function() {
-        showListView();
     });
 
     // Search handler
@@ -531,10 +512,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Generate resources
         generateAndDisplayResources(formData);
-
-        // Show create/cancel buttons
-        createFunctionBtn.style.display = 'inline-block';
-        cancelCreateBtn.style.display = 'inline-block';
     }
 
     // Auto-update resources on form input changes
@@ -991,9 +968,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Set button text based on mode
         if (mode === 'edit') {
-            createFunctionBtn.textContent = 'Update Function';
+            createFunctionDirectBtn.textContent = 'Save Function';
         } else {
-            createFunctionBtn.textContent = 'Create Function';
+            createFunctionDirectBtn.textContent = 'Create Function';
         }
 
         // Trigger initial resource preview after a short delay to let form populate

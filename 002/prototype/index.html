@@ -654,11 +654,6 @@ awsRegion: us-east-1"></textarea>
                     <div id="resourceCards" class="resource-cards">
                         <!-- Resource cards will be inserted here by JavaScript -->
                     </div>
-
-                    <div class="create-actions">
-                        <button id="createFunctionBtn" class="btn-primary" style="display: none;">Create Function</button>
-                        <button id="cancelCreateBtn" class="btn-secondary" style="display: none;">Cancel</button>
-                    </div>
                 </div>
             </div>
         </section>
@@ -724,6 +719,14 @@ awsRegion: us-east-1"></textarea>
                         </div>
                         <button type="button" id="addDestinationBtn" class="diagram-add-btn" disabled style="opacity: 0.5; cursor: not-allowed;">+ Add destination</button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Event Subscriptions Summary -->
+            <div class="event-subscriptions-summary">
+                <h3>Event Subscriptions</h3>
+                <div class="subscriptions-summary">
+                    <p id="subscriptionsSummaryText"></p>
                 </div>
             </div>
 
