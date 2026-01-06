@@ -54,7 +54,7 @@ spec:
   strategy:
     name: ${buildConfig.strategy}
   output:
-    image: ${config.image}`;
+    image: ${buildConfig.outputImage || config.image}`;
 }
 
 /**

@@ -329,22 +329,31 @@ document.addEventListener('DOMContentLoaded', function() {
             method: buildMethod
         };
 
-        if (buildMethod === 'shipwright') {
+        // Determine the image based on build method
+        let containerImage = '';
+        if (buildMethod === 'none') {
+            containerImage = document.getElementById('containerImage').value.trim();
+        } else if (buildMethod === 'shipwright') {
             buildConfig.gitURL = document.getElementById('shipwrightGitURL').value.trim();
             buildConfig.gitRevision = document.getElementById('shipwrightGitRevision').value.trim();
             buildConfig.strategy = document.getElementById('shipwrightStrategy').value;
+            buildConfig.outputImage = document.getElementById('shipwrightOutputImage').value.trim();
+            containerImage = buildConfig.outputImage; // Use the build output image
         } else if (buildMethod === 's2i') {
             buildConfig.gitURL = document.getElementById('s2iGitURL').value.trim();
             buildConfig.gitRevision = document.getElementById('s2iGitRevision').value.trim();
             buildConfig.builderImage = document.getElementById('s2iBuilderImage').value;
             buildConfig.outputImageStream = document.getElementById('s2iOutputImageStream').value.trim();
+            // For S2I, construct image reference from ImageStreamTag
+            const imageStreamTag = buildConfig.outputImageStream || `${document.getElementById('functionName').value.trim()}:latest`;
+            containerImage = `image-registry.openshift-image-registry.svc:5000/${document.getElementById('namespace').value.trim()}/${imageStreamTag}`;
         }
 
         // Collect form data
         const formData = {
             name: document.getElementById('functionName').value.trim(),
             namespace: document.getElementById('namespace').value.trim(),
-            image: document.getElementById('containerImage').value.trim(),
+            image: containerImage,
             containerPort: parseInt(document.getElementById('containerPort').value),
             buildMethod: buildMethod,
             buildConfig: buildConfig,
@@ -385,8 +394,14 @@ document.addEventListener('DOMContentLoaded', function() {
      * Validate form data
      */
     function validateForm(data) {
-        if (!data.name || !data.namespace || !data.image) {
+        if (!data.name || !data.namespace) {
             alert('Please fill in all required fields');
+            return false;
+        }
+
+        // Validate image based on build method
+        if (!data.image) {
+            alert('Please provide a container image');
             return false;
         }
 
@@ -476,6 +491,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.buildMethod === 'shipwright') {
             if (!data.buildConfig.gitURL) {
                 alert('Please provide a Git URL for Shipwright build');
+                return false;
+            }
+            if (!data.buildConfig.outputImage) {
+                alert('Please provide an output image for Shipwright build');
                 return false;
             }
         } else if (data.buildMethod === 's2i') {
@@ -833,8 +852,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset to defaults
         document.getElementById('functionName').value = 'my-function';
         document.getElementById('namespace').value = 'default';
-        document.getElementById('containerImage').value = 'registry.example.com/functions/my-function:latest';
         document.getElementById('containerPort').value = '8080';
+        document.getElementById('containerImage').value = 'registry.example.com/functions/my-function:latest';
+        document.getElementById('shipwrightOutputImage').value = 'registry.example.com/functions/my-function:latest';
         document.getElementById('minReplicaCount').value = '0';
         document.getElementById('maxReplicaCount').value = '10';
 
@@ -859,7 +879,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('functionName').value = functionData.name;
         document.getElementById('namespace').value = functionData.namespace;
-        document.getElementById('containerImage').value = functionData.image;
         document.getElementById('containerPort').value = functionData.containerPort;
         document.getElementById('minReplicaCount').value = functionData.metricConfig.minReplicaCount;
         document.getElementById('maxReplicaCount').value = functionData.metricConfig.maxReplicaCount;
@@ -871,11 +890,14 @@ document.addEventListener('DOMContentLoaded', function() {
             buildRadio.dispatchEvent(new Event('change'));
         }
 
-        // Load build config
-        if (functionData.buildMethod === 'shipwright') {
+        // Load build config and image
+        if (functionData.buildMethod === 'none') {
+            document.getElementById('containerImage').value = functionData.image || '';
+        } else if (functionData.buildMethod === 'shipwright') {
             document.getElementById('shipwrightGitURL').value = functionData.buildConfig.gitURL || '';
             document.getElementById('shipwrightGitRevision').value = functionData.buildConfig.gitRevision || 'main';
             document.getElementById('shipwrightStrategy').value = functionData.buildConfig.strategy || 'nodejs';
+            document.getElementById('shipwrightOutputImage').value = functionData.buildConfig.outputImage || functionData.image || '';
         } else if (functionData.buildMethod === 's2i') {
             document.getElementById('s2iGitURL').value = functionData.buildConfig.gitURL || '';
             document.getElementById('s2iGitRevision').value = functionData.buildConfig.gitRevision || 'main';

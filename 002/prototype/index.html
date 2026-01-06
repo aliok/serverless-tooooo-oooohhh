@@ -93,13 +93,6 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="containerImage">Container Image</label>
-                        <input type="text" id="containerImage" name="containerImage"
-                               placeholder="registry.example.com/functions/my-function:latest"
-                               value="registry.example.com/functions/my-function:latest" required>
-                    </div>
-
-                    <div class="form-group">
                         <label for="containerPort">Container Port</label>
                         <input type="number" id="containerPort" name="containerPort"
                                placeholder="8080" value="8080" min="1" max="65535" required>
@@ -122,7 +115,13 @@
                             <span class="panel-title">No Build (Use Existing Image)</span>
                         </label>
                         <div class="panel-body">
-                            <p class="helper-text">Use the container image specified above. No build will be performed.</p>
+                            <div class="form-group">
+                                <label for="containerImage">Container Image</label>
+                                <input type="text" id="containerImage" name="containerImage"
+                                       placeholder="registry.example.com/functions/my-function:latest"
+                                       value="registry.example.com/functions/my-function:latest">
+                                <small class="helper-text">Pre-built container image to deploy</small>
+                            </div>
                         </div>
                     </div>
 
@@ -160,6 +159,13 @@
                                     <option value="dotnet">dotNET</option>
                                 </select>
                                 <small class="helper-text">BuildStrategy to use for building the image</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="shipwrightOutputImage">Output Image</label>
+                                <input type="text" id="shipwrightOutputImage" name="shipwrightOutputImage"
+                                       placeholder="registry.example.com/functions/my-function:latest" value="registry.example.com/functions/my-function:latest">
+                                <small class="helper-text">Container registry location where the built image will be pushed</small>
                             </div>
                         </div>
                     </div>
