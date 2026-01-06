@@ -27,6 +27,10 @@ let functions = [
             hostname: 'example-function.example.com',
             path: '/'
         },
+        eventingEnabled: false,
+        eventingConfig: {
+            enabled: false
+        },
         createdAt: new Date().toISOString()
     }
 ];

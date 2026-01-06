@@ -8,9 +8,23 @@
  * @param {Object} config - Configuration object
  * @param {string} config.name - Function name
  * @param {string} config.namespace - Namespace
+ * @param {Object} config.eventingConfig - Eventing configuration
  * @returns {string} YAML string
  */
 function generateFunctionYAML(config) {
+    const eventingConfig = config.eventingConfig || {};
+
+    let subscriptionsYAML = '';
+    if (eventingConfig.enabled && eventingConfig.broker && eventingConfig.eventTypes && eventingConfig.eventTypes.length > 0) {
+        const eventTypesYAML = eventingConfig.eventTypes.map(type => `      - ${type}`).join('\n');
+        subscriptionsYAML = `    subscriptions:
+      - broker: ${eventingConfig.broker}
+        eventTypes:
+${eventTypesYAML}`;
+    } else {
+        subscriptionsYAML = `    subscriptions: []`;
+    }
+
     return `apiVersion: serverless.openshift.io/v1alpha1
 kind: Function
 metadata:
@@ -18,7 +32,50 @@ metadata:
   namespace: ${config.namespace}
 spec:
   eventing:
-    subscriptions: []`;
+${subscriptionsYAML}`;
+}
+
+/**
+ * Generate Knative Trigger YAML
+ * @param {Object} config - Configuration object
+ * @param {string} config.name - Function name
+ * @param {string} config.namespace - Namespace
+ * @param {Object} config.eventingConfig - Eventing configuration
+ * @returns {string} YAML string
+ */
+function generateTriggerYAML(config) {
+    const eventingConfig = config.eventingConfig || {};
+    const eventTypes = eventingConfig.eventTypes || [];
+
+    // Build filter attributes for event types
+    const filterYAML = eventTypes.length > 0
+        ? `  filter:
+    attributes:
+      type: ${eventTypes.length === 1 ? eventTypes[0] : '[' + eventTypes.join(', ') + ']'}`
+        : '';
+
+    return `apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: ${config.name}-events
+  namespace: ${config.namespace}
+  labels:
+    serverless.openshift.io/function: ${config.name}
+  ownerReferences:
+    - apiVersion: serverless.openshift.io/v1alpha1
+      kind: Function
+      name: ${config.name}
+      uid: <generated-by-apiserver>
+      controller: true
+      blockOwnerDeletion: true
+spec:
+  broker: ${eventingConfig.broker || 'default'}
+${filterYAML}
+  subscriber:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: ${config.name}`;
 }
 
 /**
@@ -541,5 +598,10 @@ const RESOURCE_METADATA = {
         kind: 'BuildConfig',
         apiVersion: 'build.openshift.io/v1',
         description: 'Builds the function container image using OpenShift Source-to-Image (S2I). Automatically detects the source code language and builds a runnable container image.'
+    },
+    trigger: {
+        kind: 'Trigger',
+        apiVersion: 'eventing.knative.dev/v1',
+        description: 'Knative Eventing Trigger that routes CloudEvents matching the specified types from the broker to the function. Created automatically by the Function controller.'
     }
 };
