@@ -314,6 +314,12 @@ document.addEventListener('DOMContentLoaded', function() {
             networkingConfig: networkingConfig
         };
 
+        // If editing, preserve the ID
+        const currentEditing = getCurrentEditingFunction();
+        if (currentEditing && currentEditing.id) {
+            formData.id = currentEditing.id;
+        }
+
         // Validate
         if (!validateForm(formData)) {
             return;
@@ -720,6 +726,13 @@ document.addEventListener('DOMContentLoaded', function() {
         createFunctionBtn.style.display = 'none';
         cancelCreateBtn.style.display = 'none';
 
+        // Set button text based on mode
+        if (mode === 'edit') {
+            createFunctionBtn.textContent = 'Update Function';
+        } else {
+            createFunctionBtn.textContent = 'Create Function';
+        }
+
         // Clear last rendered function
         lastRenderedFunction = null;
     }
@@ -843,10 +856,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     aVal = a.image;
                     bVal = b.image;
                     break;
-                case 'created':
-                    aVal = new Date(a.createdAt);
-                    bVal = new Date(b.createdAt);
-                    break;
                 default:
                     aVal = a.name;
                     bVal = b.name;
@@ -884,9 +893,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                  func.networkingMethod === 'gateway' ? 'Gateway API' :
                                  func.networkingMethod === 'ingress' ? 'Ingress' : 'OpenShift Route';
 
-            const createdDate = new Date(func.createdAt);
-            const createdStr = createdDate.toLocaleDateString() + ' ' + createdDate.toLocaleTimeString();
-
             row.innerHTML = `
                 <td class="checkbox-column">
                     <input type="checkbox" class="function-checkbox" data-id="${func.id}">
@@ -898,7 +904,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${scalingDesc}</td>
                 <td>${networkingDesc}</td>
                 <td><code style="font-size: 0.85em">${func.image}</code></td>
-                <td>${createdStr}</td>
                 <td class="actions-column">
                     <div class="table-actions">
                         <button class="btn-secondary btn-small edit-btn" data-id="${func.id}">Edit</button>
