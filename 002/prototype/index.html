@@ -9,8 +9,15 @@
 <body>
     <header>
         <h1>Serverless Function Platform</h1>
-        <p class="subtitle">Phase 1 & 2: Scaling, Runtime, and Networking - Demonstrating UI as Composition Layer</p>
+        <p class="subtitle">Phase 1-5: Demonstrating UI as Composition Layer for Serverless Functions and Event-Driven Architecture</p>
     </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="main-nav">
+        <button class="nav-tab active" data-view="functions">Functions</button>
+        <button class="nav-tab" data-view="brokers">Brokers</button>
+        <button class="nav-tab" data-view="eventSources">Event Sources</button>
+    </nav>
 
     <!-- Function List View -->
     <div id="listView" class="container">
@@ -806,6 +813,85 @@ awsRegion: us-east-1"></textarea>
                             <button type="submit" id="saveSubscriptionBtn" class="btn-primary">Add Subscription</button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Brokers List View -->
+    <div id="brokersListView" class="container" style="display: none;">
+        <section class="list-panel">
+            <div class="list-header">
+                <h2 id="brokersTitle">Brokers (<span id="brokerCount">0</span>)</h2>
+                <div class="list-header-actions">
+                    <button id="createNewBrokerBtn" class="btn-primary">Create broker</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="functions-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="name">
+                                Broker name
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="namespace">
+                                Namespace
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th>Event Sources</th>
+                            <th>Functions</th>
+                            <th class="actions-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="brokersTableBody">
+                        <!-- Broker rows will be inserted here -->
+                    </tbody>
+                </table>
+                <div id="emptyBrokersState" class="empty-table-state" style="display: none;">
+                    <p>No brokers found. Click "Create broker" to get started.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Sources List View -->
+    <div id="eventSourcesListView" class="container" style="display: none;">
+        <section class="list-panel">
+            <div class="list-header">
+                <h2 id="eventSourcesTitle">Event Sources (<span id="eventSourceCount">0</span>)</h2>
+                <div class="list-header-actions">
+                    <button id="createNewEventSourceBtn" class="btn-primary">Create event source</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="functions-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="name">
+                                Event source name
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="type">
+                                Type
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="broker">
+                                Broker
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th>Event Types</th>
+                            <th class="actions-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventSourcesTableBody">
+                        <!-- Event source rows will be inserted here -->
+                    </tbody>
+                </table>
+                <div id="emptyEventSourcesState" class="empty-table-state" style="display: none;">
+                    <p>No event sources found. Click "Create event source" to get started.</p>
                 </div>
             </div>
         </section>

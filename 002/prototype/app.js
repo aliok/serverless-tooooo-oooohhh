@@ -4,13 +4,18 @@
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', function() {
+    // Navigation tabs
+    const navTabs = document.querySelectorAll('.nav-tab');
+
     // Views
     const listView = document.getElementById('listView');
     const formView = document.getElementById('formView');
     const detailView = document.getElementById('detailView');
     const subscriptionsView = document.getElementById('subscriptionsView');
+    const brokersListView = document.getElementById('brokersListView');
+    const eventSourcesListView = document.getElementById('eventSourcesListView');
 
-    // List elements
+    // List elements - Functions
     const functionsTableBody = document.getElementById('functionsTableBody');
     const emptyTableState = document.getElementById('emptyTableState');
     const functionCountSpan = document.getElementById('functionCount');
@@ -18,6 +23,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectAllCheckbox = document.getElementById('selectAll');
     const createNewBtn = document.getElementById('createNewBtn');
     const backToListBtn = document.getElementById('backToListBtn');
+
+    // List elements - Brokers
+    const brokersTableBody = document.getElementById('brokersTableBody');
+    const emptyBrokersState = document.getElementById('emptyBrokersState');
+    const brokerCountSpan = document.getElementById('brokerCount');
+    const createNewBrokerBtn = document.getElementById('createNewBrokerBtn');
+
+    // List elements - Event Sources
+    const eventSourcesTableBody = document.getElementById('eventSourcesTableBody');
+    const emptyEventSourcesState = document.getElementById('emptyEventSourcesState');
+    const eventSourceCountSpan = document.getElementById('eventSourceCount');
+    const createNewEventSourceBtn = document.getElementById('createNewEventSourceBtn');
 
     // Sorting state
     let currentSort = { column: 'name', direction: 'asc' };
@@ -87,6 +104,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize - show list view
     renderFunctionsList();
+
+    // Navigation tab handlers
+    navTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const view = this.dataset.view;
+
+            // Update active tab
+            navTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+
+            // Show appropriate view
+            if (view === 'functions') {
+                showFunctionsList();
+            } else if (view === 'brokers') {
+                showBrokersList();
+            } else if (view === 'eventSources') {
+                showEventSourcesList();
+            }
+        });
+    });
 
     // Navigation handlers
     createNewBtn.addEventListener('click', function() {
@@ -938,15 +975,50 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * Show list view
+     * Show list view (deprecated - use showFunctionsList instead)
      */
     function showListView() {
+        showFunctionsList();
+    }
+
+    /**
+     * Show functions list view
+     */
+    function showFunctionsList() {
         listView.style.display = 'block';
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        brokersListView.style.display = 'none';
+        eventSourcesListView.style.display = 'none';
         renderFunctionsList();
         resetForm();
+    }
+
+    /**
+     * Show brokers list view
+     */
+    function showBrokersList() {
+        listView.style.display = 'none';
+        formView.style.display = 'none';
+        detailView.style.display = 'none';
+        subscriptionsView.style.display = 'none';
+        brokersListView.style.display = 'block';
+        eventSourcesListView.style.display = 'none';
+        renderBrokersList();
+    }
+
+    /**
+     * Show event sources list view
+     */
+    function showEventSourcesList() {
+        listView.style.display = 'none';
+        formView.style.display = 'none';
+        detailView.style.display = 'none';
+        subscriptionsView.style.display = 'none';
+        brokersListView.style.display = 'none';
+        eventSourcesListView.style.display = 'block';
+        renderEventSourcesList();
     }
 
     /**
@@ -1212,6 +1284,128 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Reset select all checkbox
         selectAllCheckbox.checked = false;
+    }
+
+    /**
+     * Render brokers list
+     */
+    function renderBrokersList() {
+        const brokers = getBrokers();
+
+        // Update broker count
+        brokerCountSpan.textContent = brokers.length;
+
+        // Clear table
+        brokersTableBody.innerHTML = '';
+
+        // Show/hide empty state
+        if (brokers.length === 0) {
+            emptyBrokersState.style.display = 'block';
+            return;
+        } else {
+            emptyBrokersState.style.display = 'none';
+        }
+
+        // Render rows
+        brokers.forEach(broker => {
+            const row = document.createElement('tr');
+
+            // Count event sources and functions using this broker
+            const eventSourcesCount = getEventSources().filter(es => es.broker === broker.name).length;
+            const functionsCount = getFunctions().filter(f =>
+                f.eventSubscriptions && f.eventSubscriptions.some(sub => sub.broker === broker.name)
+            ).length;
+
+            row.innerHTML = `
+                <td>
+                    <a href="#" class="broker-name-link" data-id="${broker.id}">${broker.name}</a>
+                </td>
+                <td>${broker.namespace}</td>
+                <td>${eventSourcesCount}</td>
+                <td>${functionsCount}</td>
+                <td class="actions-column">
+                    <div class="table-actions">
+                        <button class="btn-secondary btn-small edit-broker-btn" data-id="${broker.id}">Edit</button>
+                        <button class="btn-danger btn-small delete-broker-btn" data-id="${broker.id}">Delete</button>
+                    </div>
+                </td>
+            `;
+
+            brokersTableBody.appendChild(row);
+        });
+
+        // Add event listeners for edit/delete buttons
+        document.querySelectorAll('.delete-broker-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const broker = getBroker(this.dataset.id);
+                if (confirm(`Are you sure you want to delete broker "${broker.name}"?`)) {
+                    deleteBroker(broker.id);
+                    renderBrokersList();
+                }
+            });
+        });
+    }
+
+    /**
+     * Render event sources list
+     */
+    function renderEventSourcesList() {
+        const eventSources = getEventSources();
+
+        // Update event source count
+        eventSourceCountSpan.textContent = eventSources.length;
+
+        // Clear table
+        eventSourcesTableBody.innerHTML = '';
+
+        // Show/hide empty state
+        if (eventSources.length === 0) {
+            emptyEventSourcesState.style.display = 'block';
+            return;
+        } else {
+            emptyEventSourcesState.style.display = 'none';
+        }
+
+        // Render rows
+        eventSources.forEach(eventSource => {
+            const row = document.createElement('tr');
+
+            // Format event types
+            const eventTypesStr = eventSource.eventTypes.join(', ');
+
+            // Get type display name
+            const typeDisplayName = eventSource.type.charAt(0).toUpperCase() + eventSource.type.slice(1);
+
+            row.innerHTML = `
+                <td>
+                    <a href="#" class="event-source-name-link" data-id="${eventSource.id}">${eventSource.name}</a>
+                </td>
+                <td>${typeDisplayName}</td>
+                <td>${eventSource.broker}</td>
+                <td><code style="font-size: 0.85em">${eventTypesStr}</code></td>
+                <td class="actions-column">
+                    <div class="table-actions">
+                        <button class="btn-secondary btn-small edit-event-source-btn" data-id="${eventSource.id}">Edit</button>
+                        <button class="btn-danger btn-small delete-event-source-btn" data-id="${eventSource.id}">Delete</button>
+                    </div>
+                </td>
+            `;
+
+            eventSourcesTableBody.appendChild(row);
+        });
+
+        // Add event listeners for edit/delete buttons
+        document.querySelectorAll('.delete-event-source-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const eventSource = getEventSource(this.dataset.id);
+                if (confirm(`Are you sure you want to delete event source "${eventSource.name}"?`)) {
+                    deleteEventSource(eventSource.id);
+                    renderEventSourcesList();
+                }
+            });
+        });
     }
 
     /**
