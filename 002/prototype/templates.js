@@ -18,12 +18,7 @@ metadata:
   namespace: ${config.namespace}
 spec:
   eventing:
-    subscriptions: []
-    sink:
-      ref:
-        apiVersion: v1
-        kind: Service
-        name: ${config.name}`;
+    subscriptions: []`;
 }
 
 /**
@@ -43,6 +38,13 @@ metadata:
   namespace: ${config.namespace}
   labels:
     serverless.openshift.io/function: ${config.name}
+  ownerReferences:
+    - apiVersion: serverless.openshift.io/v1alpha1
+      kind: Function
+      name: ${config.name}
+      uid: <generated-by-apiserver>
+      controller: false
+      blockOwnerDeletion: true
 spec:
   replicas: 0
   selector:
@@ -76,6 +78,13 @@ metadata:
   namespace: ${config.namespace}
   labels:
     serverless.openshift.io/function: ${config.name}
+  ownerReferences:
+    - apiVersion: serverless.openshift.io/v1alpha1
+      kind: Function
+      name: ${config.name}
+      uid: <generated-by-apiserver>
+      controller: false
+      blockOwnerDeletion: true
 spec:
   selector:
     app: ${config.name}
@@ -91,6 +100,7 @@ spec:
  * @param {string} config.namespace - Namespace
  * @param {string} config.scalingMetric - Metric type: 'concurrency' or 'requestRate'
  * @param {Object} config.metricConfig - Metric-specific configuration
+ * @param {Object} config.networkingConfig - Networking configuration
  * @returns {string} YAML string
  */
 function generateHTTPScaledObjectYAML(config) {
@@ -108,6 +118,20 @@ function generateHTTPScaledObjectYAML(config) {
       granularity: ${config.metricConfig.granularity}`;
     }
 
+    // Include hosts if networking is configured with a hostname
+    let hostsYAML = '';
+    if (config.networkingConfig && config.networkingConfig.hostname) {
+        hostsYAML = `  hosts:
+    - ${config.networkingConfig.hostname}`;
+    }
+
+    // Include pathPrefixes if networking is configured with a path other than /
+    let pathPrefixesYAML = '';
+    if (config.networkingConfig && config.networkingConfig.path && config.networkingConfig.path !== '/') {
+        pathPrefixesYAML = `  pathPrefixes:
+    - ${config.networkingConfig.path}`;
+    }
+
     return `apiVersion: http.keda.sh/v1alpha1
 kind: HTTPScaledObject
 metadata:
@@ -115,7 +139,16 @@ metadata:
   namespace: ${config.namespace}
   labels:
     serverless.openshift.io/function: ${config.name}
+  ownerReferences:
+    - apiVersion: serverless.openshift.io/v1alpha1
+      kind: Function
+      name: ${config.name}
+      uid: <generated-by-apiserver>
+      controller: false
+      blockOwnerDeletion: true
 spec:
+${hostsYAML}
+${pathPrefixesYAML}
   scaleTargetRef:
     name: ${config.name}
     kind: Deployment
@@ -206,6 +239,13 @@ metadata:
   namespace: ${config.namespace}
   labels:
     serverless.openshift.io/function: ${config.name}
+  ownerReferences:
+    - apiVersion: serverless.openshift.io/v1alpha1
+      kind: Function
+      name: ${config.name}
+      uid: <generated-by-apiserver>
+      controller: false
+      blockOwnerDeletion: true
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -242,6 +282,13 @@ metadata:
   namespace: ${config.namespace}
   labels:
     serverless.openshift.io/function: ${config.name}
+  ownerReferences:
+    - apiVersion: serverless.openshift.io/v1alpha1
+      kind: Function
+      name: ${config.name}
+      uid: <generated-by-apiserver>
+      controller: false
+      blockOwnerDeletion: true
 spec:
   parentRefs:
     - name: ${nc.gatewayName}
@@ -287,6 +334,13 @@ metadata:
   namespace: ${config.namespace}
   labels:
     serverless.openshift.io/function: ${config.name}
+  ownerReferences:
+    - apiVersion: serverless.openshift.io/v1alpha1
+      kind: Function
+      name: ${config.name}
+      uid: <generated-by-apiserver>
+      controller: false
+      blockOwnerDeletion: true
 spec:
 ${ingressClassYAML}
 ${tlsYAML}
@@ -333,6 +387,13 @@ metadata:
   namespace: ${config.namespace}
   labels:
     serverless.openshift.io/function: ${config.name}
+  ownerReferences:
+    - apiVersion: serverless.openshift.io/v1alpha1
+      kind: Function
+      name: ${config.name}
+      uid: <generated-by-apiserver>
+      controller: false
+      blockOwnerDeletion: true
 spec:
 ${hostYAML}
   path: ${nc.path}
@@ -352,7 +413,7 @@ const RESOURCE_METADATA = {
     function: {
         kind: 'Function',
         apiVersion: 'serverless.openshift.io/v1alpha1',
-        description: 'The semantic anchor for the function. Defines eventing subscriptions and sink reference. This is the only resource users directly interact with in the conceptual model.'
+        description: 'The semantic anchor for the function. Defines eventing subscriptions (currently empty). This is the only resource users directly interact with in the conceptual model. All other resources are owned by this Function CR.'
     },
     deployment: {
         kind: 'Deployment',
