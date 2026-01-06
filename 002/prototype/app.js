@@ -63,6 +63,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const editFunctionBtn = document.getElementById('editFunctionBtn');
     const manageSubscriptionsBtn = document.getElementById('manageSubscriptionsBtn');
     const subscriptionsSummaryText = document.getElementById('subscriptionsSummaryText');
+    const showResourcesBtn = document.getElementById('showResourcesBtn');
+    const detailPlatformView = document.getElementById('detailPlatformView');
+    const detailResourceCount = document.getElementById('detailResourceCount');
+    const detailPlatformDescription = document.getElementById('detailPlatformDescription');
+    const detailResourceCards = document.getElementById('detailResourceCards');
 
     // Subscriptions view elements
     const backToDetailFromSubscriptionsBtn = document.getElementById('backToDetailFromSubscriptionsBtn');
@@ -119,6 +124,21 @@ document.addEventListener('DOMContentLoaded', function() {
     manageSubscriptionsBtn.addEventListener('click', function() {
         if (currentDetailFunction) {
             showSubscriptionsView(currentDetailFunction);
+        }
+    });
+
+    showResourcesBtn.addEventListener('click', function() {
+        if (currentDetailFunction) {
+            if (detailPlatformView.style.display === 'none') {
+                // Show and render resources
+                renderDetailResources(currentDetailFunction);
+                detailPlatformView.style.display = 'block';
+                showResourcesBtn.textContent = 'Hide Resources';
+            } else {
+                // Hide resources
+                detailPlatformView.style.display = 'none';
+                showResourcesBtn.textContent = 'Show Resources';
+            }
         }
     });
 
@@ -1242,6 +1262,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         currentDetailFunction = functionData;
         renderDetailView(functionData);
+
+        // Reset resources section
+        detailPlatformView.style.display = 'none';
+        showResourcesBtn.textContent = 'Show Resources';
     }
 
     /**
@@ -1298,6 +1322,113 @@ document.addEventListener('DOMContentLoaded', function() {
             const types = functionData.eventSubscriptions.map(s => s.eventType).join(', ');
             subscriptionsSummaryText.textContent = `${count} subscription${count > 1 ? 's' : ''}: ${types}`;
         }
+    }
+
+    /**
+     * Render resources for detail view
+     */
+    function renderDetailResources(config) {
+        // Generate resources
+        const resources = [
+            {
+                type: 'function',
+                name: config.name,
+                yaml: generateFunctionYAML(config),
+                metadata: RESOURCE_METADATA.function
+            }
+        ];
+
+        // Add build resource based on selected method
+        if (config.buildMethod === 'shipwright') {
+            resources.push({
+                type: 'shipwrightBuild',
+                name: `${config.name}-build`,
+                yaml: generateShipwrightBuildYAML(config),
+                metadata: RESOURCE_METADATA.shipwrightBuild
+            });
+        } else if (config.buildMethod === 's2i') {
+            resources.push({
+                type: 's2iBuildConfig',
+                name: `${config.name}-build`,
+                yaml: generateS2IBuildConfigYAML(config),
+                metadata: RESOURCE_METADATA.s2iBuildConfig
+            });
+        }
+
+        // Add runtime resources
+        resources.push(
+            {
+                type: 'deployment',
+                name: config.name,
+                yaml: generateDeploymentYAML(config),
+                metadata: RESOURCE_METADATA.deployment
+            },
+            {
+                type: 'service',
+                name: config.name,
+                yaml: generateServiceYAML(config),
+                metadata: RESOURCE_METADATA.service
+            }
+        );
+
+        // Add scaling resource based on selected metric
+        if (config.scalingMetric === 'concurrency' || config.scalingMetric === 'requestRate') {
+            resources.push({
+                type: 'httpScaledObject',
+                name: `${config.name}-http`,
+                yaml: generateHTTPScaledObjectYAML(config),
+                metadata: RESOURCE_METADATA.httpScaledObject
+            });
+        } else if (config.scalingMetric === 'scaledObject') {
+            resources.push({
+                type: 'scaledObject',
+                name: `${config.name}-scaledobject`,
+                yaml: generateScaledObjectYAML(config),
+                metadata: RESOURCE_METADATA.scaledObject
+            });
+        }
+
+        // Add networking resource based on selected method
+        if (config.networkingMethod === 'gateway') {
+            resources.push({
+                type: 'httpRoute',
+                name: config.name,
+                yaml: generateHTTPRouteYAML(config),
+                metadata: RESOURCE_METADATA.httpRoute
+            });
+        } else if (config.networkingMethod === 'ingress') {
+            resources.push({
+                type: 'ingress',
+                name: config.name,
+                yaml: generateIngressYAML(config),
+                metadata: RESOURCE_METADATA.ingress
+            });
+        } else if (config.networkingMethod === 'route') {
+            resources.push({
+                type: 'route',
+                name: config.name,
+                yaml: generateRouteYAML(config),
+                metadata: RESOURCE_METADATA.route
+            });
+        }
+
+        // Update platform description with resource count
+        detailResourceCount.textContent = resources.length;
+        const buildPart = config.buildMethod !== 'none' ? `build (${config.buildMethod === 'shipwright' ? 'Shipwright' : 'S2I BuildConfig'}), ` : '';
+        const networkingPart = config.networkingMethod !== 'none' ? 'and networking (HTTPRoute/Ingress/Route)' : 'without external networking';
+        detailPlatformDescription.innerHTML = `
+            The UI composed <strong>${resources.length}</strong> Kubernetes resources from your function configuration.
+            <br>
+            You created one Function CR, but the platform composed multiple resources: ${buildPart}runtime (Deployment, Service),
+            scaling (KEDA), ${networkingPart}.
+        `;
+
+        // Render resource cards in detail view
+        detailResourceCards.innerHTML = '';
+        resources.forEach((resource, index) => {
+            const card = createResourceCard(resource, config.name, index);
+            detailResourceCards.appendChild(card);
+        });
     }
 
     /**

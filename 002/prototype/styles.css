@@ -927,6 +927,25 @@ footer a:hover {
     border-radius: 4px;
 }
 
+/* Detail Resources Section */
+.detail-resources-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.detail-resources-section .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.detail-resources-section h3 {
+    margin: 0;
+    color: #1a1a1a;
+}
+
 .subtitle {
     color: #666;
     font-size: 0.9rem;

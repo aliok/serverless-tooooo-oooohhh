@@ -713,6 +713,24 @@ awsRegion: us-east-1"></textarea>
                     <p id="subscriptionsSummaryText">No event subscriptions configured.</p>
                 </div>
             </div>
+
+            <div class="detail-resources-section">
+                <div class="section-header">
+                    <h3>Composed Resources</h3>
+                    <button id="showResourcesBtn" class="btn-secondary">Show Resources</button>
+                </div>
+
+                <!-- Platform View Section (hidden by default) -->
+                <div id="detailPlatformView" class="platform-view" style="display: none;">
+                    <p id="detailPlatformDescription" class="platform-description">
+                        The UI composed <strong id="detailResourceCount">0</strong> Kubernetes resources from your function configuration.
+                    </p>
+
+                    <div id="detailResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
         </section>
     </div>
 
