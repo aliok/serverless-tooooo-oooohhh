@@ -36,49 +36,6 @@ ${subscriptionsYAML}`;
 }
 
 /**
- * Generate Knative Trigger YAML
- * @param {Object} config - Configuration object
- * @param {string} config.name - Function name
- * @param {string} config.namespace - Namespace
- * @param {Object} config.eventingConfig - Eventing configuration
- * @returns {string} YAML string
- */
-function generateTriggerYAML(config) {
-    const eventingConfig = config.eventingConfig || {};
-    const eventTypes = eventingConfig.eventTypes || [];
-
-    // Build filter attributes for event types
-    const filterYAML = eventTypes.length > 0
-        ? `  filter:
-    attributes:
-      type: ${eventTypes.length === 1 ? eventTypes[0] : '[' + eventTypes.join(', ') + ']'}`
-        : '';
-
-    return `apiVersion: eventing.knative.dev/v1
-kind: Trigger
-metadata:
-  name: ${config.name}-events
-  namespace: ${config.namespace}
-  labels:
-    serverless.openshift.io/function: ${config.name}
-  ownerReferences:
-    - apiVersion: serverless.openshift.io/v1alpha1
-      kind: Function
-      name: ${config.name}
-      uid: <generated-by-apiserver>
-      controller: true
-      blockOwnerDeletion: true
-spec:
-  broker: ${eventingConfig.broker || 'default'}
-${filterYAML}
-  subscriber:
-    ref:
-      apiVersion: v1
-      kind: Service
-      name: ${config.name}`;
-}
-
-/**
  * Generate Shipwright Build YAML
  * @param {Object} config - Configuration object
  * @param {string} config.name - Function name
@@ -552,7 +509,7 @@ const RESOURCE_METADATA = {
     function: {
         kind: 'Function',
         apiVersion: 'serverless.openshift.io/v1alpha1',
-        description: 'The semantic anchor for the function. Defines eventing subscriptions (currently empty). This is the only resource users directly interact with in the conceptual model. All other resources are owned by this Function CR.'
+        description: 'The semantic anchor for the function. Declares event subscriptions - the Function controller will create Knative Triggers to route CloudEvents. This is the only resource users directly interact with in the conceptual model. All other resources are owned by this Function CR.'
     },
     deployment: {
         kind: 'Deployment',
@@ -598,10 +555,5 @@ const RESOURCE_METADATA = {
         kind: 'BuildConfig',
         apiVersion: 'build.openshift.io/v1',
         description: 'Builds the function container image using OpenShift Source-to-Image (S2I). Automatically detects the source code language and builds a runnable container image.'
-    },
-    trigger: {
-        kind: 'Trigger',
-        apiVersion: 'eventing.knative.dev/v1',
-        description: 'Knative Eventing Trigger that routes CloudEvents matching the specified types from the broker to the function. Created automatically by the Function controller.'
     }
 };

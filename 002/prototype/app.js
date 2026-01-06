@@ -622,7 +622,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let eventingDescription = '';
         if (config.eventingEnabled && config.eventingConfig.eventTypes && config.eventingConfig.eventTypes.length > 0) {
             const eventTypesList = config.eventingConfig.eventTypes.map(t => `<strong>${t}</strong>`).join(', ');
-            eventingDescription = `<br><br>The function is subscribed to CloudEvents from the <strong>${config.eventingConfig.broker}</strong> broker, listening for event types: ${eventTypesList}.`;
+            eventingDescription = `<br><br>The function will receive CloudEvents from the <strong>${config.eventingConfig.broker}</strong> broker for event types: ${eventTypesList}. The Function controller will automatically create a Knative Trigger to route these events.`;
         }
 
         userMessage.innerHTML = `
@@ -724,26 +724,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Add eventing resource (Trigger) if eventing is enabled
-        if (config.eventingEnabled && config.eventingConfig.eventTypes && config.eventingConfig.eventTypes.length > 0) {
-            resources.push({
-                type: 'trigger',
-                name: `${config.name}-events`,
-                yaml: generateTriggerYAML(config),
-                metadata: RESOURCE_METADATA.trigger
-            });
-        }
-
         // Update platform description with resource count
         resourceCount.textContent = resources.length;
         const buildPart = config.buildMethod !== 'none' ? `build (${config.buildMethod === 'shipwright' ? 'Shipwright' : 'S2I BuildConfig'}), ` : '';
-        const networkingPart = config.networkingMethod !== 'none' ? 'networking (HTTPRoute/Ingress/Route), ' : '';
-        const eventingPart = config.eventingEnabled ? 'and eventing (Knative Trigger)' : 'without eventing';
+        const networkingPart = config.networkingMethod !== 'none' ? 'and networking (HTTPRoute/Ingress/Route)' : 'without external networking';
+        const eventingNote = config.eventingEnabled ?
+            '<br><br><em>Note: The Function controller will create a Knative Trigger to route events from the broker to your function.</em>' : '';
         platformDescription.innerHTML = `
             The UI composed <strong>${resources.length}</strong> Kubernetes resources from your simple form input.
             <br>
             You created one Function CR, but the platform composed multiple resources: ${buildPart}runtime (Deployment, Service),
-            scaling (KEDA), ${networkingPart}${eventingPart}.
+            scaling (KEDA), ${networkingPart}.${eventingNote}
         `;
 
         // Render resource cards
