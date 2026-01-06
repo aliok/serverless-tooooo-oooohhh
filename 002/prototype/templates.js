@@ -8,19 +8,30 @@
  * @param {Object} config - Configuration object
  * @param {string} config.name - Function name
  * @param {string} config.namespace - Namespace
- * @param {Object} config.eventingConfig - Eventing configuration
+ * @param {Array} config.eventSubscriptions - Array of event subscriptions
  * @returns {string} YAML string
  */
 function generateFunctionYAML(config) {
-    const eventingConfig = config.eventingConfig || {};
+    const eventSubscriptions = config.eventSubscriptions || [];
 
     let subscriptionsYAML = '';
-    if (eventingConfig.enabled && eventingConfig.broker && eventingConfig.eventTypes && eventingConfig.eventTypes.length > 0) {
-        const eventTypesYAML = eventingConfig.eventTypes.map(type => `      - ${type}`).join('\n');
-        subscriptionsYAML = `    subscriptions:
-      - broker: ${eventingConfig.broker}
-        eventTypes:
-${eventTypesYAML}`;
+    if (eventSubscriptions.length > 0) {
+        // Group subscriptions by broker and aggregate event types
+        const brokerMap = {};
+        eventSubscriptions.forEach(sub => {
+            if (!brokerMap[sub.broker]) {
+                brokerMap[sub.broker] = [];
+            }
+            brokerMap[sub.broker].push(sub.eventType);
+        });
+
+        // Generate YAML for each broker
+        const subscriptionEntries = Object.entries(brokerMap).map(([broker, eventTypes]) => {
+            const eventTypesYAML = eventTypes.map(type => `        - ${type}`).join('\n');
+            return `      - broker: ${broker}\n        eventTypes:\n${eventTypesYAML}`;
+        }).join('\n');
+
+        subscriptionsYAML = `    subscriptions:\n${subscriptionEntries}`;
     } else {
         subscriptionsYAML = `    subscriptions: []`;
     }

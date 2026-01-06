@@ -725,3 +725,165 @@ footer a:hover {
 .create-actions button {
     min-width: 200px;
 }
+
+/* Detail View */
+.detail-panel {
+    padding: 2rem;
+}
+
+.detail-header {
+    margin-bottom: 2rem;
+}
+
+.detail-header h2 {
+    margin: 1rem 0;
+    color: #1a1a1a;
+}
+
+.function-overview {
+    background: #f5f5f5;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.function-overview h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #1a1a1a;
+}
+
+.overview-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.info-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.info-label {
+    font-weight: 600;
+    min-width: 100px;
+}
+
+/* Event Subscriptions Section */
+.event-subscriptions-section {
+    margin-top: 2rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.section-header h3 {
+    margin: 0;
+    color: #1a1a1a;
+}
+
+.subscriptions-list {
+    min-height: 100px;
+}
+
+.empty-subscriptions {
+    padding: 2rem;
+    text-align: center;
+    background: #fafafa;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    color: #666;
+}
+
+.subscription-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.subscription-info {
+    flex: 1;
+}
+
+.subscription-broker {
+    margin-bottom: 0.5rem;
+}
+
+.subscription-event-type code {
+    background: #f5f5f5;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+/* Dialog */
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.dialog {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.dialog-header h3 {
+    margin: 0;
+    color: #1a1a1a;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+}
+
+.close-btn:hover {
+    color: #000;
+}
+
+.dialog-body {
+    padding: 1.5rem;
+}
+
+.dialog-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}

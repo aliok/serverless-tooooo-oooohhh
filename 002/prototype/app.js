@@ -90,11 +90,19 @@ document.addEventListener('DOMContentLoaded', function() {
         showListView();
     });
 
+    backToListFromDetailBtn.addEventListener('click', function() {
+        showListView();
+    });
+
     // Create function button handler (after rendering)
     createFunctionBtn.addEventListener('click', function() {
         if (lastRenderedFunction) {
+            // Initialize eventSubscriptions if not present
+            if (!lastRenderedFunction.eventSubscriptions) {
+                lastRenderedFunction.eventSubscriptions = [];
+            }
             saveFunction(lastRenderedFunction);
-            showListView();
+            showDetailView(lastRenderedFunction);
         }
     });
 
@@ -243,6 +251,68 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             ingressTLSFields.style.display = 'none';
         }
+    });
+
+    // Handle event subscription dialog
+    addSubscriptionBtn.addEventListener('click', function() {
+        openSubscriptionDialog();
+    });
+
+    closeDialogBtn.addEventListener('click', function() {
+        closeSubscriptionDialog();
+    });
+
+    cancelSubscriptionBtn.addEventListener('click', function() {
+        closeSubscriptionDialog();
+    });
+
+    // Handle event type dropdown change
+    subscriptionEventType.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customEventTypeField.style.display = 'block';
+        } else {
+            customEventTypeField.style.display = 'none';
+        }
+    });
+
+    // Handle save subscription
+    saveSubscriptionBtn.addEventListener('click', function() {
+        const broker = document.getElementById('subscriptionBroker').value.trim();
+        let eventType = subscriptionEventType.value;
+
+        if (eventType === 'custom') {
+            eventType = document.getElementById('customEventType').value.trim();
+        }
+
+        if (!broker || !eventType || eventType === '') {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        // Check if this subscription already exists
+        const existing = currentDetailFunction.eventSubscriptions.find(
+            sub => sub.broker === broker && sub.eventType === eventType
+        );
+
+        if (existing) {
+            alert('This event subscription already exists');
+            return;
+        }
+
+        // Add subscription
+        currentDetailFunction.eventSubscriptions.push({
+            broker: broker,
+            eventType: eventType
+        });
+
+        // Save to state
+        saveFunction(currentDetailFunction);
+
+        // Refresh detail view
+        renderDetailView(currentDetailFunction);
+
+        // Close dialog
+        closeSubscriptionDialog();
     });
 
     // Handle form submission
@@ -1102,5 +1172,117 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Reset select all checkbox
         selectAllCheckbox.checked = false;
+    }
+
+    /**
+     * Show detail view for a function
+     */
+    function showDetailView(functionData) {
+        listView.style.display = 'none';
+        formView.style.display = 'none';
+        detailView.style.display = 'block';
+
+        currentDetailFunction = functionData;
+        renderDetailView(functionData);
+    }
+
+    /**
+     * Render detail view content
+     */
+    function renderDetailView(functionData) {
+        detailFunctionName.textContent = functionData.name;
+        detailNamespace.textContent = functionData.namespace;
+        detailImage.textContent = functionData.image;
+
+        // Scaling description
+        let scalingDesc = '';
+        if (functionData.scalingMetric === 'concurrency') {
+            scalingDesc = 'HTTP Concurrency';
+        } else if (functionData.scalingMetric === 'requestRate') {
+            scalingDesc = 'HTTP Request Rate';
+        } else if (functionData.scalingMetric === 'scaledObject') {
+            scalingDesc = 'KEDA Triggers';
+        }
+        detailScaling.textContent = scalingDesc;
+
+        // Networking description
+        let networkingDesc = '';
+        if (functionData.networkingMethod === 'none') {
+            networkingDesc = 'No external access';
+        } else if (functionData.networkingMethod === 'gateway') {
+            networkingDesc = 'Gateway API';
+        } else if (functionData.networkingMethod === 'ingress') {
+            networkingDesc = 'Ingress';
+        } else if (functionData.networkingMethod === 'route') {
+            networkingDesc = 'OpenShift Route';
+        }
+        detailNetworking.textContent = networkingDesc;
+
+        // Render event subscriptions
+        renderEventSubscriptions(functionData);
+    }
+
+    /**
+     * Render event subscriptions list
+     */
+    function renderEventSubscriptions(functionData) {
+        subscriptionsList.innerHTML = '';
+
+        if (!functionData.eventSubscriptions || functionData.eventSubscriptions.length === 0) {
+            subscriptionsList.innerHTML = '<div id="emptySubscriptions" class="empty-subscriptions"><p>No event subscriptions configured. Click "Add event subscription" to subscribe to CloudEvents from a Knative Broker.</p></div>';
+            return;
+        }
+
+        functionData.eventSubscriptions.forEach((sub, index) => {
+            const subCard = document.createElement('div');
+            subCard.className = 'subscription-card';
+            subCard.innerHTML = `
+                <div class="subscription-info">
+                    <div class="subscription-broker">Broker: <strong>${sub.broker}</strong></div>
+                    <div class="subscription-event-type">Event Type: <code>${sub.eventType}</code></div>
+                </div>
+                <button class="btn-danger btn-small remove-subscription-btn" data-index="${index}">Remove</button>
+            `;
+            subscriptionsList.appendChild(subCard);
+        });
+
+        // Add remove handlers
+        document.querySelectorAll('.remove-subscription-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.dataset.index);
+                removeSubscription(index);
+            });
+        });
+    }
+
+    /**
+     * Remove event subscription
+     */
+    function removeSubscription(index) {
+        if (confirm('Are you sure you want to remove this event subscription?')) {
+            currentDetailFunction.eventSubscriptions.splice(index, 1);
+            saveFunction(currentDetailFunction);
+            renderDetailView(currentDetailFunction);
+        }
+    }
+
+    /**
+     * Open subscription dialog
+     */
+    function openSubscriptionDialog() {
+        // Reset form
+        document.getElementById('subscriptionBroker').value = 'default';
+        subscriptionEventType.value = '';
+        customEventTypeField.style.display = 'none';
+        document.getElementById('customEventType').value = '';
+
+        addSubscriptionDialog.style.display = 'flex';
+    }
+
+    /**
+     * Close subscription dialog
+     */
+    function closeSubscriptionDialog() {
+        addSubscriptionDialog.style.display = 'none';
     }
 });
