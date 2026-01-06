@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const formTitle = document.getElementById('formTitle');
     const userView = document.getElementById('userView');
     const platformView = document.getElementById('platformView');
-    const emptyState = document.getElementById('emptyState');
     const userMessage = document.getElementById('userMessage');
     const resourceCards = document.getElementById('resourceCards');
     const resourceCount = document.getElementById('resourceCount');
@@ -692,9 +691,6 @@ document.addEventListener('DOMContentLoaded', function() {
      * Generate and display all resources
      */
     function generateAndDisplayResources(config) {
-        // Hide empty state
-        emptyState.style.display = 'none';
-
         // Show user view
         userView.style.display = 'block';
 
@@ -1009,15 +1005,6 @@ document.addEventListener('DOMContentLoaded', function() {
             loadFunctionIntoForm(getCurrentEditingFunction());
         }
 
-        // Hide results initially
-        userView.style.display = 'none';
-        platformView.style.display = 'none';
-        emptyState.style.display = 'block';
-
-        // Hide create/cancel buttons
-        createFunctionBtn.style.display = 'none';
-        cancelCreateBtn.style.display = 'none';
-
         // Set button text based on mode
         if (mode === 'edit') {
             createFunctionBtn.textContent = 'Update Function';
@@ -1025,8 +1012,10 @@ document.addEventListener('DOMContentLoaded', function() {
             createFunctionBtn.textContent = 'Create Function';
         }
 
-        // Clear last rendered function
-        lastRenderedFunction = null;
+        // Trigger initial resource preview after a short delay to let form populate
+        setTimeout(() => {
+            updateResourcePreview();
+        }, 100);
     }
 
     /**

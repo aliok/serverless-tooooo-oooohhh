@@ -627,14 +627,13 @@ awsRegion: us-east-1"></textarea>
 
                 <div class="form-actions">
                     <button type="button" id="createFunctionDirectBtn" class="btn-primary">Create Function</button>
-                    <button type="submit" class="btn-secondary">Preview Resources</button>
                 </div>
             </form>
 
-            <!-- Resources Preview (optional) -->
+            <!-- Resources Preview -->
             <div class="resources-preview" style="margin-top: 2rem;">
-                <h2>Resource Preview <span style="font-size: 0.9rem; color: #666; font-weight: normal;">(optional)</span></h2>
-                <p class="panel-description">See how the UI composes multiple Kubernetes resources</p>
+                <h2>Composed Resources</h2>
+                <p class="panel-description">Live preview of Kubernetes resources that will be created</p>
 
                 <!-- User View Section -->
                 <div id="userView" class="user-view" style="display: none;">
@@ -660,11 +659,6 @@ awsRegion: us-east-1"></textarea>
                         <button id="createFunctionBtn" class="btn-primary" style="display: none;">Create Function</button>
                         <button id="cancelCreateBtn" class="btn-secondary" style="display: none;">Cancel</button>
                     </div>
-                </div>
-
-                <!-- Initial empty state -->
-                <div id="emptyState" class="empty-state">
-                    <p>Click "Preview Resources" to see the Kubernetes resources that will be created.</p>
                 </div>
             </div>
         </section>
