@@ -9,9 +9,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const formView = document.getElementById('formView');
 
     // List elements
-    const functionsList = document.getElementById('functionsList');
+    const functionsTableBody = document.getElementById('functionsTableBody');
+    const emptyTableState = document.getElementById('emptyTableState');
+    const functionCountSpan = document.getElementById('functionCount');
+    const searchInput = document.getElementById('searchInput');
+    const selectAllCheckbox = document.getElementById('selectAll');
     const createNewBtn = document.getElementById('createNewBtn');
     const backToListBtn = document.getElementById('backToListBtn');
+
+    // Sorting state
+    let currentSort = { column: 'name', direction: 'asc' };
+    let searchQuery = '';
 
     // Form elements
     const form = document.getElementById('functionForm');
@@ -47,6 +55,44 @@ document.addEventListener('DOMContentLoaded', function() {
 
     backToListBtn.addEventListener('click', function() {
         showListView();
+    });
+
+    // Search handler
+    searchInput.addEventListener('input', function() {
+        searchQuery = this.value.toLowerCase();
+        renderFunctionsList();
+    });
+
+    // Select all checkbox handler
+    selectAllCheckbox.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.function-checkbox');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+
+    // Sorting handlers
+    document.querySelectorAll('.sortable').forEach(header => {
+        header.addEventListener('click', function() {
+            const column = this.dataset.sort;
+
+            // Toggle direction if same column, otherwise default to asc
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+
+            // Update UI
+            document.querySelectorAll('.sortable').forEach(h => {
+                h.classList.remove('active', 'desc');
+            });
+            this.classList.add('active');
+            if (currentSort.direction === 'desc') {
+                this.classList.add('desc');
+            }
+
+            renderFunctionsList();
+        });
     });
 
     // Handle scaling metric radio button change
@@ -733,15 +779,75 @@ document.addEventListener('DOMContentLoaded', function() {
      * Render functions list
      */
     function renderFunctionsList() {
-        const functions = getFunctions();
-        functionsList.innerHTML = '';
+        let functions = getFunctions();
 
+        // Apply search filter
+        if (searchQuery) {
+            functions = functions.filter(func =>
+                func.name.toLowerCase().includes(searchQuery) ||
+                func.namespace.toLowerCase().includes(searchQuery)
+            );
+        }
+
+        // Apply sorting
+        functions.sort((a, b) => {
+            let aVal, bVal;
+
+            switch (currentSort.column) {
+                case 'name':
+                    aVal = a.name;
+                    bVal = b.name;
+                    break;
+                case 'namespace':
+                    aVal = a.namespace;
+                    bVal = b.namespace;
+                    break;
+                case 'scaling':
+                    aVal = a.scalingMetric;
+                    bVal = b.scalingMetric;
+                    break;
+                case 'networking':
+                    aVal = a.networkingMethod;
+                    bVal = b.networkingMethod;
+                    break;
+                case 'image':
+                    aVal = a.image;
+                    bVal = b.image;
+                    break;
+                case 'created':
+                    aVal = new Date(a.createdAt);
+                    bVal = new Date(b.createdAt);
+                    break;
+                default:
+                    aVal = a.name;
+                    bVal = b.name;
+            }
+
+            if (currentSort.direction === 'asc') {
+                return aVal > bVal ? 1 : -1;
+            } else {
+                return aVal < bVal ? 1 : -1;
+            }
+        });
+
+        // Update function count
+        functionCountSpan.textContent = functions.length;
+
+        // Clear table
+        functionsTableBody.innerHTML = '';
+
+        // Show/hide empty state
+        if (functions.length === 0) {
+            emptyTableState.style.display = 'block';
+            selectAllCheckbox.checked = false;
+            return;
+        } else {
+            emptyTableState.style.display = 'none';
+        }
+
+        // Render rows
         functions.forEach(func => {
-            const item = document.createElement('div');
-            item.className = 'function-item';
-
-            const info = document.createElement('div');
-            info.className = 'function-info';
+            const row = document.createElement('tr');
 
             const scalingDesc = func.scalingMetric === 'concurrency' ? 'Concurrency' :
                               func.scalingMetric === 'requestRate' ? 'Request Rate' : 'KEDA Triggers';
@@ -749,52 +855,63 @@ document.addEventListener('DOMContentLoaded', function() {
                                  func.networkingMethod === 'gateway' ? 'Gateway API' :
                                  func.networkingMethod === 'ingress' ? 'Ingress' : 'OpenShift Route';
 
-            info.innerHTML = `
-                <h3>${func.name}</h3>
-                <div class="function-meta">
-                    <div class="function-meta-item">
-                        <strong>Namespace:</strong> ${func.namespace}
+            const createdDate = new Date(func.createdAt);
+            const createdStr = createdDate.toLocaleDateString() + ' ' + createdDate.toLocaleTimeString();
+
+            row.innerHTML = `
+                <td class="checkbox-column">
+                    <input type="checkbox" class="function-checkbox" data-id="${func.id}">
+                </td>
+                <td>
+                    <a href="#" class="function-name-link" data-id="${func.id}">${func.name}</a>
+                </td>
+                <td>${func.namespace}</td>
+                <td>${scalingDesc}</td>
+                <td>${networkingDesc}</td>
+                <td><code style="font-size: 0.85em">${func.image}</code></td>
+                <td>${createdStr}</td>
+                <td class="actions-column">
+                    <div class="table-actions">
+                        <button class="btn-secondary btn-small edit-btn" data-id="${func.id}">Edit</button>
+                        <button class="btn-danger btn-small delete-btn" data-id="${func.id}">Delete</button>
                     </div>
-                    <div class="function-meta-item">
-                        <strong>Scaling:</strong> ${scalingDesc}
-                    </div>
-                    <div class="function-meta-item">
-                        <strong>Networking:</strong> ${networkingDesc}
-                    </div>
-                    <div class="function-meta-item">
-                        <strong>Image:</strong> ${func.image}
-                    </div>
-                </div>
+                </td>
             `;
 
-            const actions = document.createElement('div');
-            actions.className = 'function-actions';
+            functionsTableBody.appendChild(row);
+        });
 
-            const editBtn = document.createElement('button');
-            editBtn.className = 'btn-secondary btn-small';
-            editBtn.textContent = 'Edit';
-            editBtn.addEventListener('click', () => {
+        // Add event listeners for edit/delete buttons and function name links
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const func = getFunction(this.dataset.id);
                 setCurrentEditingFunction(func);
                 showFormView('edit');
             });
+        });
 
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'btn-danger btn-small';
-            deleteBtn.textContent = 'Delete';
-            deleteBtn.addEventListener('click', () => {
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const func = getFunction(this.dataset.id);
                 if (confirm(`Are you sure you want to delete function "${func.name}"?`)) {
                     deleteFunction(func.id);
                     renderFunctionsList();
                 }
             });
-
-            actions.appendChild(editBtn);
-            actions.appendChild(deleteBtn);
-
-            item.appendChild(info);
-            item.appendChild(actions);
-
-            functionsList.appendChild(item);
         });
+
+        document.querySelectorAll('.function-name-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const func = getFunction(this.dataset.id);
+                setCurrentEditingFunction(func);
+                showFormView('edit');
+            });
+        });
+
+        // Reset select all checkbox
+        selectAllCheckbox.checked = false;
     }
 });

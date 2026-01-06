@@ -526,62 +526,132 @@ footer a:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .list-header h2 {
     margin: 0;
+    font-size: 1.5rem;
+    font-weight: 400;
 }
 
-.functions-list {
-    display: grid;
-    gap: 1rem;
-    margin-top: 1.5rem;
-}
-
-.function-item {
-    background: #f9f9f9;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 1.5rem;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 1rem;
-    align-items: start;
-    transition: box-shadow 0.2s;
-}
-
-.function-item:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-
-.function-info h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.2rem;
-    color: #1a1a1a;
-}
-
-.function-meta {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    font-size: 0.9rem;
-    color: #666;
-}
-
-.function-meta-item {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-
-.function-meta-item strong {
-    color: #333;
-}
-
-.function-actions {
+.list-header-actions {
     display: flex;
     gap: 0.5rem;
+}
+
+.list-controls {
+    margin-bottom: 1rem;
+}
+
+.search-input {
+    width: 100%;
+    max-width: 400px;
+    padding: 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* Table */
+.table-container {
+    overflow-x: auto;
+}
+
+.functions-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.functions-table thead {
+    background-color: #f9f9f9;
+    border-top: 1px solid #e0e0e0;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.functions-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+}
+
+.functions-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.functions-table th.sortable:hover {
+    background-color: #f0f0f0;
+}
+
+.sort-icon {
+    font-size: 0.7rem;
+    margin-left: 0.3rem;
+    opacity: 0.3;
+}
+
+.functions-table th.sortable.active .sort-icon {
+    opacity: 1;
+}
+
+.functions-table th.sortable.desc .sort-icon {
+    transform: rotate(180deg);
+    display: inline-block;
+}
+
+.functions-table tbody tr {
+    border-bottom: 1px solid #e0e0e0;
+    transition: background-color 0.1s;
+}
+
+.functions-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.functions-table td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+.checkbox-column {
+    width: 40px;
+}
+
+.checkbox-column input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.actions-column {
+    width: 150px;
+    text-align: right;
+}
+
+.function-name-link {
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.function-name-link:hover {
+    text-decoration: underline;
+}
+
+.table-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
 }
 
 .btn-secondary {
@@ -631,12 +701,13 @@ footer a:hover {
     margin: 0;
 }
 
-/* Empty state for list */
-.functions-list:empty::before {
-    content: "No functions created yet. Click 'Create New Function' to get started.";
-    display: block;
+/* Empty state for table */
+.empty-table-state {
     text-align: center;
     padding: 3rem 2rem;
     color: #999;
     font-size: 1rem;
+    border: 1px solid #e0e0e0;
+    border-top: none;
+    background-color: #fafafa;
 }
