@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Views
     const listView = document.getElementById('listView');
     const formView = document.getElementById('formView');
+    const detailView = document.getElementById('detailView');
 
     // List elements
     const functionsTableBody = document.getElementById('functionsTableBody');
@@ -50,8 +51,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const ingressTLSCheckbox = document.getElementById('ingressTLSEnabled');
     const ingressTLSFields = document.getElementById('ingressTLSFields');
 
+    // Detail view elements
+    const backToListFromDetailBtn = document.getElementById('backToListFromDetailBtn');
+    const detailFunctionName = document.getElementById('detailFunctionName');
+    const detailNamespace = document.getElementById('detailNamespace');
+    const detailImage = document.getElementById('detailImage');
+    const detailScaling = document.getElementById('detailScaling');
+    const detailNetworking = document.getElementById('detailNetworking');
+    const addSubscriptionBtn = document.getElementById('addSubscriptionBtn');
+    const subscriptionsList = document.getElementById('subscriptionsList');
+    const emptySubscriptions = document.getElementById('emptySubscriptions');
+
+    // Dialog elements
+    const addSubscriptionDialog = document.getElementById('addSubscriptionDialog');
+    const closeDialogBtn = document.getElementById('closeDialogBtn');
+    const subscriptionForm = document.getElementById('subscriptionForm');
+    const subscriptionEventType = document.getElementById('subscriptionEventType');
+    const customEventTypeField = document.getElementById('customEventTypeField');
+    const saveSubscriptionBtn = document.getElementById('saveSubscriptionBtn');
+    const cancelSubscriptionBtn = document.getElementById('cancelSubscriptionBtn');
+
     // Store last rendered function data
     let lastRenderedFunction = null;
+
+    // Store current detail view function
+    let currentDetailFunction = null;
 
     // Initialize - show list view
     renderFunctionsList();
