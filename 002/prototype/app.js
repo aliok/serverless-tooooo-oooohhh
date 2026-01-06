@@ -1204,8 +1204,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const func = getFunction(this.dataset.id);
-                setCurrentEditingFunction(func);
-                showFormView('edit');
+                showDetailView(func);
             });
         });
 
