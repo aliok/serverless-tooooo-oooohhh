@@ -625,42 +625,6 @@ awsRegion: us-east-1"></textarea>
                     </div>
                 </fieldset>
 
-                <fieldset>
-                    <legend>Eventing Configuration</legend>
-
-                    <div class="scaling-method-label">
-                        <label>Event Subscriptions</label>
-                        <small class="helper-text">Configure CloudEvents subscriptions for your function (optional)</small>
-                    </div>
-
-                    <!-- Enable eventing checkbox -->
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="eventingEnabled" name="eventingEnabled">
-                            Enable Event Subscriptions
-                        </label>
-                        <small class="helper-text">Subscribe to CloudEvents from a Knative Broker</small>
-                    </div>
-
-                    <!-- Eventing fields (hidden by default) -->
-                    <div id="eventingFields" style="display: none;">
-                        <div class="form-group">
-                            <label for="eventBroker">Broker Name</label>
-                            <input type="text" id="eventBroker" name="eventBroker"
-                                   placeholder="default" value="default">
-                            <small class="helper-text">Knative Broker to subscribe to</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="eventTypes">Event Types</label>
-                            <textarea id="eventTypes" name="eventTypes" rows="4"
-                                      placeholder="com.github.push&#10;com.slack.message&#10;com.example.order.created">com.github.push
-com.slack.message</textarea>
-                            <small class="helper-text">CloudEvent types to subscribe to (one per line)</small>
-                        </div>
-                    </div>
-                </fieldset>
-
                 <button type="submit" class="btn-primary">Render Resources</button>
             </form>
         </section>

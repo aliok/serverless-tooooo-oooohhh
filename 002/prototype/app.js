@@ -49,8 +49,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const routePanel = document.getElementById('routePanel');
     const ingressTLSCheckbox = document.getElementById('ingressTLSEnabled');
     const ingressTLSFields = document.getElementById('ingressTLSFields');
-    const eventingEnabledCheckbox = document.getElementById('eventingEnabled');
-    const eventingFields = document.getElementById('eventingFields');
 
     // Store last rendered function data
     let lastRenderedFunction = null;
@@ -223,15 +221,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Handle Eventing enabled checkbox
-    eventingEnabledCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            eventingFields.style.display = 'block';
-        } else {
-            eventingFields.style.display = 'none';
-        }
-    });
-
     // Handle form submission
     form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -359,21 +348,6 @@ document.addEventListener('DOMContentLoaded', function() {
             containerImage = `image-registry.openshift-image-registry.svc:5000/${document.getElementById('namespace').value.trim()}/${imageStreamTag}`;
         }
 
-        // Collect eventing configuration
-        const eventingEnabled = document.getElementById('eventingEnabled').checked;
-        let eventingConfig = {
-            enabled: eventingEnabled
-        };
-
-        if (eventingEnabled) {
-            const broker = document.getElementById('eventBroker').value.trim();
-            const eventTypesText = document.getElementById('eventTypes').value.trim();
-            const eventTypes = eventTypesText.split('\n').map(t => t.trim()).filter(t => t.length > 0);
-
-            eventingConfig.broker = broker;
-            eventingConfig.eventTypes = eventTypes;
-        }
-
         // Collect form data
         const formData = {
             name: document.getElementById('functionName').value.trim(),
@@ -385,9 +359,7 @@ document.addEventListener('DOMContentLoaded', function() {
             scalingMetric: scalingMetric,
             metricConfig: metricConfig,
             networkingMethod: networkingMethod,
-            networkingConfig: networkingConfig,
-            eventingEnabled: eventingEnabled,
-            eventingConfig: eventingConfig
+            networkingConfig: networkingConfig
         };
 
         // If editing, preserve the ID
@@ -531,18 +503,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Validate eventing configuration
-        if (data.eventingEnabled) {
-            if (!data.eventingConfig.broker) {
-                alert('Please provide a broker name for event subscriptions');
-                return false;
-            }
-            if (!data.eventingConfig.eventTypes || data.eventingConfig.eventTypes.length === 0) {
-                alert('Please provide at least one event type for subscriptions');
-                return false;
-            }
-        }
-
         return true;
     }
 
@@ -618,13 +578,6 @@ document.addEventListener('DOMContentLoaded', function() {
             networkingDescription = `The function is exposed externally via <strong>OpenShift Route</strong>${hostnameDesc} with path <strong>${config.networkingConfig.path}</strong>${tlsDesc}.`;
         }
 
-        // Build eventing description
-        let eventingDescription = '';
-        if (config.eventingEnabled && config.eventingConfig.eventTypes && config.eventingConfig.eventTypes.length > 0) {
-            const eventTypesList = config.eventingConfig.eventTypes.map(t => `<strong>${t}</strong>`).join(', ');
-            eventingDescription = `<br><br>The function will receive CloudEvents from the <strong>${config.eventingConfig.broker}</strong> broker for event types: ${eventTypesList}. The Function controller will automatically create a Knative Trigger to route these events.`;
-        }
-
         userMessage.innerHTML = `
             You created a Function named <strong>${config.name}</strong> in namespace <strong>${config.namespace}</strong>
             with auto-scaling enabled.
@@ -634,7 +587,7 @@ document.addEventListener('DOMContentLoaded', function() {
             The platform will automatically scale your function based on HTTP traffic,
             ${scalingDescription}.
             <br><br>
-            ${networkingDescription}${eventingDescription}
+            ${networkingDescription}
         `;
 
         // Show platform view
@@ -728,13 +681,11 @@ document.addEventListener('DOMContentLoaded', function() {
         resourceCount.textContent = resources.length;
         const buildPart = config.buildMethod !== 'none' ? `build (${config.buildMethod === 'shipwright' ? 'Shipwright' : 'S2I BuildConfig'}), ` : '';
         const networkingPart = config.networkingMethod !== 'none' ? 'and networking (HTTPRoute/Ingress/Route)' : 'without external networking';
-        const eventingNote = config.eventingEnabled ?
-            '<br><br><em>Note: The Function controller will create a Knative Trigger to route events from the broker to your function.</em>' : '';
         platformDescription.innerHTML = `
             The UI composed <strong>${resources.length}</strong> Kubernetes resources from your simple form input.
             <br>
             You created one Function CR, but the platform composed multiple resources: ${buildPart}runtime (Deployment, Service),
-            scaling (KEDA), ${networkingPart}.${eventingNote}
+            scaling (KEDA), ${networkingPart}.
         `;
 
         // Render resource cards
@@ -917,10 +868,6 @@ document.addEventListener('DOMContentLoaded', function() {
         gatewayAPIPanel.classList.remove('active');
         ingressPanel.classList.remove('active');
         routePanel.classList.remove('active');
-
-        // Reset eventing
-        document.getElementById('eventingEnabled').checked = false;
-        eventingFields.style.display = 'none';
     }
 
     /**
@@ -998,19 +945,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('routeHostname').value = functionData.networkingConfig.hostname || '';
             document.getElementById('routePath').value = functionData.networkingConfig.path || '/';
             document.getElementById('routeTLSTermination').value = functionData.networkingConfig.tlsTermination || 'edge';
-        }
-
-        // Load eventing config
-        if (functionData.eventingEnabled) {
-            document.getElementById('eventingEnabled').checked = true;
-            eventingFields.style.display = 'block';
-            document.getElementById('eventBroker').value = functionData.eventingConfig.broker || 'default';
-            if (functionData.eventingConfig.eventTypes && functionData.eventingConfig.eventTypes.length > 0) {
-                document.getElementById('eventTypes').value = functionData.eventingConfig.eventTypes.join('\n');
-            }
-        } else {
-            document.getElementById('eventingEnabled').checked = false;
-            eventingFields.style.display = 'none';
         }
     }
 

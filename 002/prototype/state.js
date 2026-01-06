@@ -27,10 +27,7 @@ let functions = [
             hostname: 'example-function.example.com',
             path: '/'
         },
-        eventingEnabled: false,
-        eventingConfig: {
-            enabled: false
-        },
+        eventSubscriptions: [],
         createdAt: new Date().toISOString()
     }
 ];
