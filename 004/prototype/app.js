@@ -1283,17 +1283,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show functions list view
      */
     function showFunctionsList() {
+        hideAllViews();
         listView.style.display = 'block';
-        formView.style.display = 'none';
-        detailView.style.display = 'none';
-        subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
-        eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
-        eventSourceFormView.style.display = 'none';
         renderFunctionsList();
         resetForm();
     }
@@ -1302,17 +1293,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show brokers list view
      */
     function showBrokersList() {
-        listView.style.display = 'none';
-        formView.style.display = 'none';
-        detailView.style.display = 'none';
-        subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
-        eventSourceDetailView.style.display = 'none';
+        hideAllViews();
         brokersListView.style.display = 'block';
-        brokerFormView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
-        eventSourceFormView.style.display = 'none';
         renderBrokersList();
     }
 
@@ -1320,17 +1302,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show event sources list view
      */
     function showEventSourcesList() {
-        listView.style.display = 'none';
-        formView.style.display = 'none';
-        detailView.style.display = 'none';
-        subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
-        eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
+        hideAllViews();
         eventSourcesListView.style.display = 'block';
-        eventSourceFormView.style.display = 'none';
         renderEventSourcesList();
     }
 
@@ -1338,16 +1311,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show event source form view
      */
     function showEventSourceFormView(mode) {
-        listView.style.display = 'none';
-        formView.style.display = 'none';
-        detailView.style.display = 'none';
-        subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
-        eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
+        hideAllViews();
         eventSourceFormView.style.display = 'block';
 
         if (mode === 'create') {
@@ -1552,16 +1516,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show broker form view
      */
     function showBrokerFormView(mode) {
-        listView.style.display = 'none';
-        formView.style.display = 'none';
-        detailView.style.display = 'none';
-        subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
-        eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
-        eventSourceFormView.style.display = 'none';
+        hideAllViews();
         brokerFormView.style.display = 'block';
 
         if (mode === 'create') {
@@ -1584,17 +1539,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show form view
      */
     function showFormView(mode) {
-        listView.style.display = 'none';
+        hideAllViews();
         formView.style.display = 'block';
-        detailView.style.display = 'none';
-        subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
-        eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
-        eventSourceFormView.style.display = 'none';
 
         if (mode === 'create') {
             formTitle.textContent = 'Create Function';
@@ -2095,15 +2041,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show detail view for a function
      */
     function showDetailView(functionData) {
-        listView.style.display = 'none';
-        formView.style.display = 'none';
+        hideAllViews();
         detailView.style.display = 'block';
-        subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
-        eventSourceFormView.style.display = 'none';
 
         currentDetailFunction = functionData;
         renderDetailView(functionData);
@@ -2116,15 +2055,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show subscriptions management view
      */
     function showSubscriptionsView(functionData) {
-        listView.style.display = 'none';
-        formView.style.display = 'none';
-        detailView.style.display = 'none';
+        hideAllViews();
         subscriptionsView.style.display = 'block';
-        destinationsView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
-        eventSourceFormView.style.display = 'none';
 
         currentDetailFunction = functionData;
         subscriptionsViewFunctionName.textContent = `Function: ${functionData.name}`;
@@ -2139,15 +2071,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show destinations management view
      */
     function showDestinationsView(functionData) {
-        listView.style.display = 'none';
-        formView.style.display = 'none';
-        detailView.style.display = 'none';
-        subscriptionsView.style.display = 'none';
+        hideAllViews();
         destinationsView.style.display = 'block';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
-        eventSourceFormView.style.display = 'none';
 
         currentDetailFunction = functionData;
         destinationsViewFunctionName.textContent = `Function: ${functionData.name}`;
@@ -2200,17 +2125,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show broker detail view
      */
     function showBrokerDetailView(brokerData) {
-        listView.style.display = 'none';
-        formView.style.display = 'none';
-        detailView.style.display = 'none';
-        subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
+        hideAllViews();
         brokerDetailView.style.display = 'block';
-        eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
-        eventSourceFormView.style.display = 'none';
 
         // Set current editing broker so edit button works
         setCurrentEditingBroker(brokerData);
@@ -2223,17 +2139,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Show event source detail view
      */
     function showEventSourceDetailView(eventSourceData) {
-        listView.style.display = 'none';
-        formView.style.display = 'none';
-        detailView.style.display = 'none';
-        subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
+        hideAllViews();
         eventSourceDetailView.style.display = 'block';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
-        eventSourceFormView.style.display = 'none';
 
         // Set current editing event source so edit button works
         setCurrentEditingEventSource(eventSourceData);
