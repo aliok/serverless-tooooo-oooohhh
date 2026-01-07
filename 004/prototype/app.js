@@ -498,6 +498,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Handle subscription broker dropdown change
+    const subscriptionBroker = document.getElementById('subscriptionBroker');
+    if (subscriptionBroker) {
+        subscriptionBroker.addEventListener('change', function() {
+            populateSubscriptionEventTypeDropdown(this.value);
+        });
+    }
+
     // Handle event type dropdown change
     subscriptionEventType.addEventListener('change', function() {
         if (this.value === 'custom') {
@@ -2064,6 +2072,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Populate broker dropdown in subscription form
         populateSubscriptionBrokerDropdown();
 
+        // Initialize event type dropdown to disabled state
+        populateSubscriptionEventTypeDropdown(null);
+
         renderEventSubscriptions(functionData);
     }
 
@@ -2100,6 +2111,57 @@ document.addEventListener('DOMContentLoaded', function() {
             option.textContent = `${broker.name} (${broker.namespace})`;
             dropdown.appendChild(option);
         });
+    }
+
+    /**
+     * Populate event type dropdown based on selected broker
+     */
+    function populateSubscriptionEventTypeDropdown(brokerName) {
+        const dropdown = document.getElementById('subscriptionEventType');
+
+        if (!brokerName) {
+            dropdown.innerHTML = '<option value="">Select a broker first...</option>';
+            dropdown.disabled = true;
+            return;
+        }
+
+        // Get all event sources connected to this broker
+        const eventSources = getEventSources().filter(es => es.broker === brokerName);
+
+        // Collect all event types from these sources
+        const eventTypesSet = new Set();
+        eventSources.forEach(es => {
+            es.eventTypes.forEach(type => eventTypesSet.add(type));
+        });
+
+        const eventTypes = Array.from(eventTypesSet).sort();
+
+        // Clear and populate dropdown
+        dropdown.innerHTML = '<option value="">Select an event type...</option>';
+
+        if (eventTypes.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No event types available from this broker';
+            option.disabled = true;
+            dropdown.appendChild(option);
+            dropdown.disabled = true;
+        } else {
+            eventTypes.forEach(eventType => {
+                const option = document.createElement('option');
+                option.value = eventType;
+                option.textContent = eventType;
+                dropdown.appendChild(option);
+            });
+
+            // Add "custom" option for advanced users
+            const customOption = document.createElement('option');
+            customOption.value = 'custom';
+            customOption.textContent = 'Custom event type...';
+            dropdown.appendChild(customOption);
+
+            dropdown.disabled = false;
+        }
     }
 
     /**
