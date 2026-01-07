@@ -2910,12 +2910,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 : getDestinationDisplay(sink.type, sink.config);
 
             row.innerHTML = `
-                <td><strong>${sink.name}</strong></td>
+                <td><strong class="clickable-name" data-id="${sink.id}">${sink.name}</strong></td>
                 <td><span class="badge">${sink.type}</span></td>
                 <td><span class="badge">${sink.mode}</span></td>
                 <td>${destination}</td>
                 <td class="actions-cell">
-                    <button class="btn-small btn-secondary view-sink-btn" data-id="${sink.id}">View</button>
                     <button class="btn-small btn-secondary edit-sink-btn" data-id="${sink.id}">Edit</button>
                     <button class="btn-small btn-danger delete-sink-btn" data-id="${sink.id}">Delete</button>
                 </td>
@@ -2923,9 +2922,9 @@ document.addEventListener('DOMContentLoaded', function() {
             eventSinksTableBody.appendChild(row);
         });
 
-        // Add event listeners to action buttons
-        document.querySelectorAll('.view-sink-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+        // Add event listeners to clickable names
+        document.querySelectorAll('.clickable-name').forEach(name => {
+            name.addEventListener('click', function() {
                 const sink = getEventSink(this.dataset.id);
                 if (sink) showEventSinkDetailView(sink);
             });
@@ -2982,7 +2981,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (sinkData.mode === 'standalone') {
             // Show broker as source
-            eventSinkSourceTitle.textContent = 'Event Source (Broker)';
+            eventSinkSourceTitle.textContent = 'Event Source';
             const sourceBox = document.createElement('div');
             sourceBox.className = 'source-box';
             sourceBox.innerHTML = `
@@ -2996,7 +2995,7 @@ document.addEventListener('DOMContentLoaded', function() {
             eventSinkSourcesList.appendChild(sourceBox);
         } else {
             // Show functions that reference this sink
-            eventSinkSourceTitle.textContent = 'Event Sources (Functions)';
+            eventSinkSourceTitle.textContent = 'Event Sources';
             const functions = getFunctions().filter(f =>
                 f.sinkMethod === 'sink' && f.sinkConfig && f.sinkConfig.sinkName === sinkData.name
             );
@@ -3004,7 +3003,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (functions.length === 0) {
                 const emptyBox = document.createElement('div');
                 emptyBox.className = 'source-box empty';
-                emptyBox.innerHTML = '<div class="source-info"><div class="source-name">No functions using this sink</div></div>';
+                emptyBox.innerHTML = '<div class="source-info"><div class="source-name">No event sources using this sink</div></div>';
                 eventSinkSourcesList.appendChild(emptyBox);
             } else {
                 functions.forEach(func => {
