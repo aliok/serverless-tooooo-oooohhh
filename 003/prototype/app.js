@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const diagramEventSourceName = document.getElementById('diagramEventSourceName');
     const detailEventSourceType = document.getElementById('detailEventSourceType');
     const detailEventSourceNamespace = document.getElementById('detailEventSourceNamespace');
-    const detailEventSourceBroker = document.getElementById('detailEventSourceBroker');
+    // const detailEventSourceBroker = document.getElementById('detailEventSourceBroker'); // Broker field removed
     const detailEventSourceEventTypes = document.getElementById('detailEventSourceEventTypes');
     const eventSourceExternalSource = document.getElementById('eventSourceExternalSource');
     const eventSourceTargetBroker = document.getElementById('eventSourceTargetBroker');
@@ -1328,7 +1328,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetEventSourceForm() {
         document.getElementById('eventSourceName').value = 'my-event-source';
         document.getElementById('eventSourceNamespace').value = 'default';
-        document.getElementById('eventSourceBroker').value = '';
+        // document.getElementById('eventSourceBroker').value = ''; // Broker field removed
 
         // Reset to GitHub as default
         const githubRadio = document.querySelector('input[name="eventSourceType"][value="github"]');
@@ -1362,7 +1362,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('eventSourceName').value = eventSourceData.name;
         document.getElementById('eventSourceNamespace').value = eventSourceData.namespace;
-        document.getElementById('eventSourceBroker').value = eventSourceData.broker;
+        // document.getElementById('eventSourceBroker').value = eventSourceData.broker; // Broker field removed
 
         // Set type radio
         const typeRadio = document.querySelector(`input[name="eventSourceType"][value="${eventSourceData.type}"]`);
@@ -2530,7 +2530,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const typeDisplayName = eventSourceData.type.charAt(0).toUpperCase() + eventSourceData.type.slice(1);
         detailEventSourceType.textContent = typeDisplayName;
         detailEventSourceNamespace.textContent = eventSourceData.namespace;
-        detailEventSourceBroker.textContent = eventSourceData.broker;
+        // detailEventSourceBroker.textContent = eventSourceData.broker; // Broker field removed
         detailEventSourceEventTypes.textContent = eventSourceData.eventTypes.join(', ');
 
         // Render external source
