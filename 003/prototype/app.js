@@ -1243,7 +1243,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Populate broker dropdown
-        populateBrokerDropdown();
+        // populateBrokerDropdown();
 
         // Trigger initial resource preview
         setTimeout(() => {
@@ -1251,24 +1251,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     }
 
-    /**
-     * Populate broker dropdown with existing brokers
-     */
-    function populateBrokerDropdown() {
-        const dropdown = document.getElementById('eventSourceBroker');
-        const brokers = getBrokers();
+    // /**
+    //  * Populate broker dropdown with existing brokers
+    //  */
+    // function populateBrokerDropdown() {
+    //     const dropdown = document.getElementById('eventSourceBroker');
+    //     const brokers = getBrokers();
 
-        // Clear existing options except first
-        dropdown.innerHTML = '<option value="">Select a broker...</option>';
+    //     // Clear existing options except first
+    //     dropdown.innerHTML = '<option value="">Select a broker...</option>';
 
-        // Add broker options
-        brokers.forEach(broker => {
-            const option = document.createElement('option');
-            option.value = broker.name;
-            option.textContent = `${broker.name} (${broker.namespace})`;
-            dropdown.appendChild(option);
-        });
-    }
+    //     // Add broker options
+    //     brokers.forEach(broker => {
+    //         const option = document.createElement('option');
+    //         option.value = broker.name;
+    //         option.textContent = `${broker.name} (${broker.namespace})`;
+    //         dropdown.appendChild(option);
+    //     });
+    // }
 
     /**
      * Collect event source form data into an object
