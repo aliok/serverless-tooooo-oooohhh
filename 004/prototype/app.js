@@ -2248,6 +2248,20 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
 
             destinationsList.appendChild(destinationBox);
+        } else if (functionData.sinkMethod === 'sink' && functionData.sinkConfig && functionData.sinkConfig.sinkName) {
+            const destinationBox = document.createElement('div');
+            destinationBox.className = 'destination-box';
+            const sinkIcon = getSinkIcon(functionData.sinkConfig.sinkType);
+
+            destinationBox.innerHTML = `
+                <div class="destination-icon">${sinkIcon}</div>
+                <div class="destination-info">
+                    <div class="destination-name">${functionData.sinkConfig.sinkName}</div>
+                    <div class="destination-details">Event Sink (${functionData.sinkConfig.sinkType})</div>
+                </div>
+            `;
+
+            destinationsList.appendChild(destinationBox);
         }
     }
 
