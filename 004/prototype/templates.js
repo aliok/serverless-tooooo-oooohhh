@@ -573,12 +573,46 @@ ${statusYAML}`;
 }
 
 /**
+ * Generate sink reference YAML for event sources
+ * @param {Object} config - Configuration object with sinkMethod and sinkConfig
+ * @returns {string} YAML string for sink reference
+ */
+function generateEventSourceSinkYAML(config) {
+    const sinkMethod = config.sinkMethod || 'broker';
+    const sinkConfig = config.sinkConfig || {};
+
+    if (sinkMethod === 'broker') {
+        const broker = sinkConfig.broker || config.broker || '';
+        return `  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: ${broker}`;
+    } else if (sinkMethod === 'sink') {
+        const sinkKind = getSinkKind(sinkConfig.sinkType);
+        return `  sink:
+    ref:
+      apiVersion: sinks.knative.dev/v1alpha1
+      kind: ${sinkKind}
+      name: ${sinkConfig.sinkName}`;
+    } else if (sinkMethod === 'function') {
+        return `  sink:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: ${sinkConfig.functionName}`;
+    }
+    return '';
+}
+
+/**
  * Generate Event Source YAML (unified function for all types)
  * @param {Object} config - Configuration object
  * @param {string} config.name - Event source name
  * @param {string} config.namespace - Namespace
  * @param {string} config.type - Event source type (github, kafka, slack, cron)
- * @param {string} config.broker - Target broker name
+ * @param {string} config.sinkMethod - Target method (broker, sink, function)
+ * @param {Object} config.sinkConfig - Target configuration
  * @param {Object} config.config - Type-specific configuration
  * @param {Array} config.eventTypes - Event types
  * @returns {string} YAML string
@@ -600,6 +634,8 @@ function generateEventSourceYAML(config) {
  * Generate GitHub Source YAML
  */
 function generateGitHubSourceYAML(config) {
+    const sinkYAML = generateEventSourceSinkYAML(config);
+
     return `apiVersion: sources.knative.dev/v1
 kind: GitHubSource
 metadata:
@@ -612,16 +648,11 @@ spec:
     secretKeyRef:
       name: ${config.config.accessTokenSecret}
       key: accessToken
-  sink:
-    ref:
-      apiVersion: eventing.knative.dev/v1
-      kind: Broker
-      name: ${config.broker}
+${sinkYAML}
 status:
   # CloudEvent type produced by this source
   observedEventTypes:
-    - dev.knative.sources.github.event
-  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
+    - dev.knative.sources.github.event`;
 }
 
 /**
@@ -629,6 +660,7 @@ status:
  */
 function generateKafkaSourceYAML(config) {
     const topics = config.config.topics || [];
+    const sinkYAML = generateEventSourceSinkYAML(config);
 
     return `apiVersion: sources.knative.dev/v1beta1
 kind: KafkaSource
@@ -641,22 +673,19 @@ spec:
     - ${config.config.bootstrapServers}
   topics:
     - ${topics.join('\n    - ')}
-  sink:
-    ref:
-      apiVersion: eventing.knative.dev/v1
-      kind: Broker
-      name: ${config.broker}
+${sinkYAML}
 status:
   # CloudEvent type produced by this source
   observedEventTypes:
-    - dev.knative.kafka.event
-  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
+    - dev.knative.kafka.event`;
 }
 
 /**
  * Generate Slack Source YAML
  */
 function generateSlackSourceYAML(config) {
+    const sinkYAML = generateEventSourceSinkYAML(config);
+
     return `apiVersion: sources.knative.dev/v1alpha1
 kind: SlackSource
 metadata:
@@ -671,16 +700,11 @@ spec:
     secretKeyRef:
       name: ${config.config.webhookURLSecret}
       key: token
-  sink:
-    ref:
-      apiVersion: eventing.knative.dev/v1
-      kind: Broker
-      name: ${config.broker}
+${sinkYAML}
 status:
   # CloudEvent type produced by this source
   observedEventTypes:
-    - dev.knative.sources.slack.event
-  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
+    - dev.knative.sources.slack.event`;
 }
 
 /**
@@ -692,6 +716,8 @@ function generateCronSourceYAML(config) {
         dataYAML = `  data: '${config.config.data}'`;
     }
 
+    const sinkYAML = generateEventSourceSinkYAML(config);
+
     return `apiVersion: sources.knative.dev/v1
 kind: PingSource
 metadata:
@@ -700,16 +726,11 @@ metadata:
 spec:
   schedule: "${config.config.schedule}"
 ${dataYAML}
-  sink:
-    ref:
-      apiVersion: eventing.knative.dev/v1
-      kind: Broker
-      name: ${config.broker}
+${sinkYAML}
 status:
   # CloudEvent type produced by this source
   observedEventTypes:
-    - dev.knative.sources.ping
-  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
+    - dev.knative.sources.ping`;
 }
 
 /**
