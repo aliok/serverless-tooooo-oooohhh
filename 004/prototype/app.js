@@ -2576,15 +2576,25 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Render subscribed functions list
+        // Render subscribers list (functions and event sinks)
         brokerFunctionsList.innerHTML = '';
+
+        // Get functions subscribed to this broker
         const functions = getFunctions().filter(f =>
             f.eventSubscriptions && f.eventSubscriptions.some(sub => sub.broker === brokerData.name)
         );
 
-        if (functions.length === 0) {
-            brokerFunctionsList.innerHTML = '<p class="empty-list">No functions subscribed to this broker.</p>';
+        // Get standalone event sinks subscribed to this broker
+        const standaloneSinks = getEventSinks().filter(s =>
+            s.mode === 'standalone' && s.broker === brokerData.name
+        );
+
+        const totalSubscribers = functions.length + standaloneSinks.length;
+
+        if (totalSubscribers === 0) {
+            brokerFunctionsList.innerHTML = '<p class="empty-list">No subscribers for this broker.</p>';
         } else {
+            // Render functions
             functions.forEach(func => {
                 const funcBox = document.createElement('div');
                 funcBox.className = 'destination-box';
@@ -2592,10 +2602,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="destination-icon">λ</div>
                     <div class="destination-info">
                         <div class="destination-name">${func.name}</div>
-                        <div class="destination-details">${func.namespace}</div>
+                        <div class="destination-details">Function</div>
                     </div>
                 `;
                 brokerFunctionsList.appendChild(funcBox);
+            });
+
+            // Render standalone event sinks
+            standaloneSinks.forEach(sink => {
+                const sinkBox = document.createElement('div');
+                sinkBox.className = 'destination-box';
+                const sinkIcon = getSinkIcon(sink.type);
+                sinkBox.innerHTML = `
+                    <div class="destination-icon">${sinkIcon}</div>
+                    <div class="destination-info">
+                        <div class="destination-name">${sink.name}</div>
+                        <div class="destination-details">Event Sink (${sink.type})</div>
+                    </div>
+                `;
+                brokerFunctionsList.appendChild(sinkBox);
             });
         }
     }
