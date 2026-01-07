@@ -933,43 +933,6 @@ awsRegion: us-east-1"></textarea>
         </section>
     </div>
 
-    <!-- Brokers List View -->
-    <div id="brokersListView" class="container" style="display: none;">
-        <section class="list-panel">
-            <div class="list-header">
-                <h2 id="brokersTitle">Brokers (<span id="brokerCount">0</span>)</h2>
-                <div class="list-header-actions">
-                    <button id="createNewBrokerBtn" class="btn-primary">Create broker</button>
-                </div>
-            </div>
-
-            <div class="table-container">
-                <table class="functions-table">
-                    <thead>
-                        <tr>
-                            <th class="sortable" data-sort="name">
-                                Broker name
-                                <span class="sort-icon">▼</span>
-                            </th>
-                            <th class="sortable" data-sort="namespace">
-                                Namespace
-                                <span class="sort-icon">▼</span>
-                            </th>
-                            <th>Event Sources</th>
-                            <th>Functions</th>
-                            <th class="actions-column">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="brokersTableBody">
-                        <!-- Broker rows will be inserted here -->
-                    </tbody>
-                </table>
-                <div id="emptyBrokersState" class="empty-table-state" style="display: none;">
-                    <p>No brokers found. Click "Create broker" to get started.</p>
-                </div>
-            </div>
-        </section>
-    </div>
 
     <!-- Event Sources List View -->
     <div id="eventSourcesListView" class="container" style="display: none;">
@@ -1012,44 +975,6 @@ awsRegion: us-east-1"></textarea>
         </section>
     </div>
 
-    <!-- Broker Form View -->
-    <div id="brokerFormView" class="container" style="display: none;">
-        <section class="form-panel">
-            <div class="form-header">
-                <h2 id="brokerFormTitle">Create Broker</h2>
-                <button type="button" id="backToBrokersListBtn" class="btn-secondary">← Back to List</button>
-            </div>
-            <p class="panel-description">Configure a Knative Eventing Broker for routing CloudEvents</p>
-
-            <form id="brokerForm">
-                <fieldset>
-                    <legend>Broker Details</legend>
-
-                    </div>
-                </fieldset>
-
-                <div class="form-actions">
-                    <button type="button" id="saveBrokerBtn" class="btn-primary">Create Broker</button>
-                </div>
-            </form>
-
-            <!-- Resources Preview -->
-            <div class="resources-preview" style="margin-top: 2rem;">
-                <h2>Composed Resources</h2>
-                <p class="panel-description">Live preview of Kubernetes resources that will be created</p>
-
-                <!-- Platform View Section -->
-                <div id="brokerPlatformView" class="platform-view" style="display: none;">
-                    <h3>What UI Creates</h3>
-                    <p id="brokerPlatformDescription" class="platform-description"></p>
-
-                    <div id="brokerResourceCards" class="resource-cards">
-                        <!-- Resource cards will be inserted here by JavaScript -->
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
 
     <!-- Event Source Form View -->
     <div id="eventSourceFormView" class="container" style="display: none;">

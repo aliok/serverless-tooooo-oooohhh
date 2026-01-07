@@ -234,10 +234,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Broker detail view navigation handlers
-    backToBrokersListFromDetailBtn.addEventListener('click', function() {
-        showBrokersList();
-    });
+    //     //     // Broker detail view navigation handlers
+    //     //     backToBrokersListFromDetailBtn.addEventListener('click', function() {
+    //     //         showBrokersList();
+    //     //     });
 
     editBrokerFromDetailBtn.addEventListener('click', function() {
         const brokerData = getCurrentEditingBroker();
@@ -1170,7 +1170,7 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
         destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
+        // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
         brokerFormView.style.display = 'none';
@@ -1189,7 +1189,7 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
         destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
+        // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'block';
         brokerFormView.style.display = 'none';
@@ -1207,7 +1207,7 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
         destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
+        // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
         brokerFormView.style.display = 'none';
@@ -1225,7 +1225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
         destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
+        // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
         brokerFormView.style.display = 'none';
@@ -1438,7 +1438,7 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
         destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
+        // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
@@ -1470,7 +1470,7 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
         destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
+        // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
         brokerFormView.style.display = 'none';
@@ -2086,7 +2086,7 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
         destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'block';
+        // // brokerDetailView.style.display = 'block';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
         brokerFormView.style.display = 'none';
@@ -2109,7 +2109,7 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
         destinationsView.style.display = 'none';
-        brokerDetailView.style.display = 'none';
+        // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'block';
         brokersListView.style.display = 'none';
         brokerFormView.style.display = 'none';
