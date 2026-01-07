@@ -498,6 +498,33 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Handle event source sink method change
+    const eventSourceSinkMethod = document.getElementById('eventSourceSinkMethod');
+    const eventSourceBrokerFields = document.getElementById('eventSourceBrokerFields');
+    const eventSourceSinkFields = document.getElementById('eventSourceSinkFields');
+    const eventSourceFunctionFields = document.getElementById('eventSourceFunctionFields');
+
+    if (eventSourceSinkMethod) {
+        eventSourceSinkMethod.addEventListener('change', function() {
+            if (this.value === 'broker') {
+                eventSourceBrokerFields.style.display = 'block';
+                eventSourceSinkFields.style.display = 'none';
+                eventSourceFunctionFields.style.display = 'none';
+            } else if (this.value === 'sink') {
+                eventSourceBrokerFields.style.display = 'none';
+                eventSourceSinkFields.style.display = 'block';
+                eventSourceFunctionFields.style.display = 'none';
+                populateEventSourceSinkDropdown();
+            } else if (this.value === 'function') {
+                eventSourceBrokerFields.style.display = 'none';
+                eventSourceSinkFields.style.display = 'none';
+                eventSourceFunctionFields.style.display = 'block';
+                populateEventSourceFunctionDropdown();
+            }
+            updateEventSourceResourcePreview();
+        });
+    }
+
     // Handle subscription broker dropdown change
     const subscriptionBroker = document.getElementById('subscriptionBroker');
     if (subscriptionBroker) {
@@ -1361,6 +1388,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
+     * Populate event source sink dropdown with referenced event sinks
+     */
+    function populateEventSourceSinkDropdown() {
+        const dropdown = document.getElementById('eventSourceSink');
+        const sinks = getEventSinks().filter(s => s.mode === 'referenced');
+
+        dropdown.innerHTML = '<option value="">Select a sink...</option>';
+        sinks.forEach(sink => {
+            const option = document.createElement('option');
+            option.value = sink.name;
+            option.dataset.sinkType = sink.type;
+            option.textContent = `${sink.name} (${sink.type})`;
+            dropdown.appendChild(option);
+        });
+    }
+
+    /**
+     * Populate event source function dropdown with existing functions
+     */
+    function populateEventSourceFunctionDropdown() {
+        const dropdown = document.getElementById('eventSourceFunction');
+        const functions = getFunctions();
+
+        dropdown.innerHTML = '<option value="">Select a function...</option>';
+        functions.forEach(func => {
+            const option = document.createElement('option');
+            option.value = func.name;
+            option.textContent = `${func.name} (${func.namespace})`;
+            dropdown.appendChild(option);
+        });
+    }
+
+    /**
      * Collect event source form data into an object
      */
     function collectEventSourceFormData() {
@@ -1395,11 +1455,26 @@ document.addEventListener('DOMContentLoaded', function() {
             eventTypes = ['dev.knative.sources.ping'];
         }
 
+        // Collect sink configuration
+        const sinkMethod = document.getElementById('eventSourceSinkMethod').value;
+        let sinkConfig = { method: sinkMethod };
+
+        if (sinkMethod === 'broker') {
+            sinkConfig.broker = document.getElementById('eventSourceBroker').value;
+        } else if (sinkMethod === 'sink') {
+            const sinkSelect = document.getElementById('eventSourceSink');
+            sinkConfig.sinkName = sinkSelect.value;
+            sinkConfig.sinkType = sinkSelect.options[sinkSelect.selectedIndex]?.dataset.sinkType || '';
+        } else if (sinkMethod === 'function') {
+            sinkConfig.functionName = document.getElementById('eventSourceFunction').value;
+        }
+
         const formData = {
             name: document.getElementById('eventSourceName').value.trim(),
             namespace: document.getElementById('eventSourceNamespace').value.trim(),
             type: eventSourceType,
-            broker: document.getElementById('eventSourceBroker').value,
+            sinkMethod: sinkMethod,
+            sinkConfig: sinkConfig,
             config: config,
             eventTypes: eventTypes
         };
@@ -1419,7 +1494,17 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetEventSourceForm() {
         document.getElementById('eventSourceName').value = 'my-event-source';
         document.getElementById('eventSourceNamespace').value = 'default';
+
+        // Reset sink method to broker (default)
+        document.getElementById('eventSourceSinkMethod').value = 'broker';
         document.getElementById('eventSourceBroker').value = '';
+        document.getElementById('eventSourceSink').value = '';
+        document.getElementById('eventSourceFunction').value = '';
+
+        // Show broker fields, hide others
+        document.getElementById('eventSourceBrokerFields').style.display = 'block';
+        document.getElementById('eventSourceSinkFields').style.display = 'none';
+        document.getElementById('eventSourceFunctionFields').style.display = 'none';
 
         // Reset to GitHub as default
         const githubRadio = document.querySelector('input[name="eventSourceType"][value="github"]');
@@ -1453,7 +1538,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('eventSourceName').value = eventSourceData.name;
         document.getElementById('eventSourceNamespace').value = eventSourceData.namespace;
-        document.getElementById('eventSourceBroker').value = eventSourceData.broker;
+
+        // Load sink configuration
+        const sinkMethod = eventSourceData.sinkMethod || 'broker';
+        document.getElementById('eventSourceSinkMethod').value = sinkMethod;
+
+        if (sinkMethod === 'broker') {
+            document.getElementById('eventSourceBroker').value = eventSourceData.sinkConfig?.broker || eventSourceData.broker || '';
+            document.getElementById('eventSourceBrokerFields').style.display = 'block';
+            document.getElementById('eventSourceSinkFields').style.display = 'none';
+            document.getElementById('eventSourceFunctionFields').style.display = 'none';
+        } else if (sinkMethod === 'sink') {
+            populateEventSourceSinkDropdown();
+            document.getElementById('eventSourceSink').value = eventSourceData.sinkConfig?.sinkName || '';
+            document.getElementById('eventSourceBrokerFields').style.display = 'none';
+            document.getElementById('eventSourceSinkFields').style.display = 'block';
+            document.getElementById('eventSourceFunctionFields').style.display = 'none';
+        } else if (sinkMethod === 'function') {
+            populateEventSourceFunctionDropdown();
+            document.getElementById('eventSourceFunction').value = eventSourceData.sinkConfig?.functionName || '';
+            document.getElementById('eventSourceBrokerFields').style.display = 'none';
+            document.getElementById('eventSourceSinkFields').style.display = 'none';
+            document.getElementById('eventSourceFunctionFields').style.display = 'block';
+        }
 
         // Set type radio
         const typeRadio = document.querySelector(`input[name="eventSourceType"][value="${eventSourceData.type}"]`);
@@ -1485,7 +1592,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = collectEventSourceFormData();
 
         // Basic validation (don't show validation errors during auto-update)
-        if (!formData.name || !formData.namespace || !formData.broker) {
+        let targetValid = false;
+        if (formData.sinkMethod === 'broker' && formData.sinkConfig.broker) {
+            targetValid = true;
+        } else if (formData.sinkMethod === 'sink' && formData.sinkConfig.sinkName) {
+            targetValid = true;
+        } else if (formData.sinkMethod === 'function' && formData.sinkConfig.functionName) {
+            targetValid = true;
+        }
+
+        if (!formData.name || !formData.namespace || !targetValid) {
             eventSourcePlatformView.style.display = 'none';
             return;
         }
@@ -1495,6 +1611,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Generate resource (will use type-specific YAML generators)
         const resourceType = `${formData.type}Source`;
+
+        // Determine target description
+        let targetDescription = '';
+        if (formData.sinkMethod === 'broker') {
+            targetDescription = `<strong>${formData.sinkConfig.broker}</strong> Broker`;
+        } else if (formData.sinkMethod === 'sink') {
+            targetDescription = `<strong>${formData.sinkConfig.sinkName}</strong> Event Sink`;
+        } else if (formData.sinkMethod === 'function') {
+            targetDescription = `<strong>${formData.sinkConfig.functionName}</strong> Function`;
+        }
+
         const resource = {
             type: resourceType,
             name: formData.name,
@@ -1502,7 +1629,7 @@ document.addEventListener('DOMContentLoaded', function() {
             metadata: RESOURCE_METADATA[resourceType] || {
                 kind: `${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}Source`,
                 apiVersion: 'sources.knative.dev/v1',
-                description: `Produces CloudEvents from ${formData.type} to the ${formData.broker} Broker.`
+                description: `Produces CloudEvents from ${formData.type} to ${targetDescription}.`
             }
         };
 
@@ -1511,7 +1638,7 @@ document.addEventListener('DOMContentLoaded', function() {
         eventSourcePlatformDescription.innerHTML = `
             The UI composed <strong>1</strong> Kubernetes resource from your event source configuration.
             <br>
-            You created a <strong>${typeDisplayName} Source</strong> that will send CloudEvents to the <strong>${formData.broker}</strong> Broker.
+            You created a <strong>${typeDisplayName} Source</strong> that will send CloudEvents to ${targetDescription}.
         `;
 
         // Render resource card
