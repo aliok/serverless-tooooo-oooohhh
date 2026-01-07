@@ -632,6 +632,46 @@ awsRegion: us-east-1"></textarea>
                     </div>
                 </fieldset>
 
+                <fieldset>
+                    <legend>Event Sink Configuration (Optional)</legend>
+
+                    <div class="scaling-method-label">
+                        <label>Output Event Sink</label>
+                        <small class="helper-text">Where should this function send output events?</small>
+                    </div>
+
+                    <!-- No Sink panel -->
+                    <div id="noSinkPanel" class="metric-panel active">
+                        <label class="panel-header">
+                            <input type="radio" name="sinkMethod" value="none" checked>
+                            <span class="panel-icon">▼</span>
+                            <span class="panel-title">No Event Sink</span>
+                        </label>
+                        <div class="panel-body">
+                            <p class="helper-text">This function does not produce output events.</p>
+                        </div>
+                    </div>
+
+                    <!-- Broker Sink panel -->
+                    <div id="brokerSinkPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="sinkMethod" value="broker">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Broker (CloudEvents)</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="sinkBroker">Target Broker</label>
+                                <select id="sinkBroker" name="sinkBroker">
+                                    <option value="">Select a broker...</option>
+                                    <!-- Will be populated dynamically from brokers list -->
+                                </select>
+                                <small class="helper-text">The Broker where this function will send output CloudEvents</small>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
                 <div class="form-actions">
                     <button type="button" id="createFunctionDirectBtn" class="btn-primary">Create Function</button>
                 </div>

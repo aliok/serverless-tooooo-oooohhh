@@ -36,6 +36,12 @@ function generateFunctionYAML(config) {
         subscriptionsYAML = `    subscriptions: []`;
     }
 
+    // Add sink configuration if broker sink is configured
+    let sinkYAML = '';
+    if (config.sinkMethod === 'broker' && config.sinkConfig && config.sinkConfig.broker) {
+        sinkYAML = `\n    sink:\n      ref:\n        apiVersion: eventing.knative.dev/v1\n        kind: Broker\n        name: ${config.sinkConfig.broker}`;
+    }
+
     return `apiVersion: serverless.openshift.io/v1alpha1
 kind: Function
 metadata:
@@ -43,7 +49,7 @@ metadata:
   namespace: ${config.namespace}
 spec:
   eventing:
-${subscriptionsYAML}`;
+${subscriptionsYAML}${sinkYAML}`;
 }
 
 /**

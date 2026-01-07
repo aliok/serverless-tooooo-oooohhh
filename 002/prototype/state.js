@@ -27,6 +27,10 @@ let functions = [
             hostname: 'example-function.example.com',
             path: '/'
         },
+        sinkMethod: 'none',
+        sinkConfig: {
+            method: 'none'
+        },
         eventSubscriptions: [],
         createdAt: new Date().toISOString()
     }
