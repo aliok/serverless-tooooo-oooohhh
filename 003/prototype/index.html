@@ -1018,6 +1018,81 @@ awsRegion: us-east-1"></textarea>
                         <div class="panel-body">
                             <div class="form-group">
                                 <label for="githubRepository">Repository</label>
+                                <input type="text" id="githubRepository" name="githubRepository"
+                                       placeholder="username/repo" value="username/repo">
+                                <small class="helper-text">GitHub repository (e.g., "username/repo")</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="githubAccessTokenSecret">Access Token Secret</label>
+                                <input type="text" id="githubAccessTokenSecret" name="githubAccessTokenSecret"
+                                       placeholder="github-secret" value="github-secret">
+                                <small class="helper-text">Name of the Kubernetes secret containing GitHub access token</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>CloudEvent Type</label>
+                                <code class="event-type-display">dev.knative.sources.github.event</code>
+                                <small class="helper-text">This source produces GitHub events as CloudEvents</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kafka Source Panel -->
+                    <div id="kafkaSourcePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSourceType" value="kafka">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Kafka Source</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="kafkaBootstrapServers">Bootstrap Servers</label>
+                                <input type="text" id="kafkaBootstrapServers" name="kafkaBootstrapServers"
+                                       placeholder="kafka:9092" value="kafka:9092">
+                                <small class="helper-text">Kafka bootstrap servers (comma-separated)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kafkaTopics">Topics</label>
+                                <input type="text" id="kafkaTopics" name="kafkaTopics"
+                                       placeholder="my-topic" value="my-topic">
+                                <small class="helper-text">Kafka topics to consume (comma-separated)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kafkaConsumerGroup">Consumer Group</label>
+                                <input type="text" id="kafkaConsumerGroup" name="kafkaConsumerGroup"
+                                       placeholder="my-consumer-group" value="my-consumer-group">
+                                <small class="helper-text">Kafka consumer group ID</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>CloudEvent Type</label>
+                                <code class="event-type-display">dev.knative.kafka.event</code>
+                                <small class="helper-text">This source produces Kafka messages as CloudEvents</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slack Source Panel -->
+                    <div id="slackSourcePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSourceType" value="slack">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Slack Source</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="slackWebhookURL">Webhook URL Secret</label>
+                                <input type="text" id="slackWebhookURL" name="slackWebhookURL"
+                                       placeholder="slack-webhook-secret" value="slack-webhook-secret">
+                                <small class="helper-text">Name of the Kubernetes secret containing Slack webhook URL</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>CloudEvent Type</label>
+                                <code class="event-type-display">dev.knative.sources.slack.event</code>
                                 <small class="helper-text">This source produces Slack events as CloudEvents</small>
                             </div>
                         </div>
