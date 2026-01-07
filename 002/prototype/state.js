@@ -59,7 +59,7 @@ let eventSources = [
             repository: 'username/repo',
             accessTokenSecret: 'github-secret'
         },
-        eventTypes: ['com.github.push', 'com.github.pull_request'],
+        eventTypes: ['dev.knative.sources.github.event'],
         createdAt: new Date().toISOString()
     }
 ];

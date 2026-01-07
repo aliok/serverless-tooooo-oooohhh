@@ -1278,34 +1278,31 @@ document.addEventListener('DOMContentLoaded', function() {
         let config = {};
         let eventTypes = [];
 
-        // Collect type-specific config
+        // Collect type-specific config and set proper CloudEvent types
         if (eventSourceType === 'github') {
             config = {
                 repository: document.getElementById('githubRepository').value.trim(),
                 accessTokenSecret: document.getElementById('githubAccessTokenSecret').value.trim()
             };
-            const eventTypesStr = document.getElementById('githubEventTypes').value.trim();
-            eventTypes = eventTypesStr.split(',').map(t => `com.github.${t.trim()}`);
+            eventTypes = ['dev.knative.sources.github.event'];
         } else if (eventSourceType === 'kafka') {
             config = {
                 bootstrapServers: document.getElementById('kafkaBootstrapServers').value.trim(),
                 topics: document.getElementById('kafkaTopics').value.trim().split(',').map(t => t.trim()),
                 consumerGroup: document.getElementById('kafkaConsumerGroup').value.trim()
             };
-            // Kafka event types are derived from topics
-            eventTypes = config.topics.map(topic => `com.kafka.${topic}`);
+            eventTypes = ['dev.knative.kafka.event'];
         } else if (eventSourceType === 'slack') {
             config = {
                 webhookURLSecret: document.getElementById('slackWebhookURL').value.trim()
             };
-            const eventTypesStr = document.getElementById('slackEventTypes').value.trim();
-            eventTypes = eventTypesStr.split(',').map(t => `com.slack.${t.trim()}`);
+            eventTypes = ['dev.knative.sources.slack.event'];
         } else if (eventSourceType === 'cron') {
             config = {
                 schedule: document.getElementById('cronSchedule').value.trim(),
                 data: document.getElementById('cronData').value.trim()
             };
-            eventTypes = ['com.cron.scheduled'];
+            eventTypes = ['dev.knative.sources.ping'];
         }
 
         const formData = {
@@ -1344,7 +1341,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset GitHub fields
         document.getElementById('githubRepository').value = 'username/repo';
         document.getElementById('githubAccessTokenSecret').value = 'github-secret';
-        document.getElementById('githubEventTypes').value = 'push,pull_request';
 
         // Reset Kafka fields
         document.getElementById('kafkaBootstrapServers').value = 'kafka:9092';
@@ -1353,7 +1349,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Reset Slack fields
         document.getElementById('slackWebhookURL').value = 'slack-webhook-secret';
-        document.getElementById('slackEventTypes').value = 'message,reaction_added';
 
         // Reset Cron fields
         document.getElementById('cronSchedule').value = '*/5 * * * *';
@@ -1377,22 +1372,16 @@ document.addEventListener('DOMContentLoaded', function() {
             typeRadio.dispatchEvent(new Event('change'));
         }
 
-        // Load type-specific config
+        // Load type-specific config (event types are now automatically set)
         if (eventSourceData.type === 'github') {
             document.getElementById('githubRepository').value = eventSourceData.config.repository || '';
             document.getElementById('githubAccessTokenSecret').value = eventSourceData.config.accessTokenSecret || '';
-            // Extract event types (remove com.github. prefix)
-            const eventTypes = eventSourceData.eventTypes.map(t => t.replace('com.github.', '')).join(',');
-            document.getElementById('githubEventTypes').value = eventTypes;
         } else if (eventSourceData.type === 'kafka') {
             document.getElementById('kafkaBootstrapServers').value = eventSourceData.config.bootstrapServers || '';
             document.getElementById('kafkaTopics').value = (eventSourceData.config.topics || []).join(',');
             document.getElementById('kafkaConsumerGroup').value = eventSourceData.config.consumerGroup || '';
         } else if (eventSourceData.type === 'slack') {
             document.getElementById('slackWebhookURL').value = eventSourceData.config.webhookURLSecret || '';
-            // Extract event types (remove com.slack. prefix)
-            const eventTypes = eventSourceData.eventTypes.map(t => t.replace('com.slack.', '')).join(',');
-            document.getElementById('slackEventTypes').value = eventTypes;
         } else if (eventSourceData.type === 'cron') {
             document.getElementById('cronSchedule').value = eventSourceData.config.schedule || '';
             document.getElementById('cronData').value = eventSourceData.config.data || '';

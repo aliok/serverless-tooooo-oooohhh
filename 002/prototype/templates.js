@@ -591,16 +591,12 @@ function generateEventSourceYAML(config) {
  * Generate GitHub Source YAML
  */
 function generateGitHubSourceYAML(config) {
-    const eventTypes = config.eventTypes.map(t => t.replace('com.github.', '')).join(', ');
-
     return `apiVersion: sources.knative.dev/v1
 kind: GitHubSource
 metadata:
   name: ${config.name}
   namespace: ${config.namespace}
 spec:
-  eventTypes:
-    - ${config.eventTypes.map(t => t.replace('com.github.', '')).join('\n    - ')}
   owner: ${config.config.repository.split('/')[0]}
   repository: ${config.config.repository.split('/')[1]}
   accessToken:
@@ -613,9 +609,9 @@ spec:
       kind: Broker
       name: ${config.broker}
 status:
-  # Event types produced by this source
+  # CloudEvent type produced by this source
   observedEventTypes:
-    - ${config.eventTypes.join('\n    - ')}
+    - dev.knative.sources.github.event
   sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
 }
 
@@ -642,9 +638,9 @@ spec:
       kind: Broker
       name: ${config.broker}
 status:
-  # Event types produced by this source (derived from topics)
+  # CloudEvent type produced by this source
   observedEventTypes:
-    - ${config.eventTypes.join('\n    - ')}
+    - dev.knative.kafka.event
   sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
 }
 
@@ -672,9 +668,9 @@ spec:
       kind: Broker
       name: ${config.broker}
 status:
-  # Event types produced by this source
+  # CloudEvent type produced by this source
   observedEventTypes:
-    - ${config.eventTypes.join('\n    - ')}
+    - dev.knative.sources.slack.event
   sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
 }
 
@@ -701,9 +697,9 @@ ${dataYAML}
       kind: Broker
       name: ${config.broker}
 status:
-  # Event types produced by this source
+  # CloudEvent type produced by this source
   observedEventTypes:
-    - ${config.eventTypes.join('\n    - ')}
+    - dev.knative.sources.ping
   sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
 }
 
@@ -719,22 +715,22 @@ const RESOURCE_METADATA = {
     githubSource: {
         kind: 'GitHubSource',
         apiVersion: 'sources.knative.dev/v1',
-        description: 'Produces CloudEvents from GitHub webhooks. Connects to a GitHub repository and forwards push, pull request, and other events to the Broker.'
+        description: 'Produces CloudEvents from GitHub webhooks. Connects to a GitHub repository and forwards all webhook events to the Broker as CloudEvents with type dev.knative.sources.github.event.'
     },
     kafkaSource: {
         kind: 'KafkaSource',
         apiVersion: 'sources.knative.dev/v1beta1',
-        description: 'Produces CloudEvents from Kafka topics. Consumes messages from Kafka and converts them to CloudEvents for routing through the Broker.'
+        description: 'Produces CloudEvents from Kafka topics. Consumes messages from Kafka and converts them to CloudEvents with type dev.knative.kafka.event for routing through the Broker.'
     },
     slackSource: {
         kind: 'SlackSource',
         apiVersion: 'sources.knative.dev/v1alpha1',
-        description: 'Produces CloudEvents from Slack webhooks. Receives Slack events (messages, reactions) and forwards them to the Broker as CloudEvents.'
+        description: 'Produces CloudEvents from Slack webhooks. Receives Slack events and forwards them to the Broker as CloudEvents with type dev.knative.sources.slack.event.'
     },
     cronSource: {
         kind: 'PingSource',
         apiVersion: 'sources.knative.dev/v1',
-        description: 'Produces CloudEvents on a cron schedule. Sends periodic events to the Broker based on a cron expression, useful for scheduled tasks.'
+        description: 'Produces CloudEvents on a cron schedule. Sends periodic events to the Broker as CloudEvents with type dev.knative.sources.ping, useful for scheduled tasks.'
     },
     function: {
         kind: 'Function',
