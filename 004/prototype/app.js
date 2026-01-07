@@ -2905,33 +2905,34 @@ document.addEventListener('DOMContentLoaded', function() {
         sinks.forEach(sink => {
             const row = document.createElement('tr');
 
+            // Get type display name (capitalize first letter)
+            const typeDisplayName = sink.type.charAt(0).toUpperCase() + sink.type.slice(1);
+
             const destination = sink.mode === 'standalone'
-                ? `Broker: ${sink.broker}`
+                ? sink.broker
                 : getDestinationDisplay(sink.type, sink.config);
 
             row.innerHTML = `
-                <td><strong class="clickable-name" data-id="${sink.id}">${sink.name}</strong></td>
-                <td><span class="badge">${sink.type}</span></td>
-                <td><span class="badge">${sink.mode}</span></td>
+                <td>
+                    <a href="#" class="event-sink-name-link" data-id="${sink.id}">${sink.name}</a>
+                </td>
+                <td>${typeDisplayName}</td>
+                <td>${sink.mode}</td>
                 <td>${destination}</td>
-                <td class="actions-cell">
-                    <button class="btn-small btn-secondary edit-sink-btn" data-id="${sink.id}">Edit</button>
-                    <button class="btn-small btn-danger delete-sink-btn" data-id="${sink.id}">Delete</button>
+                <td class="actions-column">
+                    <div class="table-actions">
+                        <button class="btn-secondary btn-small edit-sink-btn" data-id="${sink.id}">Edit</button>
+                        <button class="btn-danger btn-small delete-sink-btn" data-id="${sink.id}">Delete</button>
+                    </div>
                 </td>
             `;
             eventSinksTableBody.appendChild(row);
         });
 
-        // Add event listeners to clickable names
-        document.querySelectorAll('.clickable-name').forEach(name => {
-            name.addEventListener('click', function() {
-                const sink = getEventSink(this.dataset.id);
-                if (sink) showEventSinkDetailView(sink);
-            });
-        });
-
+        // Add event listeners for edit/delete buttons and event sink name links
         document.querySelectorAll('.edit-sink-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
                 const sink = getEventSink(this.dataset.id);
                 if (sink) {
                     setCurrentEditingEventSink(sink);
@@ -2941,11 +2942,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         document.querySelectorAll('.delete-sink-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                if (confirm('Are you sure you want to delete this event sink?')) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const sink = getEventSink(this.dataset.id);
+                if (confirm(`Are you sure you want to delete event sink "${sink.name}"?`)) {
                     deleteEventSink(this.dataset.id);
                     renderEventSinksList();
                 }
+            });
+        });
+
+        document.querySelectorAll('.event-sink-name-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const sink = getEventSink(this.dataset.id);
+                if (sink) showEventSinkDetailView(sink);
             });
         });
     }
