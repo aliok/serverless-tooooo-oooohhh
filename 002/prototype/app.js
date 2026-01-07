@@ -93,9 +93,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const routePanel = document.getElementById('routePanel');
     const ingressTLSCheckbox = document.getElementById('ingressTLSEnabled');
     const ingressTLSFields = document.getElementById('ingressTLSFields');
-    const sinkMethodRadios = document.querySelectorAll('input[name="sinkMethod"]');
-    const noSinkPanel = document.getElementById('noSinkPanel');
-    const brokerSinkPanel = document.getElementById('brokerSinkPanel');
 
     // Detail view elements
     const backToListFromDetailBtn = document.getElementById('backToListFromDetailBtn');
@@ -125,6 +122,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const subscriptionEventType = document.getElementById('subscriptionEventType');
     const customEventTypeField = document.getElementById('customEventTypeField');
     const saveSubscriptionBtn = document.getElementById('saveSubscriptionBtn');
+
+    // Destinations view elements
+    const backToDetailFromDestinationsBtn = document.getElementById('backToDetailFromDestinationsBtn');
+    const destinationsViewFunctionName = document.getElementById('destinationsViewFunctionName');
+    const destinationDisplay = document.getElementById('destinationDisplay');
+    const emptyDestination = document.getElementById('emptyDestination');
+    const destinationForm = document.getElementById('destinationForm');
+    const saveDestinationBtn = document.getElementById('saveDestinationBtn');
+    const addDestinationBtn = document.getElementById('addDestinationBtn');
 
     // Broker detail view elements
     const backToBrokersListFromDetailBtn = document.getElementById('backToBrokersListFromDetailBtn');
@@ -269,6 +275,18 @@ document.addEventListener('DOMContentLoaded', function() {
     addTriggerBtn.addEventListener('click', function() {
         if (currentDetailFunction) {
             showSubscriptionsView(currentDetailFunction);
+        }
+    });
+
+    addDestinationBtn.addEventListener('click', function() {
+        if (currentDetailFunction) {
+            showDestinationsView(currentDetailFunction);
+        }
+    });
+
+    backToDetailFromDestinationsBtn.addEventListener('click', function() {
+        if (currentDetailFunction) {
+            showDetailView(currentDetailFunction);
         }
     });
 
@@ -458,20 +476,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Handle sink method radio button change
-    sinkMethodRadios.forEach(radio => {
-        radio.addEventListener('change', function() {
-            noSinkPanel.classList.remove('active');
-            brokerSinkPanel.classList.remove('active');
-
-            if (this.value === 'none') {
-                noSinkPanel.classList.add('active');
-            } else if (this.value === 'broker') {
-                brokerSinkPanel.classList.add('active');
-            }
-        });
-    });
-
     // Handle event source type radio button change
     eventSourceTypeRadios.forEach(radio => {
         radio.addEventListener('change', function() {
@@ -542,6 +546,34 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset form
         subscriptionForm.reset();
         customEventTypeField.style.display = 'none';
+    });
+
+    // Handle destination form submission
+    destinationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const broker = document.getElementById('destinationBroker').value.trim();
+
+        if (!broker) {
+            alert('Please select a broker');
+            return;
+        }
+
+        // Set destination
+        currentDetailFunction.sinkMethod = 'broker';
+        currentDetailFunction.sinkConfig = {
+            method: 'broker',
+            broker: broker
+        };
+
+        // Save to state
+        saveFunction(currentDetailFunction);
+
+        // Refresh destination view
+        renderDestination(currentDetailFunction);
+
+        // Reset form
+        destinationForm.reset();
     });
 
     /**
@@ -645,16 +677,6 @@ document.addEventListener('DOMContentLoaded', function() {
             networkingConfig.tlsTermination = document.getElementById('routeTLSTermination').value;
         }
 
-        // Collect sink configuration
-        const sinkMethod = document.querySelector('input[name="sinkMethod"]:checked').value;
-        let sinkConfig = {
-            method: sinkMethod
-        };
-
-        if (sinkMethod === 'broker') {
-            sinkConfig.broker = document.getElementById('sinkBroker').value;
-        }
-
         // Collect build configuration
         const buildMethod = document.querySelector('input[name="buildMethod"]:checked').value;
         let buildConfig = {
@@ -692,15 +714,18 @@ document.addEventListener('DOMContentLoaded', function() {
             scalingMetric: scalingMetric,
             metricConfig: metricConfig,
             networkingMethod: networkingMethod,
-            networkingConfig: networkingConfig,
-            sinkMethod: sinkMethod,
-            sinkConfig: sinkConfig
+            networkingConfig: networkingConfig
         };
 
-        // If editing, preserve the ID
+        // If editing, preserve the ID and sink configuration
         const currentEditing = getCurrentEditingFunction();
         if (currentEditing && currentEditing.id) {
             formData.id = currentEditing.id;
+            // Preserve sink configuration if it exists
+            if (currentEditing.sinkMethod) {
+                formData.sinkMethod = currentEditing.sinkMethod;
+                formData.sinkConfig = currentEditing.sinkConfig;
+            }
         }
 
         return formData;
@@ -967,12 +992,6 @@ document.addEventListener('DOMContentLoaded', function() {
             networkingDescription = `The function is exposed externally via <strong>OpenShift Route</strong>${hostnameDesc} with path <strong>${config.networkingConfig.path}</strong>${tlsDesc}.`;
         }
 
-        // Build sink description
-        let sinkDescription = '';
-        if (config.sinkMethod === 'broker' && config.sinkConfig && config.sinkConfig.broker) {
-            sinkDescription = `<br><br>The function will send output CloudEvents to the <strong>${config.sinkConfig.broker}</strong> Broker.`;
-        }
-
         userMessage.innerHTML = `
             You created a Function named <strong>${config.name}</strong> in namespace <strong>${config.namespace}</strong>
             with auto-scaling enabled.
@@ -982,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', function() {
             The platform will automatically scale your function based on HTTP traffic,
             ${scalingDescription}.
             <br><br>
-            ${networkingDescription}${sinkDescription}
+            ${networkingDescription}
         `;
 
         // Show platform view
@@ -1208,6 +1227,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        destinationsView.style.display = 'none';
         brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
@@ -1226,6 +1246,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        destinationsView.style.display = 'none';
         brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'block';
@@ -1243,6 +1264,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        destinationsView.style.display = 'none';
         brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
@@ -1260,6 +1282,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        destinationsView.style.display = 'none';
         brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
@@ -1473,6 +1496,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        destinationsView.style.display = 'none';
         brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
@@ -1504,6 +1528,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'block';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        destinationsView.style.display = 'none';
         brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
@@ -1525,9 +1550,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             createFunctionDirectBtn.textContent = 'Create Function';
         }
-
-        // Populate sink broker dropdown
-        populateSinkBrokerDropdown();
 
         // Trigger initial resource preview after a short delay to let form populate
         setTimeout(() => {
@@ -1637,19 +1659,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('routeHostname').value = functionData.networkingConfig.hostname || '';
             document.getElementById('routePath').value = functionData.networkingConfig.path || '/';
             document.getElementById('routeTLSTermination').value = functionData.networkingConfig.tlsTermination || 'edge';
-        }
-
-        // Set sink method
-        const sinkMethod = functionData.sinkMethod || 'none';
-        const sinkRadio = document.querySelector(`input[name="sinkMethod"][value="${sinkMethod}"]`);
-        if (sinkRadio) {
-            sinkRadio.checked = true;
-            sinkRadio.dispatchEvent(new Event('change'));
-        }
-
-        // Load sink config
-        if (functionData.sinkMethod === 'broker' && functionData.sinkConfig) {
-            document.getElementById('sinkBroker').value = functionData.sinkConfig.broker || '';
         }
     }
 
@@ -2030,6 +2039,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'block';
         subscriptionsView.style.display = 'none';
+        destinationsView.style.display = 'none';
         brokersListView.style.display = 'none';
         brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
@@ -2050,6 +2060,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'block';
+        destinationsView.style.display = 'none';
         brokersListView.style.display = 'none';
         brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
@@ -2062,6 +2073,29 @@ document.addEventListener('DOMContentLoaded', function() {
         populateSubscriptionBrokerDropdown();
 
         renderEventSubscriptions(functionData);
+    }
+
+    /**
+     * Show destinations management view
+     */
+    function showDestinationsView(functionData) {
+        listView.style.display = 'none';
+        formView.style.display = 'none';
+        detailView.style.display = 'none';
+        subscriptionsView.style.display = 'none';
+        destinationsView.style.display = 'block';
+        brokersListView.style.display = 'none';
+        brokerFormView.style.display = 'none';
+        eventSourcesListView.style.display = 'none';
+        eventSourceFormView.style.display = 'none';
+
+        currentDetailFunction = functionData;
+        destinationsViewFunctionName.textContent = `Function: ${functionData.name}`;
+
+        // Populate broker dropdown in destination form
+        populateDestinationBrokerDropdown();
+
+        renderDestination(functionData);
     }
 
     /**
@@ -2084,10 +2118,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * Populate sink broker dropdown with existing brokers
+     * Populate destination broker dropdown with existing brokers
      */
-    function populateSinkBrokerDropdown() {
-        const dropdown = document.getElementById('sinkBroker');
+    function populateDestinationBrokerDropdown() {
+        const dropdown = document.getElementById('destinationBroker');
         const brokers = getBrokers();
 
         // Clear existing options except first
@@ -2110,6 +2144,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        destinationsView.style.display = 'none';
         brokerDetailView.style.display = 'block';
         eventSourceDetailView.style.display = 'none';
         brokersListView.style.display = 'none';
@@ -2132,6 +2167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
+        destinationsView.style.display = 'none';
         brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'block';
         brokersListView.style.display = 'none';
@@ -2405,6 +2441,47 @@ document.addEventListener('DOMContentLoaded', function() {
             currentDetailFunction.eventSubscriptions.splice(index, 1);
             saveFunction(currentDetailFunction);
             renderEventSubscriptions(currentDetailFunction);
+        }
+    }
+
+    /**
+     * Render destination
+     */
+    function renderDestination(functionData) {
+        destinationDisplay.innerHTML = '';
+
+        if (!functionData.sinkMethod || functionData.sinkMethod === 'none') {
+            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No destination configured. Set one below to send output CloudEvents to a Broker.</p></div>';
+            return;
+        }
+
+        if (functionData.sinkMethod === 'broker' && functionData.sinkConfig && functionData.sinkConfig.broker) {
+            const destCard = document.createElement('div');
+            destCard.className = 'subscription-card';
+            destCard.innerHTML = `
+                <div class="subscription-info">
+                    <div class="subscription-broker">Broker: <strong>${functionData.sinkConfig.broker}</strong></div>
+                </div>
+                <button class="btn-danger btn-small remove-destination-btn">Remove</button>
+            `;
+            destinationDisplay.appendChild(destCard);
+
+            // Add remove handler
+            document.querySelector('.remove-destination-btn').addEventListener('click', function() {
+                removeDestination();
+            });
+        }
+    }
+
+    /**
+     * Remove destination
+     */
+    function removeDestination() {
+        if (confirm('Are you sure you want to remove this destination?')) {
+            currentDetailFunction.sinkMethod = 'none';
+            currentDetailFunction.sinkConfig = { method: 'none' };
+            saveFunction(currentDetailFunction);
+            renderDestination(currentDetailFunction);
         }
     }
 
