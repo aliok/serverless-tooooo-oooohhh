@@ -714,22 +714,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Auto-update broker resources on form input changes
-    const brokerFormInputs = brokerForm.querySelectorAll('input, select, textarea');
-    brokerFormInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            // Debounce the update
-            clearTimeout(input.updateTimeout);
-            input.updateTimeout = setTimeout(() => {
-                updateBrokerResourcePreview();
-            }, 500);
-        });
+    // // Auto-update broker resources on form input changes
+    // const brokerFormInputs = brokerForm.querySelectorAll('input, select, textarea');
+    // brokerFormInputs.forEach(input => {
+    //     input.addEventListener('input', function() {
+    //         // Debounce the update
+    //         clearTimeout(input.updateTimeout);
+    //         input.updateTimeout = setTimeout(() => {
+    //             updateBrokerResourcePreview();
+    //         }, 500);
+    //     });
 
-        input.addEventListener('change', function() {
-            // Immediate update on change (for radio buttons, checkboxes, selects)
-            updateBrokerResourcePreview();
-        });
-    });
+    //     input.addEventListener('change', function() {
+    //         // Immediate update on change (for radio buttons, checkboxes, selects)
+    //         updateBrokerResourcePreview();
+    //     });
+    // });
 
     // Auto-update event source resources on form input changes
     const eventSourceFormInputs = eventSourceForm.querySelectorAll('input, select, textarea');
@@ -1429,37 +1429,37 @@ document.addEventListener('DOMContentLoaded', function() {
         eventSourceResourceCards.appendChild(card);
     }
 
-    /**
-     * Show broker form view
-     */
-    function showBrokerFormView(mode) {
-        listView.style.display = 'none';
-        formView.style.display = 'none';
-        detailView.style.display = 'none';
-        subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
-        // // brokerDetailView.style.display = 'none';
-        eventSourceDetailView.style.display = 'none';
-        // brokersListView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
-        eventSourceFormView.style.display = 'none';
-        // brokerFormView.style.display = 'block';
+    // /**
+    //  * Show broker form view
+    //  */
+    // function showBrokerFormView(mode) {
+    //     listView.style.display = 'none';
+    //     formView.style.display = 'none';
+    //     detailView.style.display = 'none';
+    //     subscriptionsView.style.display = 'none';
+    //     destinationsView.style.display = 'none';
+    //     // // brokerDetailView.style.display = 'none';
+    //     eventSourceDetailView.style.display = 'none';
+    //     // brokersListView.style.display = 'none';
+    //     eventSourcesListView.style.display = 'none';
+    //     eventSourceFormView.style.display = 'none';
+    //     // brokerFormView.style.display = 'block';
 
-        if (mode === 'create') {
-            brokerFormTitle.textContent = 'Create Broker';
-            saveBrokerBtn.textContent = 'Create Broker';
-            resetBrokerForm();
-        } else if (mode === 'edit') {
-            brokerFormTitle.textContent = 'Edit Broker';
-            saveBrokerBtn.textContent = 'Save Broker';
-            loadBrokerIntoForm(getCurrentEditingBroker());
-        }
+    //     if (mode === 'create') {
+    //         brokerFormTitle.textContent = 'Create Broker';
+    //         saveBrokerBtn.textContent = 'Create Broker';
+    //         resetBrokerForm();
+    //     } else if (mode === 'edit') {
+    //         brokerFormTitle.textContent = 'Edit Broker';
+    //         saveBrokerBtn.textContent = 'Save Broker';
+    //         loadBrokerIntoForm(getCurrentEditingBroker());
+    //     }
 
-        // Trigger initial resource preview
-        setTimeout(() => {
-            updateBrokerResourcePreview();
-        }, 100);
-    }
+    //     // Trigger initial resource preview
+    //     setTimeout(() => {
+    //         updateBrokerResourcePreview();
+    //     }, 100);
+    // }
 
     /**
      * Show form view
