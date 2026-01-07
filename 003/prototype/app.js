@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // const detailEventSourceBroker = document.getElementById('detailEventSourceBroker'); // Broker field removed
     const detailEventSourceEventTypes = document.getElementById('detailEventSourceEventTypes');
     const eventSourceExternalSource = document.getElementById('eventSourceExternalSource');
-    const eventSourceTargetBroker = document.getElementById('eventSourceTargetBroker');
+    // const eventSourceTargetBroker = document.getElementById('eventSourceTargetBroker');
     const eventSourceDetailResourceCount = document.getElementById('eventSourceDetailResourceCount');
     const eventSourceDetailPlatformDescription = document.getElementById('eventSourceDetailPlatformDescription');
     const eventSourceDetailResourceCards = document.getElementById('eventSourceDetailResourceCards');
@@ -2598,17 +2598,18 @@ document.addEventListener('DOMContentLoaded', function() {
         eventSourceExternalSource.appendChild(externalBox);
 
         // Render target broker
-        eventSourceTargetBroker.innerHTML = '';
-        const brokerBox = document.createElement('div');
-        brokerBox.className = 'destination-box';
-        brokerBox.innerHTML = `
-            <div class="destination-icon">📨</div>
-            <div class="destination-info">
-                <div class="destination-name">${eventSourceData.broker}</div>
-                <div class="destination-details">Knative Broker</div>
-            </div>
-        `;
-        eventSourceTargetBroker.appendChild(brokerBox);
+        // Note: Target broker section removed from HTML - now shown in helper text
+        // eventSourceTargetBroker.innerHTML = '';
+        // const brokerBox = document.createElement('div');
+        // brokerBox.className = 'destination-box';
+        // brokerBox.innerHTML = `
+        //     <div class="destination-icon">📨</div>
+        //     <div class="destination-info">
+        //         <div class="destination-name">default</div>
+        //         <div class="destination-details">Knative Broker</div>
+        //     </div>
+        // `;
+        // eventSourceTargetBroker.appendChild(brokerBox);
     }
 
     /**
@@ -2623,7 +2624,7 @@ document.addEventListener('DOMContentLoaded', function() {
             metadata: RESOURCE_METADATA[resourceType] || {
                 kind: `${eventSourceData.type.charAt(0).toUpperCase() + eventSourceData.type.slice(1)}Source`,
                 apiVersion: 'sources.knative.dev/v1',
-                description: `Produces CloudEvents from ${eventSourceData.type} to the ${eventSourceData.broker} Broker.`
+                description: `Produces CloudEvents from ${eventSourceData.type} to the default Broker.`
             }
         };
 
@@ -2632,7 +2633,7 @@ document.addEventListener('DOMContentLoaded', function() {
         eventSourceDetailPlatformDescription.innerHTML = `
             The UI composed <strong>1</strong> Kubernetes resource from your event source configuration.
             <br>
-            This ${typeDisplayName} Source produces CloudEvents and sends them to the <strong>${eventSourceData.broker}</strong> Broker.
+            This ${typeDisplayName} Source produces CloudEvents and sends them to the platform-managed <strong>default</strong> broker.
         `;
 
         eventSourceDetailResourceCards.innerHTML = '';
