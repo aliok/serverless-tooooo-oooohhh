@@ -36,10 +36,13 @@ function generateFunctionYAML(config) {
         subscriptionsYAML = `    subscriptions: []`;
     }
 
-    // Add sink configuration if broker sink is configured
+    // Add sink configuration
     let sinkYAML = '';
     if (config.sinkMethod === 'broker' && config.sinkConfig && config.sinkConfig.broker) {
         sinkYAML = `\n    sink:\n      ref:\n        apiVersion: eventing.knative.dev/v1\n        kind: Broker\n        name: ${config.sinkConfig.broker}`;
+    } else if (config.sinkMethod === 'sink' && config.sinkConfig && config.sinkConfig.sinkName) {
+        const sinkKind = getSinkKind(config.sinkConfig.sinkType);
+        sinkYAML = `\n    sink:\n      ref:\n        apiVersion: sinks.knative.dev/v1alpha1\n        kind: ${sinkKind}\n        name: ${config.sinkConfig.sinkName}`;
     }
 
     return `apiVersion: serverless.openshift.io/v1alpha1
@@ -710,6 +713,175 @@ status:
 }
 
 /**
+ * Generate Event Sink YAML (unified function for all types)
+ * @param {Object} config - Configuration object
+ * @param {string} config.name - Event sink name
+ * @param {string} config.namespace - Namespace
+ * @param {string} config.type - Event sink type (http, kafka, sns, pubsub, eventgrid, database)
+ * @param {string} config.mode - Mode (standalone or referenced)
+ * @param {string} config.broker - Source broker name (standalone mode only)
+ * @param {Array} config.eventTypes - Event types (standalone mode only)
+ * @param {Object} config.config - Type-specific configuration
+ * @returns {string} YAML string
+ */
+function generateEventSinkYAML(config) {
+    if (config.type === 'http') {
+        return generateHttpSinkYAML(config);
+    } else if (config.type === 'kafka') {
+        return generateKafkaSinkYAML(config);
+    } else if (config.type === 'sns') {
+        return generateSnsSinkYAML(config);
+    } else if (config.type === 'pubsub') {
+        return generatePubSubSinkYAML(config);
+    } else if (config.type === 'eventgrid') {
+        return generateEventGridSinkYAML(config);
+    } else if (config.type === 'database') {
+        return generateDatabaseSinkYAML(config);
+    }
+    return '# Unknown event sink type';
+}
+
+/**
+ * Generate HTTP Sink YAML
+ */
+function generateHttpSinkYAML(config) {
+    return `apiVersion: sinks.knative.dev/v1alpha1
+kind: HttpSink
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  url: ${config.config.url}
+  headers:
+    Content-Type: "application/cloudevents+json"`;
+}
+
+/**
+ * Generate Kafka Sink YAML
+ */
+function generateKafkaSinkYAML(config) {
+    return `apiVersion: eventing.knative.dev/v1alpha1
+kind: KafkaSink
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  topic: ${config.config.topic}
+  bootstrapServers:
+    - ${config.config.bootstrapServers}`;
+}
+
+/**
+ * Generate AWS SNS Sink YAML
+ */
+function generateSnsSinkYAML(config) {
+    return `apiVersion: sinks.knative.dev/v1alpha1
+kind: AwsSnsSink
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  topicArn: ${config.config.topicArn}
+  credentials:
+    secretKeyRef:
+      name: ${config.config.credentialsSecret}
+      key: credentials`;
+}
+
+/**
+ * Generate GCP Pub/Sub Sink YAML
+ */
+function generatePubSubSinkYAML(config) {
+    return `apiVersion: sinks.knative.dev/v1alpha1
+kind: GcpPubSubSink
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  topic: ${config.config.topic}
+  credentials:
+    secretKeyRef:
+      name: ${config.config.credentialsSecret}
+      key: credentials`;
+}
+
+/**
+ * Generate Azure Event Grid Sink YAML
+ */
+function generateEventGridSinkYAML(config) {
+    return `apiVersion: sinks.knative.dev/v1alpha1
+kind: AzureEventGridSink
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  endpoint: ${config.config.endpoint}
+  key:
+    secretKeyRef:
+      name: ${config.config.keySecret}
+      key: key`;
+}
+
+/**
+ * Generate Database Sink YAML
+ */
+function generateDatabaseSinkYAML(config) {
+    return `apiVersion: sinks.knative.dev/v1alpha1
+kind: DatabaseSink
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  type: ${config.config.databaseType}
+  connectionSecret: ${config.config.connectionSecret}
+  table: ${config.config.table}`;
+}
+
+/**
+ * Generate Trigger for Standalone Mode Event Sink
+ * @param {Object} config - Sink configuration
+ * @returns {string} YAML string
+ */
+function generateSinkTriggerYAML(config) {
+    const eventTypeFilters = config.eventTypes
+        .map(type => `    - exact:\n        type: ${type}`)
+        .join('\n');
+
+    return `apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: ${config.name}-trigger
+  namespace: ${config.namespace}
+spec:
+  broker: ${config.broker}
+  filter:
+    attributes:
+${eventTypeFilters}
+  subscriber:
+    ref:
+      apiVersion: sinks.knative.dev/v1alpha1
+      kind: ${getSinkKind(config.type)}
+      name: ${config.name}`;
+}
+
+/**
+ * Get Kubernetes Kind for sink type
+ * @param {string} type - Sink type
+ * @returns {string} Kubernetes Kind
+ */
+function getSinkKind(type) {
+    const kindMap = {
+        'http': 'HttpSink',
+        'kafka': 'KafkaSink',
+        'sns': 'AwsSnsSink',
+        'pubsub': 'GcpPubSubSink',
+        'eventgrid': 'AzureEventGridSink',
+        'database': 'DatabaseSink'
+    };
+    return kindMap[type] || 'HttpSink';
+}
+
+/**
  * Resource metadata for UI display
  */
 const RESOURCE_METADATA = {
@@ -787,5 +959,40 @@ const RESOURCE_METADATA = {
         kind: 'BuildConfig',
         apiVersion: 'build.openshift.io/v1',
         description: 'Builds the function container image using OpenShift Source-to-Image (S2I). Automatically detects the source code language and builds a runnable container image.'
+    },
+    httpSink: {
+        kind: 'HttpSink',
+        apiVersion: 'sinks.knative.dev/v1alpha1',
+        description: 'Sends CloudEvents to HTTP/Webhook endpoints. Delivers events as HTTP POST requests with CloudEvents format to external webhook URLs.'
+    },
+    kafkaSink: {
+        kind: 'KafkaSink',
+        apiVersion: 'eventing.knative.dev/v1alpha1',
+        description: 'Sends CloudEvents to Kafka topics. Converts CloudEvents to Kafka messages and publishes them to the specified topic.'
+    },
+    snsSink: {
+        kind: 'AwsSnsSink',
+        apiVersion: 'sinks.knative.dev/v1alpha1',
+        description: 'Sends CloudEvents to AWS SNS topics. Publishes events as SNS messages to the specified Amazon SNS topic ARN.'
+    },
+    pubsubSink: {
+        kind: 'GcpPubSubSink',
+        apiVersion: 'sinks.knative.dev/v1alpha1',
+        description: 'Sends CloudEvents to GCP Pub/Sub topics. Publishes events as Pub/Sub messages to the specified Google Cloud Pub/Sub topic.'
+    },
+    eventgridSink: {
+        kind: 'AzureEventGridSink',
+        apiVersion: 'sinks.knative.dev/v1alpha1',
+        description: 'Sends CloudEvents to Azure Event Grid topics. Publishes events to the specified Azure Event Grid endpoint.'
+    },
+    databaseSink: {
+        kind: 'DatabaseSink',
+        apiVersion: 'sinks.knative.dev/v1alpha1',
+        description: 'Sends CloudEvents to database tables. Stores events as rows in the specified database table or collection (PostgreSQL or MongoDB).'
+    },
+    trigger: {
+        kind: 'Trigger',
+        apiVersion: 'eventing.knative.dev/v1',
+        description: 'Filters and routes CloudEvents from a Broker to a subscriber. Matches events by type and forwards them to the configured destination (Function or Sink).'
     }
 };

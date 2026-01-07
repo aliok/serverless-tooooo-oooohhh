@@ -17,6 +17,7 @@
         <button class="nav-tab active" data-view="functions">Functions</button>
         <button class="nav-tab" data-view="brokers">Brokers</button>
         <button class="nav-tab" data-view="eventSources">Event Sources</button>
+        <button class="nav-tab" data-view="eventSinks">Event Sinks</button>
     </nav>
 
     <!-- Function List View -->
@@ -855,12 +856,36 @@ awsRegion: us-east-1"></textarea>
                     <h3>Set Destination</h3>
                     <form id="destinationForm" class="subscription-form-inline">
                         <div class="form-group">
-                            <label for="destinationBroker">Broker Name</label>
-                            <select id="destinationBroker" name="destinationBroker" required>
-                                <option value="">Select a broker...</option>
-                                <!-- Will be populated dynamically from brokers list -->
+                            <label for="destinationMethod">Destination Type</label>
+                            <select id="destinationMethod" name="destinationMethod" required>
+                                <option value="broker">Broker</option>
+                                <option value="sink">Event Sink</option>
                             </select>
-                            <small class="helper-text">Knative Broker where output CloudEvents will be sent</small>
+                            <small class="helper-text">Send events to a Broker or directly to an Event Sink</small>
+                        </div>
+
+                        <!-- Broker Destination Fields -->
+                        <div id="brokerDestinationFields">
+                            <div class="form-group">
+                                <label for="destinationBroker">Broker Name</label>
+                                <select id="destinationBroker" name="destinationBroker">
+                                    <option value="">Select a broker...</option>
+                                    <!-- Will be populated dynamically from brokers list -->
+                                </select>
+                                <small class="helper-text">Knative Broker where output CloudEvents will be sent</small>
+                            </div>
+                        </div>
+
+                        <!-- Sink Destination Fields -->
+                        <div id="sinkDestinationFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="destinationSink">Event Sink Name</label>
+                                <select id="destinationSink" name="destinationSink">
+                                    <option value="">Select a sink...</option>
+                                    <!-- Will be populated dynamically with referenced sinks -->
+                                </select>
+                                <small class="helper-text">Event Sink where output CloudEvents will be sent</small>
+                            </div>
                         </div>
 
                         <div class="form-actions">
@@ -1392,6 +1417,370 @@ awsRegion: us-east-1"></textarea>
                     <p id="eventSourcePlatformDescription" class="platform-description"></p>
 
                     <div id="eventSourceResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Sink Form View -->
+    <div id="eventSinkFormView" class="container" style="display: none;">
+        <section class="form-panel">
+            <div class="form-header">
+                <h2 id="eventSinkFormTitle">Create Event Sink</h2>
+                <button type="button" id="backToEventSinksListBtn" class="btn-secondary">← Back to List</button>
+            </div>
+            <p class="panel-description">Configure an Event Sink to send CloudEvents to external systems</p>
+
+            <form id="eventSinkForm">
+                <fieldset>
+                    <legend>Event Sink Details</legend>
+
+                    <div class="form-group">
+                        <label for="eventSinkName">Event Sink Name</label>
+                        <input type="text" id="eventSinkName" name="eventSinkName"
+                               placeholder="my-event-sink" value="my-event-sink" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventSinkNamespace">Namespace</label>
+                        <input type="text" id="eventSinkNamespace" name="eventSinkNamespace"
+                               placeholder="default" value="default" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventSinkMode">Mode</label>
+                        <select id="eventSinkMode" name="eventSinkMode" required>
+                            <option value="referenced">Referenced (used by Functions)</option>
+                            <option value="standalone">Standalone (subscribes to Broker)</option>
+                        </select>
+                        <small class="helper-text">Referenced mode: sink is used by functions as destination. Standalone mode: sink subscribes directly to a broker.</small>
+                    </div>
+                </fieldset>
+
+                <!-- Standalone Mode Fields -->
+                <fieldset id="standaloneModeFields" style="display: none;">
+                    <legend>Standalone Mode Configuration</legend>
+
+                    <div class="form-group">
+                        <label for="eventSinkBroker">Source Broker</label>
+                        <select id="eventSinkBroker" name="eventSinkBroker">
+                            <option value="">Select a broker...</option>
+                            <!-- Will be populated dynamically from brokers list -->
+                        </select>
+                        <small class="helper-text">The Broker to subscribe to</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventSinkEventTypes">Event Types (comma-separated)</label>
+                        <input type="text" id="eventSinkEventTypes" name="eventSinkEventTypes"
+                               placeholder="com.example.order.created,com.example.order.updated" value="">
+                        <small class="helper-text">Filter events by type (e.g., "com.example.order.created")</small>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Sink Type</legend>
+
+                    <div class="scaling-method-label">
+                        <label>Destination Type</label>
+                        <small class="helper-text">Choose the type of external destination</small>
+                    </div>
+
+                    <!-- HTTP/Webhook Sink Panel -->
+                    <div id="httpSinkPanel" class="metric-panel active">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="http" checked>
+                            <span class="panel-icon">▼</span>
+                            <span class="panel-title">HTTP / Webhook</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="httpSinkURL">URL</label>
+                                <input type="text" id="httpSinkURL" name="httpSinkURL"
+                                       placeholder="https://example.com/webhook" value="https://example.com/webhook">
+                                <small class="helper-text">HTTP endpoint URL to send CloudEvents to</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kafka Sink Panel -->
+                    <div id="kafkaSinkPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="kafka">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Kafka</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="kafkaSinkTopic">Topic</label>
+                                <input type="text" id="kafkaSinkTopic" name="kafkaSinkTopic"
+                                       placeholder="my-topic" value="my-topic">
+                                <small class="helper-text">Kafka topic name</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kafkaSinkBootstrapServers">Bootstrap Servers</label>
+                                <input type="text" id="kafkaSinkBootstrapServers" name="kafkaSinkBootstrapServers"
+                                       placeholder="kafka:9092" value="kafka:9092">
+                                <small class="helper-text">Kafka bootstrap servers (comma-separated)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AWS SNS Sink Panel -->
+                    <div id="snsSinkPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="sns">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">AWS SNS</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="snsTopicArn">Topic ARN</label>
+                                <input type="text" id="snsTopicArn" name="snsTopicArn"
+                                       placeholder="arn:aws:sns:us-east-1:123456789012:my-topic" value="">
+                                <small class="helper-text">AWS SNS Topic ARN</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="snsCredentialsSecret">Credentials Secret</label>
+                                <input type="text" id="snsCredentialsSecret" name="snsCredentialsSecret"
+                                       placeholder="aws-credentials" value="aws-credentials">
+                                <small class="helper-text">Kubernetes Secret containing AWS credentials</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GCP Pub/Sub Sink Panel -->
+                    <div id="pubsubSinkPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="pubsub">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">GCP Pub/Sub</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="pubsubTopic">Topic</label>
+                                <input type="text" id="pubsubTopic" name="pubsubTopic"
+                                       placeholder="projects/my-project/topics/my-topic" value="">
+                                <small class="helper-text">GCP Pub/Sub Topic path</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="pubsubCredentialsSecret">Credentials Secret</label>
+                                <input type="text" id="pubsubCredentialsSecret" name="pubsubCredentialsSecret"
+                                       placeholder="gcp-credentials" value="gcp-credentials">
+                                <small class="helper-text">Kubernetes Secret containing GCP service account credentials</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Azure Event Grid Sink Panel -->
+                    <div id="eventgridSinkPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="eventgrid">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Azure Event Grid</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="eventgridEndpoint">Endpoint</label>
+                                <input type="text" id="eventgridEndpoint" name="eventgridEndpoint"
+                                       placeholder="https://my-topic.westus2-1.eventgrid.azure.net/api/events" value="">
+                                <small class="helper-text">Azure Event Grid topic endpoint URL</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="eventgridKeySecret">Access Key Secret</label>
+                                <input type="text" id="eventgridKeySecret" name="eventgridKeySecret"
+                                       placeholder="eventgrid-key" value="eventgrid-key">
+                                <small class="helper-text">Kubernetes Secret containing Event Grid access key</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Database Sink Panel -->
+                    <div id="databaseSinkPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="database">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Database</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="databaseType">Database Type</label>
+                                <select id="databaseType" name="databaseType">
+                                    <option value="postgresql">PostgreSQL</option>
+                                    <option value="mongodb">MongoDB</option>
+                                </select>
+                                <small class="helper-text">Type of database</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="databaseConnectionSecret">Connection Secret</label>
+                                <input type="text" id="databaseConnectionSecret" name="databaseConnectionSecret"
+                                       placeholder="db-connection" value="db-connection">
+                                <small class="helper-text">Kubernetes Secret containing database connection string</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="databaseTable">Table/Collection</label>
+                                <input type="text" id="databaseTable" name="databaseTable"
+                                       placeholder="events" value="events">
+                                <small class="helper-text">Database table or collection name for storing events</small>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="form-actions">
+                    <button type="button" id="saveEventSinkBtn" class="btn-primary">Create Event Sink</button>
+                </div>
+            </form>
+
+            <!-- Resources Preview -->
+            <div class="resources-preview" style="margin-top: 2rem;">
+                <h2>Composed Resources</h2>
+                <p class="panel-description">Live preview of Kubernetes resources that will be created</p>
+
+                <!-- Platform View Section -->
+                <div id="eventSinkPlatformView" class="platform-view" style="display: none;">
+                    <h3>What UI Creates</h3>
+                    <p id="eventSinkPlatformDescription" class="platform-description"></p>
+
+                    <div id="eventSinkResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Sinks List View -->
+    <div id="eventSinksListView" class="container" style="display: none;">
+        <section class="list-panel">
+            <div class="list-header">
+                <h2 id="eventSinksTitle">Event Sinks (<span id="eventSinkCount">0</span>)</h2>
+                <div class="list-header-actions">
+                    <button id="createNewEventSinkBtn" class="btn-primary">Create event sink</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="functions-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="name">
+                                Event sink name
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="type">
+                                Type
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="mode">
+                                Mode
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th>Destination</th>
+                            <th class="actions-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventSinksTableBody">
+                        <!-- Event sink rows will be inserted here -->
+                    </tbody>
+                </table>
+                <div id="emptyEventSinksState" class="empty-table-state" style="display: none;">
+                    <p>No event sinks found. Click "Create event sink" to get started.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Sink Detail View -->
+    <div id="eventSinkDetailView" class="container" style="display: none;">
+        <section class="detail-panel">
+            <div class="detail-header">
+                <div>
+                    <button type="button" id="backToEventSinksListFromDetailBtn" class="btn-secondary">← Back to List</button>
+                    <h2 id="detailEventSinkName"></h2>
+                </div>
+                <div class="detail-actions">
+                    <button type="button" id="editEventSinkFromDetailBtn" class="btn-secondary">Edit Event Sink</button>
+                </div>
+            </div>
+
+            <div class="function-overview">
+                <h3>Event Sink Overview</h3>
+
+                <div class="function-diagram">
+                    <!-- Event Sources (Left) -->
+                    <div class="diagram-column diagram-sources">
+                        <h4 id="eventSinkSourceTitle">Event Source</h4>
+                        <div id="eventSinkSourcesList" class="source-items">
+                            <!-- Source boxes will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Arrow: Sources → Sink -->
+                    <div class="diagram-arrow">
+                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 5 20 L 45 20" />
+                            <polygon points="45,15 55,20 45,25" />
+                        </svg>
+                    </div>
+
+                    <!-- Event Sink (Center) -->
+                    <div class="diagram-column diagram-function">
+                        <div class="function-box">
+                            <div class="function-icon">📤</div>
+                            <div class="function-name" id="diagramEventSinkName"></div>
+                            <div class="function-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">Type:</span>
+                                    <span id="detailEventSinkType"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Mode:</span>
+                                    <span id="detailEventSinkMode"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Namespace:</span>
+                                    <span id="detailEventSinkNamespace"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Arrow: Sink → External Destination -->
+                    <div class="diagram-arrow">
+                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 5 20 L 45 20" />
+                            <polygon points="45,15 55,20 45,25" />
+                        </svg>
+                    </div>
+
+                    <!-- External Destination (Right) -->
+                    <div class="diagram-column diagram-destinations">
+                        <h4>External Destination</h4>
+                        <div id="eventSinkExternalDestination" class="destination-items">
+                            <!-- Destination box will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-resources-section">
+                <h3>Composed Resources</h3>
+
+                <div id="eventSinkDetailPlatformView" class="platform-view">
+                    <p id="eventSinkDetailPlatformDescription" class="platform-description">
+                        The UI composed <strong id="eventSinkDetailResourceCount">1</strong> Kubernetes resource from your event sink configuration.
+                    </p>
+
+                    <div id="eventSinkDetailResourceCards" class="resource-cards">
                         <!-- Resource cards will be inserted here by JavaScript -->
                     </div>
                 </div>

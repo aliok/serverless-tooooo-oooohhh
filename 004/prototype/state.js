@@ -83,6 +83,25 @@ let currentEditingBroker = null;
 // Current event source being edited (null for create mode)
 let currentEditingEventSource = null;
 
+// In-memory event sink storage
+let eventSinks = [
+    {
+        id: 'http-webhook-1',
+        name: 'http-webhook',
+        namespace: 'default',
+        type: 'http',
+        mode: 'referenced',
+        config: {
+            url: 'https://example.com/webhook',
+            headers: { 'Content-Type': 'application/cloudevents+json' }
+        },
+        createdAt: new Date().toISOString()
+    }
+];
+
+// Current event sink being edited (null for create mode)
+let currentEditingEventSink = null;
+
 /**
  * Get all functions
  */
@@ -279,4 +298,70 @@ function getCurrentEditingEventSource() {
  */
 function clearCurrentEditingEventSource() {
     currentEditingEventSource = null;
+}
+
+/**
+ * Get all event sinks
+ */
+function getEventSinks() {
+    return eventSinks;
+}
+
+/**
+ * Get event sink by ID
+ */
+function getEventSink(id) {
+    return eventSinks.find(sink => sink.id === id);
+}
+
+/**
+ * Add or update event sink
+ */
+function saveEventSink(sinkData) {
+    if (sinkData.id) {
+        // Update existing
+        const index = eventSinks.findIndex(sink => sink.id === sinkData.id);
+        if (index !== -1) {
+            eventSinks[index] = {
+                ...sinkData,
+                updatedAt: new Date().toISOString()
+            };
+        }
+    } else {
+        // Create new
+        const newSink = {
+            ...sinkData,
+            id: sinkData.name,
+            createdAt: new Date().toISOString()
+        };
+        eventSinks.push(newSink);
+    }
+}
+
+/**
+ * Delete event sink by ID
+ */
+function deleteEventSink(id) {
+    eventSinks = eventSinks.filter(sink => sink.id !== id);
+}
+
+/**
+ * Set current editing event sink
+ */
+function setCurrentEditingEventSink(sinkData) {
+    currentEditingEventSink = sinkData;
+}
+
+/**
+ * Get current editing event sink
+ */
+function getCurrentEditingEventSink() {
+    return currentEditingEventSink;
+}
+
+/**
+ * Clear current editing event sink
+ */
+function clearCurrentEditingEventSink() {
+    currentEditingEventSink = null;
 }
