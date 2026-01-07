@@ -796,13 +796,10 @@ awsRegion: us-east-1"></textarea>
                             <label for="subscriptionEventType">Event Type</label>
                             <select id="subscriptionEventType" name="subscriptionEventType" required>
                                 <option value="">Select an event type...</option>
-                                <option value="dev.knative.kafka.event">dev.knative.kafka.event (Kafka)</option>
-                                <option value="dev.knative.sources.github.event">dev.knative.sources.github.event (GitHub)</option>
-                                <option value="dev.knative.sources.ping">dev.knative.sources.ping (Cron/Ping)</option>
-                                <option value="dev.knative.sources.slack.event">dev.knative.sources.slack.event (Slack)</option>
+                                <!-- Event types will be populated from existing event sources -->
                                 <option value="custom">Custom (enter below)</option>
                             </select>
-                            <small class="helper-text">Select a Knative event source type or choose "Custom" to enter your own</small>
+                            <small class="helper-text">Select an event type from your event sources or choose "Custom"</small>
                         </div>
 
                         <div id="customEventTypeField" class="form-group" style="display: none;">

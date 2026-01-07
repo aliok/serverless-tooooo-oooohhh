@@ -2010,8 +2010,8 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDetailFunction = functionData;
         subscriptionsViewFunctionName.textContent = `Function: ${functionData.name}`;
 
-        // // Populate broker dropdown in subscription form
-        // populateSubscriptionBrokerDropdown();
+        // Populate event types from existing event sources
+        populateEventTypeDropdown();
 
         renderEventSubscriptions(functionData);
     }
@@ -2057,6 +2057,49 @@ document.addEventListener('DOMContentLoaded', function() {
     //         dropdown.appendChild(option);
     //     });
     // }
+
+    /**
+     * Populate event type dropdown from existing event sources
+     */
+    function populateEventTypeDropdown() {
+        const dropdown = document.getElementById('subscriptionEventType');
+        const eventSources = getEventSources();
+
+        // Clear existing options except first and last (custom)
+        dropdown.innerHTML = '<option value="">Select an event type...</option>';
+
+        // Group event types by source
+        const addedTypes = new Set(); // Track to avoid duplicates
+
+        eventSources.forEach(source => {
+            const sourceTypeLabel = source.type.charAt(0).toUpperCase() + source.type.slice(1);
+
+            source.eventTypes.forEach(eventType => {
+                if (!addedTypes.has(eventType)) {
+                    const option = document.createElement('option');
+                    option.value = eventType;
+                    option.textContent = `${eventType} (${sourceTypeLabel}: ${source.name})`;
+                    dropdown.appendChild(option);
+                    addedTypes.add(eventType);
+                }
+            });
+        });
+
+        // Add custom option at the end
+        const customOption = document.createElement('option');
+        customOption.value = 'custom';
+        customOption.textContent = 'Custom (enter below)';
+        dropdown.appendChild(customOption);
+
+        // Show message if no event sources exist
+        if (eventSources.length === 0) {
+            const noSourcesOption = document.createElement('option');
+            noSourcesOption.value = '';
+            noSourcesOption.disabled = true;
+            noSourcesOption.textContent = '(No event sources created yet)';
+            dropdown.insertBefore(noSourcesOption, dropdown.lastChild);
+        }
+    }
 
     /**
      * Populate destination broker dropdown with existing brokers
