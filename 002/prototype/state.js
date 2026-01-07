@@ -27,11 +27,17 @@ let functions = [
             hostname: 'example-function.example.com',
             path: '/'
         },
-        sinkMethod: 'none',
+        sinkMethod: 'broker',
         sinkConfig: {
-            method: 'none'
+            method: 'broker',
+            broker: 'default'
         },
-        eventSubscriptions: [],
+        eventSubscriptions: [
+            {
+                broker: 'default',
+                eventType: 'dev.knative.sources.github.event'
+            }
+        ],
         createdAt: new Date().toISOString()
     }
 ];
