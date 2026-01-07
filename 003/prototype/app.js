@@ -490,33 +490,33 @@ document.addEventListener('DOMContentLoaded', function() {
         customEventTypeField.style.display = 'none';
     });
 
-    // Handle destination form submission
-    destinationForm.addEventListener('submit', function(e) {
-        e.preventDefault();
+    // // Handle destination form submission
+    // destinationForm.addEventListener('submit', function(e) {
+    //     e.preventDefault();
 
-        const broker = document.getElementById('destinationBroker').value.trim();
+    //     const broker = document.getElementById('destinationBroker').value.trim();
 
-        if (!broker) {
-            alert('Please select a broker');
-            return;
-        }
+    //     if (!broker) {
+    //         alert('Please select a broker');
+    //         return;
+    //     }
 
-        // Set destination
-        currentDetailFunction.sinkMethod = 'broker';
-        currentDetailFunction.sinkConfig = {
-            method: 'broker',
-            broker: broker
-        };
+    //     // Set destination
+    //     currentDetailFunction.sinkMethod = 'broker';
+    //     currentDetailFunction.sinkConfig = {
+    //         method: 'broker',
+    //         broker: broker
+    //     };
 
-        // Save to state
-        saveFunction(currentDetailFunction);
+    //     // Save to state
+    //     saveFunction(currentDetailFunction);
 
-        // Refresh destination view
-        renderDestination(currentDetailFunction);
+    //     // Refresh destination view
+    //     renderDestination(currentDetailFunction);
 
-        // Reset form
-        destinationForm.reset();
-    });
+    //     // Reset form
+    //     destinationForm.reset();
+    // });
 
     /**
      * Collect form data into an object
@@ -2010,8 +2010,8 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDetailFunction = functionData;
         subscriptionsViewFunctionName.textContent = `Function: ${functionData.name}`;
 
-        // Populate broker dropdown in subscription form
-        populateSubscriptionBrokerDropdown();
+        // // Populate broker dropdown in subscription form
+        // populateSubscriptionBrokerDropdown();
 
         renderEventSubscriptions(functionData);
     }
@@ -2033,49 +2033,49 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDetailFunction = functionData;
         destinationsViewFunctionName.textContent = `Function: ${functionData.name}`;
 
-        // Populate broker dropdown in destination form
-        populateDestinationBrokerDropdown();
+        // // Populate broker dropdown in destination form
+        // populateDestinationBrokerDropdown();
 
         renderDestination(functionData);
     }
 
-    /**
-     * Populate subscription broker dropdown with existing brokers
-     */
-    function populateSubscriptionBrokerDropdown() {
-        const dropdown = document.getElementById('subscriptionBroker');
-        const brokers = getBrokers();
+    // /**
+    //  * Populate subscription broker dropdown with existing brokers
+    //  */
+    // function populateSubscriptionBrokerDropdown() {
+    //     const dropdown = document.getElementById('subscriptionBroker');
+    //     const brokers = getBrokers();
 
-        // Clear existing options except first
-        dropdown.innerHTML = '<option value="">Select a broker...</option>';
+    //     // Clear existing options except first
+    //     dropdown.innerHTML = '<option value="">Select a broker...</option>';
 
-        // Add broker options
-        brokers.forEach(broker => {
-            const option = document.createElement('option');
-            option.value = broker.name;
-            option.textContent = `${broker.name} (${broker.namespace})`;
-            dropdown.appendChild(option);
-        });
-    }
+    //     // Add broker options
+    //     brokers.forEach(broker => {
+    //         const option = document.createElement('option');
+    //         option.value = broker.name;
+    //         option.textContent = `${broker.name} (${broker.namespace})`;
+    //         dropdown.appendChild(option);
+    //     });
+    // }
 
     /**
      * Populate destination broker dropdown with existing brokers
      */
-    function populateDestinationBrokerDropdown() {
-        const dropdown = document.getElementById('destinationBroker');
-        const brokers = getBrokers();
+    // function populateDestinationBrokerDropdown() {
+    //     const dropdown = document.getElementById('destinationBroker');
+    //     const brokers = getBrokers();
 
-        // Clear existing options except first
-        dropdown.innerHTML = '<option value="">Select a broker...</option>';
+    //     // Clear existing options except first
+    //     dropdown.innerHTML = '<option value="">Select a broker...</option>';
 
-        // Add broker options
-        brokers.forEach(broker => {
-            const option = document.createElement('option');
-            option.value = broker.name;
-            option.textContent = `${broker.name} (${broker.namespace})`;
-            dropdown.appendChild(option);
-        });
-    }
+    //     // Add broker options
+    //     brokers.forEach(broker => {
+    //         const option = document.createElement('option');
+    //         option.value = broker.name;
+    //         option.textContent = `${broker.name} (${broker.namespace})`;
+    //         dropdown.appendChild(option);
+    //     });
+    // }
 
     /**
      * Show broker detail view
