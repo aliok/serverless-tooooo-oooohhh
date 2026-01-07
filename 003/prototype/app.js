@@ -108,13 +108,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveSubscriptionBtn = document.getElementById('saveSubscriptionBtn');
 
     // Destinations view elements
-    const backToDetailFromDestinationsBtn = document.getElementById('backToDetailFromDestinationsBtn');
-    const destinationsViewFunctionName = document.getElementById('destinationsViewFunctionName');
-    const destinationDisplay = document.getElementById('destinationDisplay');
-    const emptyDestination = document.getElementById('emptyDestination');
-    const destinationForm = document.getElementById('destinationForm');
-    const saveDestinationBtn = document.getElementById('saveDestinationBtn');
-    const addDestinationBtn = document.getElementById('addDestinationBtn');
+    // const backToDetailFromDestinationsBtn = document.getElementById('backToDetailFromDestinationsBtn');
+    // const destinationsViewFunctionName = document.getElementById('destinationsViewFunctionName');
+    // const destinationDisplay = document.getElementById('destinationDisplay');
+    // const emptyDestination = document.getElementById('emptyDestination');
+    // const destinationForm = document.getElementById('destinationForm');
+    // const saveDestinationBtn = document.getElementById('saveDestinationBtn');
+    // const addDestinationBtn = document.getElementById('addDestinationBtn');
 
     // Event Source detail view elements
     const backToEventSourcesListFromDetailBtn = document.getElementById('backToEventSourcesListFromDetailBtn');
@@ -222,17 +222,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    addDestinationBtn.addEventListener('click', function() {
-        if (currentDetailFunction) {
-            showDestinationsView(currentDetailFunction);
-        }
-    });
+    // addDestinationBtn.addEventListener('click', function() {
+    //     if (currentDetailFunction) {
+    //         showDestinationsView(currentDetailFunction);
+    //     }
+    // });
 
-    backToDetailFromDestinationsBtn.addEventListener('click', function() {
-        if (currentDetailFunction) {
-            showDetailView(currentDetailFunction);
-        }
-    });
+    // backToDetailFromDestinationsBtn.addEventListener('click', function() {
+    //     if (currentDetailFunction) {
+    //         showDetailView(currentDetailFunction);
+    //     }
+    // });
 
     //     //     // Broker detail view navigation handlers
     //     //     backToBrokersListFromDetailBtn.addEventListener('click', function() {
@@ -1169,7 +1169,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
+        // destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         // brokersListView.style.display = 'none';
@@ -1188,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
+        // destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         // brokersListView.style.display = 'block';
@@ -1206,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
+        // destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         // brokersListView.style.display = 'none';
@@ -1224,7 +1224,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
+        // destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         // brokersListView.style.display = 'none';
@@ -1437,7 +1437,7 @@ document.addEventListener('DOMContentLoaded', function() {
     //     formView.style.display = 'none';
     //     detailView.style.display = 'none';
     //     subscriptionsView.style.display = 'none';
-    //     destinationsView.style.display = 'none';
+    //     // destinationsView.style.display = 'none';
     //     // // brokerDetailView.style.display = 'none';
     //     eventSourceDetailView.style.display = 'none';
     //     // brokersListView.style.display = 'none';
@@ -1469,7 +1469,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'block';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
+        // destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
         // brokersListView.style.display = 'none';
@@ -1980,7 +1980,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'block';
         subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
+        // destinationsView.style.display = 'none';
         // brokersListView.style.display = 'none';
         // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
@@ -2001,7 +2001,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'block';
-        destinationsView.style.display = 'none';
+        // destinationsView.style.display = 'none';
         // brokersListView.style.display = 'none';
         // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
@@ -2016,28 +2016,28 @@ document.addEventListener('DOMContentLoaded', function() {
         renderEventSubscriptions(functionData);
     }
 
-    /**
-     * Show destinations management view
-     */
-    function showDestinationsView(functionData) {
-        listView.style.display = 'none';
-        formView.style.display = 'none';
-        detailView.style.display = 'none';
-        subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'block';
-        // brokersListView.style.display = 'none';
-        // brokerFormView.style.display = 'none';
-        eventSourcesListView.style.display = 'none';
-        eventSourceFormView.style.display = 'none';
+    // /**
+    //  * Show destinations management view
+    //  */
+    // function showDestinationsView(functionData) {
+    //     listView.style.display = 'none';
+    //     formView.style.display = 'none';
+    //     detailView.style.display = 'none';
+    //     subscriptionsView.style.display = 'none';
+    //     // destinationsView.style.display = 'block';
+    //     // brokersListView.style.display = 'none';
+    //     // brokerFormView.style.display = 'none';
+    //     eventSourcesListView.style.display = 'none';
+    //     eventSourceFormView.style.display = 'none';
 
-        currentDetailFunction = functionData;
-        destinationsViewFunctionName.textContent = `Function: ${functionData.name}`;
+    //     currentDetailFunction = functionData;
+    //     destinationsViewFunctionName.textContent = `Function: ${functionData.name}`;
 
-        // // Populate broker dropdown in destination form
-        // populateDestinationBrokerDropdown();
+    //     // // Populate broker dropdown in destination form
+    //     // populateDestinationBrokerDropdown();
 
-        renderDestination(functionData);
-    }
+    //     renderDestination(functionData);
+    // }
 
     // /**
     //  * Populate subscription broker dropdown with existing brokers
@@ -2128,7 +2128,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
+        // destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'block';
         eventSourceDetailView.style.display = 'none';
         // brokersListView.style.display = 'none';
@@ -2151,7 +2151,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formView.style.display = 'none';
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
-        destinationsView.style.display = 'none';
+        // destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'block';
         // brokersListView.style.display = 'none';
@@ -2252,28 +2252,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /**
      * Render sink destinations in diagram
+     * Always shows "default" broker (platform-managed)
      */
     function renderSinkDestinations(functionData) {
         destinationsList.innerHTML = '';
 
-        if (!functionData.sinkMethod || functionData.sinkMethod === 'none') {
-            return;
-        }
+        // Always show default broker as destination
+        const destinationBox = document.createElement('div');
+        destinationBox.className = 'destination-box';
 
-        if (functionData.sinkMethod === 'broker' && functionData.sinkConfig && functionData.sinkConfig.broker) {
-            const destinationBox = document.createElement('div');
-            destinationBox.className = 'destination-box';
+        destinationBox.innerHTML = `
+            <div class="destination-icon">📨</div>
+            <div class="destination-info">
+                <div class="destination-name">default</div>
+                <div class="destination-details">Broker (Platform-managed)</div>
+            </div>
+        `;
 
-            destinationBox.innerHTML = `
-                <div class="destination-icon">📨</div>
-                <div class="destination-info">
-                    <div class="destination-name">${functionData.sinkConfig.broker}</div>
-                    <div class="destination-details">Broker (Sink)</div>
-                </div>
-            `;
-
-            destinationsList.appendChild(destinationBox);
-        }
+        destinationsList.appendChild(destinationBox);
     }
 
     /**
@@ -2435,46 +2431,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    /**
-     * Render destination
-     */
-    function renderDestination(functionData) {
-        destinationDisplay.innerHTML = '';
+    // /**
+    //  * Render destination
+    //  */
+    // function renderDestination(functionData) {
+    //     destinationDisplay.innerHTML = '';
 
-        if (!functionData.sinkMethod || functionData.sinkMethod === 'none') {
-            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No destination configured. Set one below to send output CloudEvents to a Broker.</p></div>';
-            return;
-        }
+    //     if (!functionData.sinkMethod || functionData.sinkMethod === 'none') {
+    //         destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No destination configured. Set one below to send output CloudEvents to a Broker.</p></div>';
+    //         return;
+    //     }
 
-        if (functionData.sinkMethod === 'broker' && functionData.sinkConfig && functionData.sinkConfig.broker) {
-            const destCard = document.createElement('div');
-            destCard.className = 'subscription-card';
-            destCard.innerHTML = `
-                <div class="subscription-info">
-                    <div class="subscription-broker">Broker: <strong>${functionData.sinkConfig.broker}</strong></div>
-                </div>
-                <button class="btn-danger btn-small remove-destination-btn">Remove</button>
-            `;
-            destinationDisplay.appendChild(destCard);
+    //     if (functionData.sinkMethod === 'broker' && functionData.sinkConfig && functionData.sinkConfig.broker) {
+    //         const destCard = document.createElement('div');
+    //         destCard.className = 'subscription-card';
+    //         destCard.innerHTML = `
+    //             <div class="subscription-info">
+    //                 <div class="subscription-broker">Broker: <strong>${functionData.sinkConfig.broker}</strong></div>
+    //             </div>
+    //             <button class="btn-danger btn-small remove-destination-btn">Remove</button>
+    //         `;
+    //         destinationDisplay.appendChild(destCard);
 
-            // Add remove handler
-            document.querySelector('.remove-destination-btn').addEventListener('click', function() {
-                removeDestination();
-            });
-        }
-    }
+    //         // Add remove handler
+    //         document.querySelector('.remove-destination-btn').addEventListener('click', function() {
+    //             removeDestination();
+    //         });
+    //     }
+    // }
 
-    /**
-     * Remove destination
-     */
-    function removeDestination() {
-        if (confirm('Are you sure you want to remove this destination?')) {
-            currentDetailFunction.sinkMethod = 'none';
-            currentDetailFunction.sinkConfig = { method: 'none' };
-            saveFunction(currentDetailFunction);
-            renderDestination(currentDetailFunction);
-        }
-    }
+    // /**
+    //  * Remove destination
+    //  */
+    // function removeDestination() {
+    //     if (confirm('Are you sure you want to remove this destination?')) {
+    //         currentDetailFunction.sinkMethod = 'none';
+    //         currentDetailFunction.sinkConfig = { method: 'none' };
+    //         saveFunction(currentDetailFunction);
+    //         renderDestination(currentDetailFunction);
+    //     }
+    // }
 
     /**
      * Render broker detail view content

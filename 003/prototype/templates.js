@@ -33,7 +33,12 @@ metadata:
   namespace: ${config.namespace}
 spec:
   eventing:
-${subscriptionsYAML}`;
+${subscriptionsYAML}
+    sink:
+      ref:
+        apiVersion: eventing.knative.dev/v1
+        kind: Broker
+        name: default`;
 }
 
 /**

@@ -737,9 +737,8 @@ awsRegion: us-east-1"></textarea>
                     <!-- Destinations (Right) -->
                     <div class="diagram-column diagram-destinations">
                         <div id="destinationsList" class="destination-items">
-                            <!-- Destination boxes will be inserted here -->
+                            <!-- Destination boxes will be inserted here (always "default" broker) -->
                         </div>
-                        <button type="button" id="addDestinationBtn" class="diagram-add-btn">+ Add destination</button>
                     </div>
                 </div>
             </div>
@@ -811,39 +810,6 @@ awsRegion: us-east-1"></textarea>
 
                         <div class="form-actions">
                             <button type="submit" id="saveSubscriptionBtn" class="btn-primary">Add Subscription</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </section>
-    </div>
-
-    <!-- Destinations Management View -->
-    <div id="destinationsView" class="container" style="display: none;">
-        <section class="detail-panel">
-            <div class="detail-header">
-                <div>
-                    <button type="button" id="backToDetailFromDestinationsBtn" class="btn-secondary">← Back to Function</button>
-                    <h2>Manage Destination</h2>
-                    <p class="subtitle" id="destinationsViewFunctionName"></p>
-                </div>
-            </div>
-
-            <div id="destinationSection" class="event-subscriptions-section">
-                <h3>Current Destination</h3>
-
-                <div id="destinationDisplay" class="subscriptions-list">
-                    <div id="emptyDestination" class="empty-subscriptions">
-                        <p>No destination configured. Add one below.</p>
-                    </div>
-                </div>
-
-                <div class="add-subscription-section">
-                    <h3>Set Destination</h3>
-                    <form id="destinationForm" class="subscription-form-inline">
-                        <p>This function will send CloudEvents to the platform-managed default broker.</p>
-                        <div class="form-actions">
-                            <button type="submit" id="saveDestinationBtn" class="btn-primary">Set Destination</button>
                         </div>
                     </form>
                 </div>
