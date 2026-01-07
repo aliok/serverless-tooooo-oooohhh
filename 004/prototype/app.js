@@ -187,6 +187,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 showBrokersList();
             } else if (view === 'eventSources') {
                 showEventSourcesList();
+            } else if (view === 'eventSinks') {
+                showEventSinksList();
             }
         });
     });
@@ -548,23 +550,64 @@ document.addEventListener('DOMContentLoaded', function() {
         customEventTypeField.style.display = 'none';
     });
 
+    // Handle destination method change
+    const destinationMethod = document.getElementById('destinationMethod');
+    const brokerDestinationFields = document.getElementById('brokerDestinationFields');
+    const sinkDestinationFields = document.getElementById('sinkDestinationFields');
+
+    if (destinationMethod) {
+        destinationMethod.addEventListener('change', function() {
+            if (this.value === 'broker') {
+                brokerDestinationFields.style.display = 'block';
+                sinkDestinationFields.style.display = 'none';
+            } else if (this.value === 'sink') {
+                brokerDestinationFields.style.display = 'none';
+                sinkDestinationFields.style.display = 'block';
+                populateDestinationSinkDropdown();
+            }
+        });
+    }
+
     // Handle destination form submission
     destinationForm.addEventListener('submit', function(e) {
         e.preventDefault();
 
-        const broker = document.getElementById('destinationBroker').value.trim();
+        const method = destinationMethod ? destinationMethod.value : 'broker';
 
-        if (!broker) {
-            alert('Please select a broker');
-            return;
+        if (method === 'broker') {
+            const broker = document.getElementById('destinationBroker').value.trim();
+
+            if (!broker) {
+                alert('Please select a broker');
+                return;
+            }
+
+            // Set broker destination
+            currentDetailFunction.sinkMethod = 'broker';
+            currentDetailFunction.sinkConfig = {
+                method: 'broker',
+                broker: broker
+            };
+        } else if (method === 'sink') {
+            const sinkSelect = document.getElementById('destinationSink');
+            const sinkName = sinkSelect.value.trim();
+
+            if (!sinkName) {
+                alert('Please select an event sink');
+                return;
+            }
+
+            // Get sink type from dropdown option
+            const sinkType = sinkSelect.options[sinkSelect.selectedIndex].dataset.sinkType;
+
+            // Set sink destination
+            currentDetailFunction.sinkMethod = 'sink';
+            currentDetailFunction.sinkConfig = {
+                method: 'sink',
+                sinkName: sinkName,
+                sinkType: sinkType
+            };
         }
-
-        // Set destination
-        currentDetailFunction.sinkMethod = 'broker';
-        currentDetailFunction.sinkConfig = {
-            method: 'broker',
-            broker: broker
-        };
 
         // Save to state
         saveFunction(currentDetailFunction);
@@ -575,6 +618,23 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset form
         destinationForm.reset();
     });
+
+    /**
+     * Populate destination sink dropdown with referenced sinks
+     */
+    function populateDestinationSinkDropdown() {
+        const dropdown = document.getElementById('destinationSink');
+        const sinks = getEventSinks().filter(s => s.mode === 'referenced');
+
+        dropdown.innerHTML = '<option value="">Select a sink...</option>';
+        sinks.forEach(sink => {
+            const option = document.createElement('option');
+            option.value = sink.name;
+            option.dataset.sinkType = sink.type;
+            option.textContent = `${sink.name} (${sink.type})`;
+            dropdown.appendChild(option);
+        });
+    }
 
     /**
      * Collect form data into an object
@@ -2442,7 +2502,7 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationDisplay.innerHTML = '';
 
         if (!functionData.sinkMethod || functionData.sinkMethod === 'none') {
-            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No destination configured. Set one below to send output CloudEvents to a Broker.</p></div>';
+            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No destination configured. Set one below to send output CloudEvents to a Broker or Event Sink.</p></div>';
             return;
         }
 
@@ -2452,6 +2512,22 @@ document.addEventListener('DOMContentLoaded', function() {
             destCard.innerHTML = `
                 <div class="subscription-info">
                     <div class="subscription-broker">Broker: <strong>${functionData.sinkConfig.broker}</strong></div>
+                </div>
+                <button class="btn-danger btn-small remove-destination-btn">Remove</button>
+            `;
+            destinationDisplay.appendChild(destCard);
+
+            // Add remove handler
+            document.querySelector('.remove-destination-btn').addEventListener('click', function() {
+                removeDestination();
+            });
+        } else if (functionData.sinkMethod === 'sink' && functionData.sinkConfig && functionData.sinkConfig.sinkName) {
+            const destCard = document.createElement('div');
+            destCard.className = 'subscription-card';
+            destCard.innerHTML = `
+                <div class="subscription-info">
+                    <div class="subscription-broker">Event Sink: <strong>${functionData.sinkConfig.sinkName}</strong></div>
+                    <div class="subscription-type">Type: ${functionData.sinkConfig.sinkType}</div>
                 </div>
                 <button class="btn-danger btn-small remove-destination-btn">Remove</button>
             `;
@@ -2642,6 +2718,567 @@ document.addEventListener('DOMContentLoaded', function() {
         eventSourceDetailResourceCards.innerHTML = '';
         const card = createResourceCard(resource, eventSourceData.name, 0);
         eventSourceDetailResourceCards.appendChild(card);
+    }
+
+    // ==================== Event Sinks Functions ====================
+
+    // Get DOM elements for event sinks
+    const eventSinksListView = document.getElementById('eventSinksListView');
+    const eventSinkFormView = document.getElementById('eventSinkFormView');
+    const eventSinkDetailView = document.getElementById('eventSinkDetailView');
+    const eventSinksTableBody = document.getElementById('eventSinksTableBody');
+    const emptyEventSinksState = document.getElementById('emptyEventSinksState');
+    const eventSinkCountSpan = document.getElementById('eventSinkCount');
+    const createNewEventSinkBtn = document.getElementById('createNewEventSinkBtn');
+    const backToEventSinksListBtn = document.getElementById('backToEventSinksListBtn');
+    const saveEventSinkBtn = document.getElementById('saveEventSinkBtn');
+    const eventSinkForm = document.getElementById('eventSinkForm');
+    const eventSinkFormTitle = document.getElementById('eventSinkFormTitle');
+    const eventSinkMode = document.getElementById('eventSinkMode');
+    const standaloneModeFields = document.getElementById('standaloneModeFields');
+    const eventSinkTypeRadios = document.querySelectorAll('input[name="eventSinkType"]');
+    const eventSinkPlatformView = document.getElementById('eventSinkPlatformView');
+    const eventSinkPlatformDescription = document.getElementById('eventSinkPlatformDescription');
+    const eventSinkResourceCards = document.getElementById('eventSinkResourceCards');
+    const backToEventSinksListFromDetailBtn = document.getElementById('backToEventSinksListFromDetailBtn');
+    const editEventSinkFromDetailBtn = document.getElementById('editEventSinkFromDetailBtn');
+
+    /**
+     * Show event sinks list view
+     */
+    function showEventSinksList() {
+        hideAllViews();
+        eventSinksListView.style.display = 'block';
+        renderEventSinksList();
+    }
+
+    /**
+     * Show event sink form view
+     */
+    function showEventSinkFormView(mode) {
+        hideAllViews();
+        eventSinkFormView.style.display = 'block';
+
+        if (mode === 'create') {
+            eventSinkFormTitle.textContent = 'Create Event Sink';
+            saveEventSinkBtn.textContent = 'Create Event Sink';
+            resetEventSinkForm();
+        } else if (mode === 'edit') {
+            eventSinkFormTitle.textContent = 'Edit Event Sink';
+            saveEventSinkBtn.textContent = 'Save Event Sink';
+            loadEventSinkIntoForm(getCurrentEditingEventSink());
+        }
+
+        // Populate broker dropdown for standalone mode
+        populateEventSinkBrokerDropdown();
+
+        // Trigger initial resource preview
+        setTimeout(() => {
+            updateEventSinkResourcePreview();
+        }, 100);
+    }
+
+    /**
+     * Show event sink detail view
+     */
+    function showEventSinkDetailView(sinkData) {
+        hideAllViews();
+        eventSinkDetailView.style.display = 'block';
+        setCurrentEditingEventSink(sinkData);
+        renderEventSinkDetailView(sinkData);
+    }
+
+    /**
+     * Collect event sink form data
+     */
+    function collectEventSinkFormData() {
+        const currentSink = getCurrentEditingEventSink();
+        const eventSinkType = document.querySelector('input[name="eventSinkType"]:checked').value;
+        const mode = eventSinkMode.value;
+        let config = {};
+
+        // Collect type-specific config
+        if (eventSinkType === 'http') {
+            config = {
+                url: document.getElementById('httpSinkURL').value.trim()
+            };
+        } else if (eventSinkType === 'kafka') {
+            config = {
+                topic: document.getElementById('kafkaSinkTopic').value.trim(),
+                bootstrapServers: document.getElementById('kafkaSinkBootstrapServers').value.trim()
+            };
+        } else if (eventSinkType === 'sns') {
+            config = {
+                topicArn: document.getElementById('snsTopicArn').value.trim(),
+                credentialsSecret: document.getElementById('snsCredentialsSecret').value.trim()
+            };
+        } else if (eventSinkType === 'pubsub') {
+            config = {
+                topic: document.getElementById('pubsubTopic').value.trim(),
+                credentialsSecret: document.getElementById('pubsubCredentialsSecret').value.trim()
+            };
+        } else if (eventSinkType === 'eventgrid') {
+            config = {
+                endpoint: document.getElementById('eventgridEndpoint').value.trim(),
+                keySecret: document.getElementById('eventgridKeySecret').value.trim()
+            };
+        } else if (eventSinkType === 'database') {
+            config = {
+                databaseType: document.getElementById('databaseType').value,
+                connectionSecret: document.getElementById('databaseConnectionSecret').value.trim(),
+                table: document.getElementById('databaseTable').value.trim()
+            };
+        }
+
+        const formData = {
+            id: currentSink ? currentSink.id : null,
+            name: document.getElementById('eventSinkName').value.trim(),
+            namespace: document.getElementById('eventSinkNamespace').value.trim(),
+            type: eventSinkType,
+            mode: mode,
+            config: config
+        };
+
+        // Add standalone mode specific fields
+        if (mode === 'standalone') {
+            formData.broker = document.getElementById('eventSinkBroker').value;
+            const eventTypesStr = document.getElementById('eventSinkEventTypes').value.trim();
+            formData.eventTypes = eventTypesStr ? eventTypesStr.split(',').map(t => t.trim()).filter(t => t) : [];
+        }
+
+        return formData;
+    }
+
+    /**
+     * Reset event sink form
+     */
+    function resetEventSinkForm() {
+        eventSinkForm.reset();
+        clearCurrentEditingEventSink();
+
+        // Reset to default panel (HTTP)
+        document.querySelectorAll('.metric-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        document.getElementById('httpSinkPanel').classList.add('active');
+
+        // Hide standalone mode fields by default
+        standaloneModeFields.style.display = 'none';
+    }
+
+    /**
+     * Load event sink into form
+     */
+    function loadEventSinkIntoForm(sinkData) {
+        if (!sinkData) return;
+
+        document.getElementById('eventSinkName').value = sinkData.name;
+        document.getElementById('eventSinkNamespace').value = sinkData.namespace;
+        eventSinkMode.value = sinkData.mode;
+
+        // Show/hide standalone mode fields
+        standaloneModeFields.style.display = sinkData.mode === 'standalone' ? 'block' : 'none';
+
+        if (sinkData.mode === 'standalone') {
+            document.getElementById('eventSinkBroker').value = sinkData.broker || '';
+            document.getElementById('eventSinkEventTypes').value = (sinkData.eventTypes || []).join(', ');
+        }
+
+        // Set sink type radio and show corresponding panel
+        document.querySelectorAll('input[name="eventSinkType"]').forEach(radio => {
+            if (radio.value === sinkData.type) {
+                radio.checked = true;
+            }
+        });
+
+        // Show the appropriate panel
+        document.querySelectorAll('.metric-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        document.getElementById(`${sinkData.type}SinkPanel`).classList.add('active');
+
+        // Load type-specific config
+        if (sinkData.type === 'http') {
+            document.getElementById('httpSinkURL').value = sinkData.config.url || '';
+        } else if (sinkData.type === 'kafka') {
+            document.getElementById('kafkaSinkTopic').value = sinkData.config.topic || '';
+            document.getElementById('kafkaSinkBootstrapServers').value = sinkData.config.bootstrapServers || '';
+        } else if (sinkData.type === 'sns') {
+            document.getElementById('snsTopicArn').value = sinkData.config.topicArn || '';
+            document.getElementById('snsCredentialsSecret').value = sinkData.config.credentialsSecret || '';
+        } else if (sinkData.type === 'pubsub') {
+            document.getElementById('pubsubTopic').value = sinkData.config.topic || '';
+            document.getElementById('pubsubCredentialsSecret').value = sinkData.config.credentialsSecret || '';
+        } else if (sinkData.type === 'eventgrid') {
+            document.getElementById('eventgridEndpoint').value = sinkData.config.endpoint || '';
+            document.getElementById('eventgridKeySecret').value = sinkData.config.keySecret || '';
+        } else if (sinkData.type === 'database') {
+            document.getElementById('databaseType').value = sinkData.config.databaseType || 'postgresql';
+            document.getElementById('databaseConnectionSecret').value = sinkData.config.connectionSecret || '';
+            document.getElementById('databaseTable').value = sinkData.config.table || '';
+        }
+    }
+
+    /**
+     * Update event sink resource preview
+     */
+    function updateEventSinkResourcePreview() {
+        const formData = collectEventSinkFormData();
+        const resources = [];
+
+        // Always add the sink resource
+        const sinkResourceType = `${formData.type}Sink`;
+        resources.push({
+            type: sinkResourceType,
+            name: formData.name,
+            yaml: generateEventSinkYAML(formData),
+            metadata: RESOURCE_METADATA[sinkResourceType] || {
+                kind: getSinkKind(formData.type),
+                apiVersion: 'sinks.knative.dev/v1alpha1',
+                description: `Sends CloudEvents to ${formData.type} destination.`
+            }
+        });
+
+        // For standalone mode, add Trigger
+        if (formData.mode === 'standalone' && formData.broker && formData.eventTypes && formData.eventTypes.length > 0) {
+            resources.push({
+                type: 'trigger',
+                name: `${formData.name}-trigger`,
+                yaml: generateSinkTriggerYAML(formData),
+                metadata: RESOURCE_METADATA.trigger
+            });
+        }
+
+        // Update UI
+        eventSinkPlatformView.style.display = 'block';
+        eventSinkPlatformDescription.innerHTML = `
+            The UI composed <strong>${resources.length}</strong> Kubernetes resource${resources.length > 1 ? 's' : ''} from your event sink configuration.
+            ${formData.mode === 'standalone' ? `<br>This sink subscribes to the <strong>${formData.broker}</strong> Broker and filters events by type.` : `<br>This sink can be referenced by Functions as a destination.`}
+        `;
+
+        eventSinkResourceCards.innerHTML = '';
+        resources.forEach((resource, index) => {
+            const card = createResourceCard(resource, formData.name, index);
+            eventSinkResourceCards.appendChild(card);
+        });
+    }
+
+    /**
+     * Populate broker dropdown for standalone mode
+     */
+    function populateEventSinkBrokerDropdown() {
+        const dropdown = document.getElementById('eventSinkBroker');
+        const brokers = getBrokers();
+
+        dropdown.innerHTML = '<option value="">Select a broker...</option>';
+        brokers.forEach(broker => {
+            const option = document.createElement('option');
+            option.value = broker.name;
+            option.textContent = `${broker.name} (${broker.namespace})`;
+            dropdown.appendChild(option);
+        });
+    }
+
+    /**
+     * Render event sinks list
+     */
+    function renderEventSinksList() {
+        const sinks = getEventSinks();
+        eventSinkCountSpan.textContent = sinks.length;
+
+        if (sinks.length === 0) {
+            eventSinksTableBody.innerHTML = '';
+            emptyEventSinksState.style.display = 'block';
+            return;
+        }
+
+        emptyEventSinksState.style.display = 'none';
+        eventSinksTableBody.innerHTML = '';
+
+        sinks.forEach(sink => {
+            const row = document.createElement('tr');
+
+            const destination = sink.mode === 'standalone'
+                ? `Broker: ${sink.broker}`
+                : getDestinationDisplay(sink.type, sink.config);
+
+            row.innerHTML = `
+                <td><strong>${sink.name}</strong></td>
+                <td><span class="badge">${sink.type}</span></td>
+                <td><span class="badge">${sink.mode}</span></td>
+                <td>${destination}</td>
+                <td class="actions-cell">
+                    <button class="btn-small btn-secondary view-sink-btn" data-id="${sink.id}">View</button>
+                    <button class="btn-small btn-secondary edit-sink-btn" data-id="${sink.id}">Edit</button>
+                    <button class="btn-small btn-danger delete-sink-btn" data-id="${sink.id}">Delete</button>
+                </td>
+            `;
+            eventSinksTableBody.appendChild(row);
+        });
+
+        // Add event listeners to action buttons
+        document.querySelectorAll('.view-sink-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const sink = getEventSink(this.dataset.id);
+                if (sink) showEventSinkDetailView(sink);
+            });
+        });
+
+        document.querySelectorAll('.edit-sink-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const sink = getEventSink(this.dataset.id);
+                if (sink) {
+                    setCurrentEditingEventSink(sink);
+                    showEventSinkFormView('edit');
+                }
+            });
+        });
+
+        document.querySelectorAll('.delete-sink-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to delete this event sink?')) {
+                    deleteEventSink(this.dataset.id);
+                    renderEventSinksList();
+                }
+            });
+        });
+    }
+
+    /**
+     * Get destination display string for sink
+     */
+    function getDestinationDisplay(type, config) {
+        if (type === 'http') return config.url;
+        if (type === 'kafka') return `Kafka: ${config.topic}`;
+        if (type === 'sns') return config.topicArn;
+        if (type === 'pubsub') return config.topic;
+        if (type === 'eventgrid') return config.endpoint;
+        if (type === 'database') return `${config.databaseType}: ${config.table}`;
+        return 'Unknown';
+    }
+
+    /**
+     * Render event sink detail view
+     */
+    function renderEventSinkDetailView(sinkData) {
+        // Set title and metadata
+        document.getElementById('detailEventSinkName').textContent = sinkData.name;
+        document.getElementById('diagramEventSinkName').textContent = sinkData.name;
+        document.getElementById('detailEventSinkType').textContent = sinkData.type;
+        document.getElementById('detailEventSinkMode').textContent = sinkData.mode;
+        document.getElementById('detailEventSinkNamespace').textContent = sinkData.namespace;
+
+        // Render sources based on mode
+        const eventSinkSourcesList = document.getElementById('eventSinkSourcesList');
+        const eventSinkSourceTitle = document.getElementById('eventSinkSourceTitle');
+        eventSinkSourcesList.innerHTML = '';
+
+        if (sinkData.mode === 'standalone') {
+            // Show broker as source
+            eventSinkSourceTitle.textContent = 'Event Source (Broker)';
+            const sourceBox = document.createElement('div');
+            sourceBox.className = 'source-box';
+            sourceBox.innerHTML = `
+                <div class="source-icon">📨</div>
+                <div class="source-info">
+                    <div class="source-name">${sinkData.broker}</div>
+                    <div class="source-details">Broker</div>
+                    <div class="source-details">Event Types: ${sinkData.eventTypes.join(', ')}</div>
+                </div>
+            `;
+            eventSinkSourcesList.appendChild(sourceBox);
+        } else {
+            // Show functions that reference this sink
+            eventSinkSourceTitle.textContent = 'Event Sources (Functions)';
+            const functions = getFunctions().filter(f =>
+                f.sinkMethod === 'sink' && f.sinkConfig && f.sinkConfig.sinkName === sinkData.name
+            );
+
+            if (functions.length === 0) {
+                const emptyBox = document.createElement('div');
+                emptyBox.className = 'source-box empty';
+                emptyBox.innerHTML = '<div class="source-info"><div class="source-name">No functions using this sink</div></div>';
+                eventSinkSourcesList.appendChild(emptyBox);
+            } else {
+                functions.forEach(func => {
+                    const sourceBox = document.createElement('div');
+                    sourceBox.className = 'source-box';
+                    sourceBox.innerHTML = `
+                        <div class="source-icon">λ</div>
+                        <div class="source-info">
+                            <div class="source-name">${func.name}</div>
+                            <div class="source-details">Function</div>
+                        </div>
+                    `;
+                    eventSinkSourcesList.appendChild(sourceBox);
+                });
+            }
+        }
+
+        // Render external destination
+        const eventSinkExternalDestination = document.getElementById('eventSinkExternalDestination');
+        eventSinkExternalDestination.innerHTML = '';
+        const destBox = document.createElement('div');
+        destBox.className = 'destination-box';
+        const destIcon = getSinkIcon(sinkData.type);
+        const destDisplay = getDestinationDisplay(sinkData.type, sinkData.config);
+        destBox.innerHTML = `
+            <div class="destination-icon">${destIcon}</div>
+            <div class="destination-info">
+                <div class="destination-name">${destDisplay}</div>
+                <div class="destination-details">${sinkData.type.toUpperCase()}</div>
+            </div>
+        `;
+        eventSinkExternalDestination.appendChild(destBox);
+
+        // Render resources
+        renderEventSinkDetailResources(sinkData);
+    }
+
+    /**
+     * Get icon for sink type
+     */
+    function getSinkIcon(type) {
+        const icons = {
+            'http': '🌐',
+            'kafka': '📊',
+            'sns': '📧',
+            'pubsub': '📬',
+            'eventgrid': '⚡',
+            'database': '💾'
+        };
+        return icons[type] || '📤';
+    }
+
+    /**
+     * Render event sink detail resources
+     */
+    function renderEventSinkDetailResources(sinkData) {
+        const resources = [];
+        const sinkResourceType = `${sinkData.type}Sink`;
+
+        resources.push({
+            type: sinkResourceType,
+            name: sinkData.name,
+            yaml: generateEventSinkYAML(sinkData),
+            metadata: RESOURCE_METADATA[sinkResourceType]
+        });
+
+        if (sinkData.mode === 'standalone' && sinkData.eventTypes && sinkData.eventTypes.length > 0) {
+            resources.push({
+                type: 'trigger',
+                name: `${sinkData.name}-trigger`,
+                yaml: generateSinkTriggerYAML(sinkData),
+                metadata: RESOURCE_METADATA.trigger
+            });
+        }
+
+        const eventSinkDetailResourceCount = document.getElementById('eventSinkDetailResourceCount');
+        const eventSinkDetailPlatformDescription = document.getElementById('eventSinkDetailPlatformDescription');
+        const eventSinkDetailResourceCards = document.getElementById('eventSinkDetailResourceCards');
+
+        eventSinkDetailResourceCount.textContent = resources.length;
+        eventSinkDetailPlatformDescription.innerHTML = `
+            The UI composed <strong>${resources.length}</strong> Kubernetes resource${resources.length > 1 ? 's' : ''} from your event sink configuration.
+            ${sinkData.mode === 'standalone' ? `<br>This sink subscribes to the <strong>${sinkData.broker}</strong> Broker and sends events to ${getDestinationDisplay(sinkData.type, sinkData.config)}.` : `<br>This sink can be referenced by Functions as a destination.`}
+        `;
+
+        eventSinkDetailResourceCards.innerHTML = '';
+        resources.forEach((resource, index) => {
+            const card = createResourceCard(resource, sinkData.name, index);
+            eventSinkDetailResourceCards.appendChild(card);
+        });
+    }
+
+    /**
+     * Helper function to hide all views
+     */
+    function hideAllViews() {
+        listView.style.display = 'none';
+        formView.style.display = 'none';
+        detailView.style.display = 'none';
+        subscriptionsView.style.display = 'none';
+        destinationsView.style.display = 'none';
+        brokerDetailView.style.display = 'none';
+        eventSourceDetailView.style.display = 'none';
+        brokersListView.style.display = 'none';
+        brokerFormView.style.display = 'none';
+        eventSourcesListView.style.display = 'none';
+        eventSourceFormView.style.display = 'none';
+        eventSinksListView.style.display = 'none';
+        eventSinkFormView.style.display = 'none';
+        eventSinkDetailView.style.display = 'none';
+    }
+
+    // Event Sink button handlers
+    if (createNewEventSinkBtn) {
+        createNewEventSinkBtn.addEventListener('click', function() {
+            clearCurrentEditingEventSink();
+            showEventSinkFormView('create');
+        });
+    }
+
+    if (backToEventSinksListBtn) {
+        backToEventSinksListBtn.addEventListener('click', showEventSinksList);
+    }
+
+    if (backToEventSinksListFromDetailBtn) {
+        backToEventSinksListFromDetailBtn.addEventListener('click', showEventSinksList);
+    }
+
+    if (editEventSinkFromDetailBtn) {
+        editEventSinkFromDetailBtn.addEventListener('click', function() {
+            showEventSinkFormView('edit');
+        });
+    }
+
+    if (saveEventSinkBtn) {
+        saveEventSinkBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const formData = collectEventSinkFormData();
+            saveEventSink(formData);
+            showEventSinksList();
+        });
+    }
+
+    // Event sink mode change handler
+    if (eventSinkMode) {
+        eventSinkMode.addEventListener('change', function() {
+            if (this.value === 'standalone') {
+                standaloneModeFields.style.display = 'block';
+                populateEventSinkBrokerDropdown();
+            } else {
+                standaloneModeFields.style.display = 'none';
+            }
+            updateEventSinkResourcePreview();
+        });
+    }
+
+    // Event sink type panel toggle
+    eventSinkTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Hide all panels
+            document.querySelectorAll('#eventSinkForm .metric-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            // Show selected panel
+            const panelId = `${this.value}SinkPanel`;
+            const targetPanel = document.getElementById(panelId);
+            if (targetPanel) {
+                targetPanel.classList.add('active');
+            }
+
+            // Update preview
+            updateEventSinkResourcePreview();
+        });
+    });
+
+    // Event sink form field listeners for live preview
+    if (eventSinkForm) {
+        eventSinkForm.addEventListener('input', function() {
+            updateEventSinkResourcePreview();
+        });
     }
 
 });
