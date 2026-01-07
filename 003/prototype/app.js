@@ -12,9 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const formView = document.getElementById('formView');
     const detailView = document.getElementById('detailView');
     const subscriptionsView = document.getElementById('subscriptionsView');
-    const brokerDetailView = document.getElementById('brokerDetailView');
     const eventSourceDetailView = document.getElementById('eventSourceDetailView');
-    const brokersListView = document.getElementById('brokersListView');
     const eventSourcesListView = document.getElementById('eventSourcesListView');
 
     // List elements - Functions
@@ -26,11 +24,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const createNewBtn = document.getElementById('createNewBtn');
     const backToListBtn = document.getElementById('backToListBtn');
 
-    // List elements - Brokers
-    const brokersTableBody = document.getElementById('brokersTableBody');
-    const emptyBrokersState = document.getElementById('emptyBrokersState');
-    const brokerCountSpan = document.getElementById('brokerCount');
-    const createNewBrokerBtn = document.getElementById('createNewBrokerBtn');
 
     // List elements - Event Sources
     const eventSourcesTableBody = document.getElementById('eventSourcesTableBody');
@@ -54,15 +47,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const cronSourcePanel = document.getElementById('cronSourcePanel');
 
     // Broker form elements
-    const brokerFormView = document.getElementById('brokerFormView');
-    const brokerForm = document.getElementById('brokerForm');
-    const brokerFormTitle = document.getElementById('brokerFormTitle');
-    const backToBrokersListBtn = document.getElementById('backToBrokersListBtn');
-    const saveBrokerBtn = document.getElementById('saveBrokerBtn');
-    const brokerPlatformView = document.getElementById('brokerPlatformView');
-    const brokerPlatformDescription = document.getElementById('brokerPlatformDescription');
-    const brokerResourceCards = document.getElementById('brokerResourceCards');
-
     // Sorting state
     let currentSort = { column: 'name', direction: 'asc' };
     let searchQuery = '';
@@ -132,21 +116,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveDestinationBtn = document.getElementById('saveDestinationBtn');
     const addDestinationBtn = document.getElementById('addDestinationBtn');
 
-    // Broker detail view elements
-    const backToBrokersListFromDetailBtn = document.getElementById('backToBrokersListFromDetailBtn');
-    const editBrokerFromDetailBtn = document.getElementById('editBrokerFromDetailBtn');
-    const detailBrokerName = document.getElementById('detailBrokerName');
-    const diagramBrokerName = document.getElementById('diagramBrokerName');
-    const detailBrokerNamespace = document.getElementById('detailBrokerNamespace');
-    const detailBrokerRetry = document.getElementById('detailBrokerRetry');
-    const detailBrokerBackoffPolicy = document.getElementById('detailBrokerBackoffPolicy');
-    const detailBrokerEventTypes = document.getElementById('detailBrokerEventTypes');
-    const brokerEventSourcesList = document.getElementById('brokerEventSourcesList');
-    const brokerFunctionsList = document.getElementById('brokerFunctionsList');
-    const brokerDetailResourceCount = document.getElementById('brokerDetailResourceCount');
-    const brokerDetailPlatformDescription = document.getElementById('brokerDetailPlatformDescription');
-    const brokerDetailResourceCards = document.getElementById('brokerDetailResourceCards');
-
     // Event Source detail view elements
     const backToEventSourcesListFromDetailBtn = document.getElementById('backToEventSourcesListFromDetailBtn');
     const editEventSourceFromDetailBtn = document.getElementById('editEventSourceFromDetailBtn');
@@ -205,31 +174,6 @@ document.addEventListener('DOMContentLoaded', function() {
         showListView();
     });
 
-    // Broker navigation handlers
-    createNewBrokerBtn.addEventListener('click', function() {
-        clearCurrentEditingBroker();
-        showBrokerFormView('create');
-    });
-
-    backToBrokersListBtn.addEventListener('click', function() {
-        showBrokersList();
-    });
-
-    saveBrokerBtn.addEventListener('click', function() {
-        const brokerData = collectBrokerFormData();
-
-        // Validate
-        if (!brokerData.name || !brokerData.namespace) {
-            alert('Please fill in all required fields');
-            return;
-        }
-
-        // Save and show list
-        saveBroker(brokerData);
-        showBrokersList();
-    });
-
-    // Event Source navigation handlers
     createNewEventSourceBtn.addEventListener('click', function() {
         clearCurrentEditingEventSource();
         showEventSourceFormView('create');
@@ -509,21 +453,20 @@ document.addEventListener('DOMContentLoaded', function() {
     subscriptionForm.addEventListener('submit', function(e) {
         e.preventDefault();
 
-        const broker = document.getElementById('subscriptionBroker').value.trim();
         let eventType = subscriptionEventType.value;
 
         if (eventType === 'custom') {
             eventType = document.getElementById('customEventType').value.trim();
         }
 
-        if (!broker || !eventType || eventType === '') {
-            alert('Please fill in all fields');
+        if (!eventType || eventType === '') {
+            alert('Please select or enter an event type');
             return;
         }
 
         // Check if this subscription already exists
         const existing = currentDetailFunction.eventSubscriptions.find(
-            sub => sub.broker === broker && sub.eventType === eventType
+            sub => sub.eventType === eventType
         );
 
         if (existing) {
@@ -533,7 +476,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Add subscription
         currentDetailFunction.eventSubscriptions.push({
-            broker: broker,
             eventType: eventType
         });
 
@@ -1367,7 +1309,6 @@ document.addEventListener('DOMContentLoaded', function() {
             name: document.getElementById('eventSourceName').value.trim(),
             namespace: document.getElementById('eventSourceNamespace').value.trim(),
             type: eventSourceType,
-            broker: document.getElementById('eventSourceBroker').value,
             config: config,
             eventTypes: eventTypes
         };
@@ -1453,7 +1394,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = collectEventSourceFormData();
 
         // Basic validation (don't show validation errors during auto-update)
-        if (!formData.name || !formData.namespace || !formData.broker) {
+        if (!formData.name || !formData.namespace) {
             eventSourcePlatformView.style.display = 'none';
             return;
         }
@@ -2246,10 +2187,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const sourceBox = document.createElement('div');
             sourceBox.className = 'source-box';
 
+            // Find event sources that produce this event type
+            const sources = getEventSources().filter(es =>
+                es.eventTypes.includes(sub.eventType)
+            );
+            const sourceName = sources.length > 0
+                ? sources.map(s => `${s.type}: ${s.name}`).join(', ')
+                : 'Unknown source';
+
             sourceBox.innerHTML = `
-                <div class="source-icon">📨</div>
+                <div class="source-icon">⚡</div>
                 <div class="source-info">
-                    <div class="source-name">${sub.broker}</div>
+                    <div class="source-name">${sourceName}</div>
                     <div class="source-details">${sub.eventType}</div>
                 </div>
             `;
@@ -2403,12 +2352,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         functionData.eventSubscriptions.forEach((sub, index) => {
+            // Find event sources that produce this event type
+            const sources = getEventSources().filter(es =>
+                es.eventTypes.includes(sub.eventType)
+            );
+            const sourceInfo = sources.length > 0
+                ? `Produced by: <strong>${sources.map(s => `${s.type}: ${s.name}`).join(', ')}</strong>`
+                : '<em>No known source</em>';
+
             const subCard = document.createElement('div');
             subCard.className = 'subscription-card';
             subCard.innerHTML = `
                 <div class="subscription-info">
-                    <div class="subscription-broker">Broker: <strong>${sub.broker}</strong></div>
                     <div class="subscription-event-type">Event Type: <code>${sub.eventType}</code></div>
+                    <div class="subscription-source">${sourceInfo}</div>
                 </div>
                 <button class="btn-danger btn-small remove-subscription-btn" data-index="${index}">Remove</button>
             `;
