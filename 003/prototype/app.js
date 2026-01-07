@@ -239,13 +239,13 @@ document.addEventListener('DOMContentLoaded', function() {
     //     //         showBrokersList();
     //     //     });
 
-    editBrokerFromDetailBtn.addEventListener('click', function() {
-        const brokerData = getCurrentEditingBroker();
-        if (brokerData) {
-            setCurrentEditingBroker(brokerData);
-            showBrokerFormView('edit');
-        }
-    });
+    // editBrokerFromDetailBtn.addEventListener('click', function() {
+    //     const brokerData = getCurrentEditingBroker();
+    //     if (brokerData) {
+    //         setCurrentEditingBroker(brokerData);
+    //         showBrokerFormView('edit');
+    //     }
+    // });
 
     // Event Source detail view navigation handlers
     backToEventSourcesListFromDetailBtn.addEventListener('click', function() {
@@ -1172,8 +1172,8 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
+        // brokersListView.style.display = 'none';
+        // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
         eventSourceFormView.style.display = 'none';
         renderFunctionsList();
@@ -1191,8 +1191,8 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'block';
-        brokerFormView.style.display = 'none';
+        // brokersListView.style.display = 'block';
+        // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
         eventSourceFormView.style.display = 'none';
         renderBrokersList();
@@ -1209,8 +1209,8 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
+        // brokersListView.style.display = 'none';
+        // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'block';
         eventSourceFormView.style.display = 'none';
         renderEventSourcesList();
@@ -1227,8 +1227,8 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
+        // brokersListView.style.display = 'none';
+        // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
         eventSourceFormView.style.display = 'block';
 
@@ -1440,10 +1440,10 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
+        // brokersListView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
         eventSourceFormView.style.display = 'none';
-        brokerFormView.style.display = 'block';
+        // brokerFormView.style.display = 'block';
 
         if (mode === 'create') {
             brokerFormTitle.textContent = 'Create Broker';
@@ -1472,8 +1472,8 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
+        // brokersListView.style.display = 'none';
+        // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
         eventSourceFormView.style.display = 'none';
 
@@ -1981,8 +1981,8 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'block';
         subscriptionsView.style.display = 'none';
         destinationsView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
+        // brokersListView.style.display = 'none';
+        // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
         eventSourceFormView.style.display = 'none';
 
@@ -2002,8 +2002,8 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'block';
         destinationsView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
+        // brokersListView.style.display = 'none';
+        // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
         eventSourceFormView.style.display = 'none';
 
@@ -2025,8 +2025,8 @@ document.addEventListener('DOMContentLoaded', function() {
         detailView.style.display = 'none';
         subscriptionsView.style.display = 'none';
         destinationsView.style.display = 'block';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
+        // brokersListView.style.display = 'none';
+        // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
         eventSourceFormView.style.display = 'none';
 
@@ -2088,8 +2088,8 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'block';
         eventSourceDetailView.style.display = 'none';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
+        // brokersListView.style.display = 'none';
+        // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
         eventSourceFormView.style.display = 'none';
 
@@ -2111,8 +2111,8 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationsView.style.display = 'none';
         // // brokerDetailView.style.display = 'none';
         eventSourceDetailView.style.display = 'block';
-        brokersListView.style.display = 'none';
-        brokerFormView.style.display = 'none';
+        // brokersListView.style.display = 'none';
+        // brokerFormView.style.display = 'none';
         eventSourcesListView.style.display = 'none';
         eventSourceFormView.style.display = 'none';
 
