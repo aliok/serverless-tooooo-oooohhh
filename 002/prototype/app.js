@@ -2241,25 +2241,16 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Group subscriptions by broker
-        const brokerMap = {};
+        // Create a source box for each subscription
         functionData.eventSubscriptions.forEach(sub => {
-            if (!brokerMap[sub.broker]) {
-                brokerMap[sub.broker] = [];
-            }
-            brokerMap[sub.broker].push(sub.eventType);
-        });
-
-        // Create a source box for each broker
-        Object.entries(brokerMap).forEach(([broker, eventTypes]) => {
             const sourceBox = document.createElement('div');
             sourceBox.className = 'source-box';
 
             sourceBox.innerHTML = `
                 <div class="source-icon">📨</div>
                 <div class="source-info">
-                    <div class="source-name">${broker}</div>
-                    <div class="source-details">${eventTypes.join(', ')}</div>
+                    <div class="source-name">${sub.broker}</div>
+                    <div class="source-details">${sub.eventType}</div>
                 </div>
             `;
 
