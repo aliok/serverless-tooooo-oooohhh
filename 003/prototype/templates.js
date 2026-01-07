@@ -16,30 +16,14 @@ function generateFunctionYAML(config) {
 
     let subscriptionsYAML = '';
     if (eventSubscriptions.length > 0) {
-        // Group subscriptions by broker and aggregate event types
-        const brokerMap = {};
-        eventSubscriptions.forEach(sub => {
-            if (!brokerMap[sub.broker]) {
-                brokerMap[sub.broker] = [];
-            }
-            brokerMap[sub.broker].push(sub.eventType);
-        });
-
-        // Generate YAML for each broker
-        const subscriptionEntries = Object.entries(brokerMap).map(([broker, eventTypes]) => {
-            const eventTypesYAML = eventTypes.map(type => `        - ${type}`).join('\n');
-            return `      - broker: ${broker}\n        eventTypes:\n${eventTypesYAML}`;
-        }).join('\n');
+        // Simple array of event types (no broker grouping)
+        const subscriptionEntries = eventSubscriptions
+            .map(sub => `      - eventType: ${sub.eventType}`)
+            .join('\n');
 
         subscriptionsYAML = `    subscriptions:\n${subscriptionEntries}`;
     } else {
         subscriptionsYAML = `    subscriptions: []`;
-    }
-
-    // Add sink configuration if broker sink is configured
-    let sinkYAML = '';
-    if (config.sinkMethod === 'broker' && config.sinkConfig && config.sinkConfig.broker) {
-        sinkYAML = `\n    sink:\n      ref:\n        apiVersion: eventing.knative.dev/v1\n        kind: Broker\n        name: ${config.sinkConfig.broker}`;
     }
 
     return `apiVersion: serverless.openshift.io/v1alpha1
@@ -49,7 +33,7 @@ metadata:
   namespace: ${config.namespace}
 spec:
   eventing:
-${subscriptionsYAML}${sinkYAML}`;
+${subscriptionsYAML}`;
 }
 
 /**
@@ -520,62 +504,11 @@ ${tlsYAML}`;
 }
 
 /**
- * Generate Broker YAML
- * @param {Object} config - Configuration object
- * @param {string} config.name - Broker name
- * @param {string} config.namespace - Namespace
- * @param {Object} config.deliveryConfig - Delivery configuration
- * @returns {string} YAML string
- */
-function generateBrokerYAML(config) {
-    const dc = config.deliveryConfig || {};
-    let deliveryYAML = '';
-
-    if (dc.retry || dc.backoffPolicy || dc.backoffDelay) {
-        const retryLine = dc.retry ? `    retry: ${dc.retry}` : '';
-        const backoffPolicyLine = dc.backoffPolicy ? `    backoffPolicy: ${dc.backoffPolicy}` : '';
-        const backoffDelayLine = dc.backoffDelay ? `    backoffDelay: ${dc.backoffDelay}` : '';
-
-        const lines = [retryLine, backoffPolicyLine, backoffDelayLine].filter(line => line).join('\n');
-
-        deliveryYAML = `  delivery:
-${lines}`;
-    }
-
-    // Get all event types from event sources that send to this broker
-    const eventSources = getEventSources().filter(es => es.broker === config.name);
-    const allEventTypes = eventSources.flatMap(es => es.eventTypes);
-    const uniqueEventTypes = [...new Set(allEventTypes)];
-
-    let statusYAML = '';
-    if (uniqueEventTypes.length > 0) {
-        statusYAML = `status:
-  # Event types being routed through this broker
-  observedEventTypes:
-    - ${uniqueEventTypes.join('\n    - ')}`;
-    } else {
-        statusYAML = `status:
-  # No event sources connected yet
-  observedEventTypes: []`;
-    }
-
-    return `apiVersion: eventing.knative.dev/v1
-kind: Broker
-metadata:
-  name: ${config.name}
-  namespace: ${config.namespace}
-spec:
-${deliveryYAML}
-${statusYAML}`;
-}
-
-/**
  * Generate Event Source YAML (unified function for all types)
  * @param {Object} config - Configuration object
  * @param {string} config.name - Event source name
  * @param {string} config.namespace - Namespace
  * @param {string} config.type - Event source type (github, kafka, slack, cron)
- * @param {string} config.broker - Target broker name
  * @param {Object} config.config - Type-specific configuration
  * @param {Array} config.eventTypes - Event types
  * @returns {string} YAML string
@@ -613,12 +546,12 @@ spec:
     ref:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
-      name: ${config.broker}
+      name: default  # ← Platform-managed default broker
 status:
   # CloudEvent type produced by this source
   observedEventTypes:
     - dev.knative.sources.github.event
-  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
+  sinkUri: http://default-broker.${config.namespace}.svc.cluster.local`;
 }
 
 /**
@@ -642,12 +575,12 @@ spec:
     ref:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
-      name: ${config.broker}
+      name: default  # ← Platform-managed default broker
 status:
   # CloudEvent type produced by this source
   observedEventTypes:
     - dev.knative.kafka.event
-  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
+  sinkUri: http://default-broker.${config.namespace}.svc.cluster.local`;
 }
 
 /**
@@ -672,12 +605,12 @@ spec:
     ref:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
-      name: ${config.broker}
+      name: default  # ← Platform-managed default broker
 status:
   # CloudEvent type produced by this source
   observedEventTypes:
     - dev.knative.sources.slack.event
-  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
+  sinkUri: http://default-broker.${config.namespace}.svc.cluster.local`;
 }
 
 /**
@@ -701,12 +634,12 @@ ${dataYAML}
     ref:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
-      name: ${config.broker}
+      name: default  # ← Platform-managed default broker
 status:
   # CloudEvent type produced by this source
   observedEventTypes:
     - dev.knative.sources.ping
-  sinkUri: http://${config.broker}-broker.${config.namespace}.svc.cluster.local`;
+  sinkUri: http://default-broker.${config.namespace}.svc.cluster.local`;
 }
 
 /**

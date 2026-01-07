@@ -15,7 +15,6 @@
     <!-- Navigation Tabs -->
     <nav class="main-nav">
         <button class="nav-tab active" data-view="functions">Functions</button>
-        <button class="nav-tab" data-view="brokers">Brokers</button>
         <button class="nav-tab" data-view="eventSources">Event Sources</button>
     </nav>
 
@@ -794,15 +793,6 @@ awsRegion: us-east-1"></textarea>
                     <h3>Add Event Subscription</h3>
                     <form id="subscriptionForm" class="subscription-form-inline">
                         <div class="form-group">
-                            <label for="subscriptionBroker">Broker Name</label>
-                            <select id="subscriptionBroker" name="subscriptionBroker" required>
-                                <option value="">Select a broker...</option>
-                                <!-- Will be populated dynamically from brokers list -->
-                            </select>
-                            <small class="helper-text">Knative Broker to subscribe to</small>
-                        </div>
-
-                        <div class="form-group">
                             <label for="subscriptionEventType">Event Type</label>
                             <select id="subscriptionEventType" name="subscriptionEventType" required>
                                 <option value="">Select an event type...</option>
@@ -854,15 +844,7 @@ awsRegion: us-east-1"></textarea>
                 <div class="add-subscription-section">
                     <h3>Set Destination</h3>
                     <form id="destinationForm" class="subscription-form-inline">
-                        <div class="form-group">
-                            <label for="destinationBroker">Broker Name</label>
-                            <select id="destinationBroker" name="destinationBroker" required>
-                                <option value="">Select a broker...</option>
-                                <!-- Will be populated dynamically from brokers list -->
-                            </select>
-                            <small class="helper-text">Knative Broker where output CloudEvents will be sent</small>
-                        </div>
-
+                        <p>This function will send CloudEvents to the platform-managed default broker.</p>
                         <div class="form-actions">
                             <button type="submit" id="saveDestinationBtn" class="btn-primary">Set Destination</button>
                         </div>
@@ -872,98 +854,6 @@ awsRegion: us-east-1"></textarea>
         </section>
     </div>
 
-    <!-- Broker Detail View -->
-    <div id="brokerDetailView" class="container" style="display: none;">
-        <section class="detail-panel">
-            <div class="detail-header">
-                <div>
-                    <button type="button" id="backToBrokersListFromDetailBtn" class="btn-secondary">← Back to List</button>
-                    <h2 id="detailBrokerName"></h2>
-                </div>
-                <div class="detail-actions">
-                    <button type="button" id="editBrokerFromDetailBtn" class="btn-secondary">Edit Broker</button>
-                </div>
-            </div>
-
-            <div class="function-overview">
-                <h3>Broker Overview</h3>
-
-                <div class="function-diagram">
-                    <!-- Event Sources (Left) -->
-                    <div class="diagram-column diagram-sources">
-                        <h4>Event Sources</h4>
-                        <div id="brokerEventSourcesList" class="source-items">
-                            <!-- Event source boxes will be inserted here -->
-                        </div>
-                    </div>
-
-                    <!-- Arrow: Event Sources → Broker -->
-                    <div class="diagram-arrow">
-                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 5 20 L 45 20" />
-                            <polygon points="45,15 55,20 45,25" />
-                        </svg>
-                    </div>
-
-                    <!-- Broker (Center) -->
-                    <div class="diagram-column diagram-function">
-                        <div class="function-box">
-                            <div class="function-icon">📨</div>
-                            <div class="function-name" id="diagramBrokerName"></div>
-                            <div class="function-meta">
-                                <div class="meta-item">
-                                    <span class="meta-label">Namespace:</span>
-                                    <span id="detailBrokerNamespace"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Retry:</span>
-                                    <span id="detailBrokerRetry"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Backoff Policy:</span>
-                                    <span id="detailBrokerBackoffPolicy"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Event Types:</span>
-                                    <span id="detailBrokerEventTypes"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Arrow: Broker → Functions -->
-                    <div class="diagram-arrow">
-                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 5 20 L 45 20" />
-                            <polygon points="45,15 55,20 45,25" />
-                        </svg>
-                    </div>
-
-                    <!-- Functions (Right) -->
-                    <div class="diagram-column diagram-destinations">
-                        <h4>Subscribed Functions</h4>
-                        <div id="brokerFunctionsList" class="destination-items">
-                            <!-- Function boxes will be inserted here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="detail-resources-section">
-                <h3>Composed Resources</h3>
-
-                <div id="brokerDetailPlatformView" class="platform-view">
-                    <p id="brokerDetailPlatformDescription" class="platform-description">
-                        The UI composed <strong id="brokerDetailResourceCount">1</strong> Kubernetes resource from your broker configuration.
-                    </p>
-
-                    <div id="brokerDetailResourceCards" class="resource-cards">
-                        <!-- Resource cards will be inserted here by JavaScript -->
-                    </div>
-                </div>
-            </div>
-        </section>
-    </div>
 
     <!-- Event Source Detail View -->
     <div id="eventSourceDetailView" class="container" style="display: none;">
@@ -1013,33 +903,18 @@ awsRegion: us-east-1"></textarea>
                                     <span id="detailEventSourceNamespace"></span>
                                 </div>
                                 <div class="meta-item">
-                                    <span class="meta-label">Target Broker:</span>
-                                    <span id="detailEventSourceBroker"></span>
-                                </div>
-                                <div class="meta-item">
                                     <span class="meta-label">Event Types:</span>
                                     <code id="detailEventSourceEventTypes"></code>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Arrow: Event Source → Broker -->
-                    <div class="diagram-arrow">
-                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 5 20 L 45 20" />
-                            <polygon points="45,15 55,20 45,25" />
-                        </svg>
-                    </div>
-
-                    <!-- Broker (Right) -->
-                    <div class="diagram-column diagram-destinations">
-                        <h4>Target Broker</h4>
-                        <div id="eventSourceTargetBroker" class="destination-items">
-                            <!-- Target broker box will be inserted here -->
-                        </div>
-                    </div>
                 </div>
+
+                <p class="helper-text">
+                    Events from this source are automatically sent to the platform-managed default broker,
+                    where they can be consumed by functions that subscribe to the event types.
+                </p>
             </div>
 
             <div class="detail-resources-section">
@@ -1150,43 +1025,6 @@ awsRegion: us-east-1"></textarea>
                 <fieldset>
                     <legend>Broker Details</legend>
 
-                    <div class="form-group">
-                        <label for="brokerName">Broker Name</label>
-                        <input type="text" id="brokerName" name="brokerName"
-                               placeholder="default" value="default" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="brokerNamespace">Namespace</label>
-                        <input type="text" id="brokerNamespace" name="brokerNamespace"
-                               placeholder="default" value="default" required>
-                    </div>
-                </fieldset>
-
-                <fieldset>
-                    <legend>Delivery Configuration</legend>
-
-                    <div class="form-group">
-                        <label for="brokerRetry">Retry Attempts</label>
-                        <input type="number" id="brokerRetry" name="brokerRetry"
-                               placeholder="3" value="3" min="0" max="10">
-                        <small class="helper-text">Number of times to retry failed deliveries</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="brokerBackoffPolicy">Backoff Policy</label>
-                        <select id="brokerBackoffPolicy" name="brokerBackoffPolicy">
-                            <option value="exponential">Exponential</option>
-                            <option value="linear">Linear</option>
-                        </select>
-                        <small class="helper-text">Strategy for increasing delay between retries</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="brokerBackoffDelay">Backoff Delay</label>
-                        <input type="text" id="brokerBackoffDelay" name="brokerBackoffDelay"
-                               placeholder="1s" value="1s">
-                        <small class="helper-text">Initial delay between retries (e.g., "1s", "500ms")</small>
                     </div>
                 </fieldset>
 
@@ -1236,15 +1074,7 @@ awsRegion: us-east-1"></textarea>
                         <label for="eventSourceNamespace">Namespace</label>
                         <input type="text" id="eventSourceNamespace" name="eventSourceNamespace"
                                placeholder="default" value="default" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="eventSourceBroker">Target Broker</label>
-                        <select id="eventSourceBroker" name="eventSourceBroker" required>
-                            <option value="">Select a broker...</option>
-                            <!-- Will be populated dynamically from brokers list -->
-                        </select>
-                        <small class="helper-text">The Broker where events will be sent</small>
+                        <small class="helper-text">Events will be automatically sent to the default broker in this namespace</small>
                     </div>
                 </fieldset>
 
@@ -1266,81 +1096,6 @@ awsRegion: us-east-1"></textarea>
                         <div class="panel-body">
                             <div class="form-group">
                                 <label for="githubRepository">Repository</label>
-                                <input type="text" id="githubRepository" name="githubRepository"
-                                       placeholder="username/repo" value="username/repo">
-                                <small class="helper-text">GitHub repository (owner/repo)</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="githubAccessTokenSecret">Access Token Secret</label>
-                                <input type="text" id="githubAccessTokenSecret" name="githubAccessTokenSecret"
-                                       placeholder="github-secret" value="github-secret">
-                                <small class="helper-text">Kubernetes Secret containing GitHub access token</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label>CloudEvent Type</label>
-                                <code class="event-type-display">dev.knative.sources.github.event</code>
-                                <small class="helper-text">This source produces GitHub events as CloudEvents</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Kafka Source Panel -->
-                    <div id="kafkaSourcePanel" class="metric-panel">
-                        <label class="panel-header">
-                            <input type="radio" name="eventSourceType" value="kafka">
-                            <span class="panel-icon">▶</span>
-                            <span class="panel-title">Kafka Source</span>
-                        </label>
-                        <div class="panel-body">
-                            <div class="form-group">
-                                <label for="kafkaBootstrapServers">Bootstrap Servers</label>
-                                <input type="text" id="kafkaBootstrapServers" name="kafkaBootstrapServers"
-                                       placeholder="kafka:9092" value="kafka:9092">
-                                <small class="helper-text">Kafka bootstrap servers (comma-separated)</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="kafkaTopics">Topics (comma-separated)</label>
-                                <input type="text" id="kafkaTopics" name="kafkaTopics"
-                                       placeholder="my-topic" value="my-topic">
-                                <small class="helper-text">Kafka topics to consume from</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="kafkaConsumerGroup">Consumer Group</label>
-                                <input type="text" id="kafkaConsumerGroup" name="kafkaConsumerGroup"
-                                       placeholder="my-consumer-group" value="my-consumer-group">
-                                <small class="helper-text">Kafka consumer group ID</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label>CloudEvent Type</label>
-                                <code class="event-type-display">dev.knative.kafka.event</code>
-                                <small class="helper-text">This source produces Kafka messages as CloudEvents</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Slack Source Panel -->
-                    <div id="slackSourcePanel" class="metric-panel">
-                        <label class="panel-header">
-                            <input type="radio" name="eventSourceType" value="slack">
-                            <span class="panel-icon">▶</span>
-                            <span class="panel-title">Slack Source</span>
-                        </label>
-                        <div class="panel-body">
-                            <div class="form-group">
-                                <label for="slackWebhookURL">Webhook URL Secret</label>
-                                <input type="text" id="slackWebhookURL" name="slackWebhookURL"
-                                       placeholder="slack-webhook-secret" value="slack-webhook-secret">
-                                <small class="helper-text">Kubernetes Secret containing Slack webhook URL</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label>CloudEvent Type</label>
-                                <code class="event-type-display">dev.knative.sources.slack.event</code>
                                 <small class="helper-text">This source produces Slack events as CloudEvents</small>
                             </div>
                         </div>
