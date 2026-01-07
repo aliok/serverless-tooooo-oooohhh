@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const eventSourceData = collectEventSourceFormData();
 
         // Validate
-        if (!eventSourceData.name || !eventSourceData.namespace || !eventSourceData.broker) {
+        if (!eventSourceData.name || !eventSourceData.namespace) {
             alert('Please fill in all required fields');
             return;
         }
