@@ -1236,19 +1236,21 @@ footer a:hover {
 }
 
 .node-text {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 15px;
+    font-weight: 600;
     pointer-events: none;
+    fill: #333;
 }
 
 .node-type-text {
-    font-size: 11px;
+    font-size: 12px;
     fill: #666;
     pointer-events: none;
+    text-transform: capitalize;
 }
 
 .node-icon {
-    font-size: 24px;
+    font-size: 28px;
     pointer-events: none;
 }
 

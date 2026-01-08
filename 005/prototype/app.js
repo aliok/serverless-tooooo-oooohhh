@@ -1949,70 +1949,78 @@ document.addEventListener('DOMContentLoaded', function() {
         const eventSinks = getEventSinks();
 
         // Calculate dimensions
-        const nodeWidth = 140;
-        const nodeHeight = 80;
-        const columnGap = 200;
-        const rowGap = 100;
-        const padding = 50;
+        const nodeWidth = 160;
+        const nodeHeight = 90;
+        const horizontalGap = 250;
+        const verticalGap = 120;
+        const padding = 60;
 
-        // Position nodes in columns
+        // Calculate total height needed for each column
+        const sourcesHeight = eventSources.length * (nodeHeight + verticalGap);
+        const brokersHeight = brokers.length * (nodeHeight + verticalGap);
+        const functionsHeight = functions.length * (nodeHeight + verticalGap);
+        const sinksHeight = eventSinks.length * (nodeHeight + verticalGap);
+
+        const totalHeight = Math.max(sourcesHeight, brokersHeight, functionsHeight, sinksHeight, 500);
+        const svgHeight = totalHeight + 2 * padding;
+        const svgWidth = padding + 3 * (nodeWidth + horizontalGap) + nodeWidth + padding;
+
+        // Broker is centerpiece - calculate its position first
+        const brokerX = padding + nodeWidth + horizontalGap; // Center column
+        const brokerStartY = (svgHeight - brokersHeight) / 2;
+
+        // Position nodes in columns with broker as center
         const columns = {
             sources: { x: padding, nodes: [] },
-            brokers: { x: padding + nodeWidth + columnGap, nodes: [] },
-            functions: { x: padding + 2 * (nodeWidth + columnGap), nodes: [] },
-            sinks: { x: padding + 3 * (nodeWidth + columnGap), nodes: [] }
+            brokers: { x: brokerX, nodes: [] },
+            functions: { x: brokerX + nodeWidth + horizontalGap, nodes: [] },
+            sinks: { x: brokerX + 2 * (nodeWidth + horizontalGap), nodes: [] }
         };
 
-        // Position event sources
+        // Position brokers (centerpiece) - centered vertically
+        brokers.forEach((broker, i) => {
+            columns.brokers.nodes.push({
+                ...broker,
+                x: columns.brokers.x,
+                y: brokerStartY + i * (nodeHeight + verticalGap),
+                type: 'broker'
+            });
+        });
+
+        // Position event sources (left) - centered vertically
+        const sourcesStartY = (svgHeight - sourcesHeight) / 2;
         eventSources.forEach((source, i) => {
             columns.sources.nodes.push({
                 ...source,
                 x: columns.sources.x,
-                y: padding + i * (nodeHeight + rowGap),
+                y: sourcesStartY + i * (nodeHeight + verticalGap),
                 type: 'source',
                 sourceType: source.type
             });
         });
 
-        // Position brokers
-        brokers.forEach((broker, i) => {
-            columns.brokers.nodes.push({
-                ...broker,
-                x: columns.brokers.x,
-                y: padding + i * (nodeHeight + rowGap),
-                type: 'broker'
-            });
-        });
-
-        // Position functions
+        // Position functions (right of broker) - centered vertically
+        const functionsStartY = (svgHeight - functionsHeight) / 2;
         functions.forEach((func, i) => {
             columns.functions.nodes.push({
                 ...func,
                 x: columns.functions.x,
-                y: padding + i * (nodeHeight + rowGap),
+                y: functionsStartY + i * (nodeHeight + verticalGap),
                 type: 'function'
             });
         });
 
-        // Position event sinks
+        // Position event sinks (far right) - centered vertically
+        const sinksStartY = (svgHeight - sinksHeight) / 2;
         eventSinks.forEach((sink, i) => {
             columns.sinks.nodes.push({
                 ...sink,
                 x: columns.sinks.x,
-                y: padding + i * (nodeHeight + rowGap),
+                y: sinksStartY + i * (nodeHeight + verticalGap),
                 type: 'sink',
                 sinkType: sink.type
             });
         });
-
-        // Calculate SVG dimensions
-        const maxY = Math.max(
-            ...Object.values(columns).map(col =>
-                col.nodes.length > 0 ? col.nodes[col.nodes.length - 1].y + nodeHeight + padding : 0
-            )
-        );
-        const svgWidth = padding + 4 * (nodeWidth + columnGap) + padding;
-        const svgHeight = Math.max(maxY, 400);
 
         // Create SVG
         let svg = `<svg id="networkGraphSvg" width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
@@ -2120,13 +2128,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         allNodes.forEach(node => {
             const colors = {
-                source: { fill: '#E8F5E9', stroke: '#4CAF50' },
-                broker: { fill: '#FFF3E0', stroke: '#FF9800' },
-                function: { fill: '#E3F2FD', stroke: '#2196F3' },
-                sink: { fill: '#F3E5F5', stroke: '#9C27B0' }
+                source: { fill: '#E8F5E9', stroke: '#4CAF50', strokeWidth: 2 },
+                broker: { fill: '#FFF3E0', stroke: '#FF9800', strokeWidth: 3 }, // Thicker stroke for broker
+                function: { fill: '#E3F2FD', stroke: '#2196F3', strokeWidth: 2 },
+                sink: { fill: '#F3E5F5', stroke: '#9C27B0', strokeWidth: 2 }
             };
 
             const color = colors[node.type];
+            const isBroker = node.type === 'broker';
 
             // Get icon based on node type
             let icon = '📦';
@@ -2150,13 +2159,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                node.type === 'function' ? `window.viewFunctionDetails('${node.id}')` :
                                `window.viewEventSinkDetails('${node.id}')`;
 
+            // Add drop shadow for broker (centerpiece)
+            const shadow = isBroker ? 'filter="drop-shadow(0 4px 8px rgba(255, 152, 0, 0.3))"' : '';
+
             svg += `
-                <g class="graph-node" onclick="${clickHandler}">
+                <g class="graph-node" onclick="${clickHandler}" ${shadow}>
                     <rect class="node-rect" x="${node.x}" y="${node.y}" width="${nodeWidth}" height="${nodeHeight}"
-                          rx="8" fill="${color.fill}" stroke="${color.stroke}" stroke-width="2"/>
-                    <text x="${node.x + nodeWidth/2}" y="${node.y + 30}" class="node-icon" text-anchor="middle">${icon}</text>
-                    <text x="${node.x + nodeWidth/2}" y="${node.y + 52}" class="node-text" text-anchor="middle">${node.name}</text>
-                    <text x="${node.x + nodeWidth/2}" y="${node.y + 68}" class="node-type-text" text-anchor="middle">${node.type}</text>
+                          rx="8" fill="${color.fill}" stroke="${color.stroke}" stroke-width="${color.strokeWidth}"/>
+                    <text x="${node.x + nodeWidth/2}" y="${node.y + 35}" class="node-icon" text-anchor="middle">${icon}</text>
+                    <text x="${node.x + nodeWidth/2}" y="${node.y + 58}" class="node-text" text-anchor="middle">${node.name}</text>
+                    <text x="${node.x + nodeWidth/2}" y="${node.y + 75}" class="node-type-text" text-anchor="middle">${node.type}</text>
                 </g>
             `;
         });
