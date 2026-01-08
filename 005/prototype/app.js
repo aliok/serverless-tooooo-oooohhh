@@ -2096,7 +2096,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Function → Sink edges
+        // Function → Sink edges (direct event sending via SinkBinding)
         columns.functions.nodes.forEach(func => {
             if (func.sinkMethod === 'broker' && func.sinkConfig) {
                 const targetBroker = columns.brokers.nodes.find(b => b.name === func.sinkConfig.broker);
@@ -2104,7 +2104,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     edges.push({
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
                         to: { x: targetBroker.x, y: targetBroker.y + nodeHeight / 2 },
-                        label: 'reply',
+                        label: 'produces',
                         dashed: true
                     });
                 }
@@ -2114,7 +2114,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     edges.push({
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
                         to: { x: targetSink.x, y: targetSink.y + nodeHeight / 2 },
-                        label: 'reply'
+                        label: 'produces',
+                        color: '#2196F3'
                     });
                 }
             } else if (func.sinkMethod === 'function' && func.sinkConfig) {
@@ -2123,8 +2124,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     edges.push({
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
                         to: { x: targetFunc.x, y: targetFunc.y + nodeHeight / 2 },
-                        label: 'chain',
-                        curved: true
+                        label: 'produces',
+                        curved: true,
+                        color: '#2196F3'
                     });
                 }
             }
@@ -2137,7 +2139,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 : `M ${edge.from.x} ${edge.from.y} L ${edge.to.x} ${edge.to.y}`;
 
             const dashArray = edge.dashed ? 'stroke-dasharray="5,5"' : '';
-            svg += `<path d="${path}" class="edge-path" ${dashArray} />`;
+            const strokeColor = edge.color || '#999';
+            svg += `<path d="${path}" class="edge-path" ${dashArray} stroke="${strokeColor}" />`;
 
             // Add label
             if (edge.label) {
@@ -3068,7 +3071,7 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationDisplay.innerHTML = '';
 
         if (!functionData.sinkMethod || functionData.sinkMethod === 'none') {
-            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No event sink configured. The Function controller can create a SinkBinding to inject a sink where your function sends CloudEvents.</p></div>';
+            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No event sink configured. SinkBinding can inject K_SINK for your function to actively send CloudEvents (direct sending, not replies).</p></div>';
             return;
         }
 
@@ -3078,7 +3081,7 @@ document.addEventListener('DOMContentLoaded', function() {
             destCard.innerHTML = `
                 <div class="subscription-info">
                     <div class="subscription-broker">Broker: <strong>${functionData.sinkConfig.broker}</strong></div>
-                    <div class="subscription-type">Function controller creates SinkBinding to inject this sink</div>
+                    <div class="subscription-type">SinkBinding injects K_SINK - function actively sends events to broker</div>
                 </div>
                 <button class="btn-danger btn-small remove-destination-btn">Remove</button>
             `;
@@ -3094,7 +3097,7 @@ document.addEventListener('DOMContentLoaded', function() {
             destCard.innerHTML = `
                 <div class="subscription-info">
                     <div class="subscription-broker">Event Sink: <strong>${functionData.sinkConfig.sinkName}</strong></div>
-                    <div class="subscription-type">Function controller creates SinkBinding to inject this ${functionData.sinkConfig.sinkType} sink</div>
+                    <div class="subscription-type">SinkBinding injects K_SINK - function sends events directly to ${functionData.sinkConfig.sinkType} (bypasses broker)</div>
                 </div>
                 <button class="btn-danger btn-small remove-destination-btn">Remove</button>
             `;
@@ -3110,7 +3113,7 @@ document.addEventListener('DOMContentLoaded', function() {
             destCard.innerHTML = `
                 <div class="subscription-info">
                     <div class="subscription-broker">Function: <strong>${functionData.sinkConfig.functionName}</strong></div>
-                    <div class="subscription-type">Function controller creates SinkBinding for function chaining</div>
+                    <div class="subscription-type">SinkBinding enables direct function-to-function chaining (bypasses broker)</div>
                 </div>
                 <button class="btn-danger btn-small remove-destination-btn">Remove</button>
             `;

@@ -854,7 +854,7 @@ awsRegion: us-east-1"></textarea>
 
             <div id="destinationSection" class="event-subscriptions-section">
                 <h3>Current Event Sink Configuration</h3>
-                <p class="helper-text">The Function controller will create a SinkBinding to inject this sink into your function. When your function produces CloudEvents, they will be sent to this sink.</p>
+                <p class="helper-text">The Function controller creates a SinkBinding to inject K_SINK into your function's environment. Your function can actively send CloudEvents to K_SINK (not a reply - direct sending).</p>
 
                 <div id="destinationDisplay" class="subscriptions-list">
                     <div id="emptyDestination" class="empty-subscriptions">
@@ -872,7 +872,7 @@ awsRegion: us-east-1"></textarea>
                                 <option value="sink">Event Sink (HTTP/Kafka/etc.)</option>
                                 <option value="function">Function (chaining)</option>
                             </select>
-                            <small class="helper-text">The Function controller will create a SinkBinding to inject this sink reference</small>
+                            <small class="helper-text">SinkBinding injects K_SINK into function - function actively sends events (not replies)</small>
                         </div>
 
                         <!-- Broker Destination Fields -->
