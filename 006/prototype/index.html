@@ -1493,21 +1493,6 @@ awsRegion: us-east-1"></textarea>
                                placeholder="default" value="default" required>
                     </div>
 
-                    <div class="form-group">
-                        <label for="eventSinkBroker">Source Broker</label>
-                        <select id="eventSinkBroker" name="eventSinkBroker" required>
-                            <option value="">Select a broker...</option>
-                            <!-- Will be populated dynamically from brokers list -->
-                        </select>
-                        <small class="helper-text">The Broker to subscribe to via Trigger</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="eventSinkEventTypes">Event Types (comma-separated)</label>
-                        <input type="text" id="eventSinkEventTypes" name="eventSinkEventTypes"
-                               placeholder="com.example.order.created,com.example.order.updated" value="" required>
-                        <small class="helper-text">CloudEvent types to subscribe to (e.g., "com.example.order.created")</small>
-                    </div>
                 </fieldset>
 
                 <fieldset>
@@ -1739,6 +1724,7 @@ awsRegion: us-east-1"></textarea>
                 </div>
                 <div class="detail-actions">
                     <button type="button" id="editEventSinkFromDetailBtn" class="btn-secondary">Edit Event Sink</button>
+                    <button type="button" id="manageEventSinkSubscriptionsBtn" class="btn-primary">Manage Event Subscriptions</button>
                 </div>
             </div>
 
@@ -1748,9 +1734,8 @@ awsRegion: us-east-1"></textarea>
                 <div class="function-diagram">
                     <!-- Event Sources (Left) -->
                     <div class="diagram-column diagram-sources">
-                        <h4 id="eventSinkSourceTitle">Event Source</h4>
                         <div id="eventSinkSourcesList" class="source-items">
-                            <!-- Source boxes will be inserted here -->
+                            <!-- Event source boxes will be inserted here -->
                         </div>
                     </div>
 
@@ -1771,10 +1756,6 @@ awsRegion: us-east-1"></textarea>
                                 <div class="meta-item">
                                     <span class="meta-label">Type:</span>
                                     <span id="detailEventSinkType"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Mode:</span>
-                                    <span id="detailEventSinkMode"></span>
                                 </div>
                                 <div class="meta-item">
                                     <span class="meta-label">Namespace:</span>
@@ -1802,6 +1783,14 @@ awsRegion: us-east-1"></textarea>
                 </div>
             </div>
 
+            <!-- Event Subscriptions Summary -->
+            <div class="event-subscriptions-summary">
+                <h3>Event Subscriptions</h3>
+                <div class="subscriptions-summary">
+                    <p id="eventSinkSubscriptionsSummaryText"></p>
+                </div>
+            </div>
+
             <div class="detail-resources-section">
                 <h3>Composed Resources</h3>
 
@@ -1813,6 +1802,62 @@ awsRegion: us-east-1"></textarea>
                     <div id="eventSinkDetailResourceCards" class="resource-cards">
                         <!-- Resource cards will be inserted here by JavaScript -->
                     </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Sink Subscriptions Management View -->
+    <div id="eventSinkSubscriptionsView" class="container" style="display: none;">
+        <section class="detail-panel">
+            <div class="detail-header">
+                <div>
+                    <button type="button" id="backToEventSinkDetailFromSubscriptionsBtn" class="btn-secondary">← Back to Event Sink</button>
+                    <h2>Manage Event Subscriptions</h2>
+                    <p class="subtitle" id="eventSinkSubscriptionsViewName"></p>
+                </div>
+            </div>
+
+            <div id="eventSinkEventSubscriptionsSection" class="event-subscriptions-section">
+                <h3>Current Subscriptions</h3>
+
+                <div id="eventSinkSubscriptionsList" class="subscriptions-list">
+                    <div id="emptyEventSinkSubscriptions" class="empty-subscriptions">
+                        <p>No event subscriptions configured. Add one below.</p>
+                    </div>
+                </div>
+
+                <div class="add-subscription-section">
+                    <h3>Add Event Subscription</h3>
+                    <form id="eventSinkSubscriptionForm" class="subscription-form-inline">
+                        <div class="form-group">
+                            <label for="eventSinkSubscriptionBroker">Broker Name</label>
+                            <select id="eventSinkSubscriptionBroker" name="eventSinkSubscriptionBroker" required>
+                                <option value="">Select a broker...</option>
+                                <!-- Will be populated dynamically from brokers list -->
+                            </select>
+                            <small class="helper-text">Knative Broker to subscribe to</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="eventSinkSubscriptionEventType">Event Type</label>
+                            <select id="eventSinkSubscriptionEventType" name="eventSinkSubscriptionEventType" required disabled>
+                                <option value="">Select a broker first...</option>
+                            </select>
+                            <small class="helper-text">CloudEvent types available from the selected broker's event sources</small>
+                        </div>
+
+                        <div id="customEventSinkEventTypeField" class="form-group" style="display: none;">
+                            <label for="customEventSinkEventType">Custom Event Type</label>
+                            <input type="text" id="customEventSinkEventType" name="customEventSinkEventType"
+                                   placeholder="com.myapp.myevent">
+                            <small class="helper-text">Enter your custom CloudEvent type</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" id="saveEventSinkSubscriptionBtn" class="btn-primary">Add Subscription</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </section>

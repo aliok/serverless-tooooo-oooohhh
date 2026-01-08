@@ -877,6 +877,40 @@ ${eventTypeFilters}
 }
 
 /**
+ * Generate Trigger YAML for a single event sink subscription
+ * @param {object} sinkConfig - Event sink configuration
+ * @param {object} subscription - Subscription object with broker and eventType
+ * @returns {string} Trigger YAML
+ */
+function generateSinkSubscriptionTriggerYAML(sinkConfig, subscription) {
+    // Determine trigger name based on how many subscriptions exist
+    let triggerName;
+    if (sinkConfig.eventSubscriptions && sinkConfig.eventSubscriptions.length > 1) {
+        const index = sinkConfig.eventSubscriptions.indexOf(subscription);
+        triggerName = `${sinkConfig.name}-trigger-${index + 1}`;
+    } else {
+        triggerName = `${sinkConfig.name}-trigger`;
+    }
+
+    return `apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: ${triggerName}
+  namespace: ${sinkConfig.namespace}
+spec:
+  broker: ${subscription.broker}
+  filter:
+    attributes:
+    - exact:
+        type: ${subscription.eventType}
+  subscriber:
+    ref:
+      apiVersion: sinks.knative.dev/v1alpha1
+      kind: ${getSinkKind(sinkConfig.type)}
+      name: ${sinkConfig.name}`;
+}
+
+/**
  * Get Kubernetes Kind for sink type
  * @param {string} type - Sink type
  * @returns {string} Kubernetes Kind

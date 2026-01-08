@@ -3090,20 +3090,20 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
-        // Event sinks always subscribe to brokers via Triggers
-        const broker = document.getElementById('eventSinkBroker').value;
-        const eventTypesStr = document.getElementById('eventSinkEventTypes').value.trim();
-        const eventTypes = eventTypesStr ? eventTypesStr.split(',').map(t => t.trim()).filter(t => t) : [];
-
         const formData = {
             id: currentSink ? currentSink.id : null,
             name: document.getElementById('eventSinkName').value.trim(),
             namespace: document.getElementById('eventSinkNamespace').value.trim(),
             type: eventSinkType,
-            broker: broker,
-            eventTypes: eventTypes,
             config: config
         };
+
+        // Preserve event subscriptions if editing
+        if (currentSink && currentSink.eventSubscriptions) {
+            formData.eventSubscriptions = currentSink.eventSubscriptions;
+        } else {
+            formData.eventSubscriptions = [];
+        }
 
         return formData;
     }
@@ -3131,9 +3131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('eventSinkName').value = sinkData.name;
         document.getElementById('eventSinkNamespace').value = sinkData.namespace;
 
-        // Event sinks always subscribe to brokers via Triggers
-        document.getElementById('eventSinkBroker').value = sinkData.broker || '';
-        document.getElementById('eventSinkEventTypes').value = (sinkData.eventTypes || []).join(', ');
+        // Note: broker and eventTypes are managed separately in subscription view
 
         // Set sink type radio and show corresponding panel
         document.querySelectorAll('input[name="eventSinkType"]').forEach(radio => {
@@ -3175,6 +3173,13 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function updateEventSinkResourcePreview() {
         const formData = collectEventSinkFormData();
+
+        // Don't show preview if basic fields are missing
+        if (!formData.name || !formData.type) {
+            eventSinkPlatformView.style.display = 'none';
+            return;
+        }
+
         const resources = [];
 
         // Always add the sink resource
@@ -3190,21 +3195,33 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // All event sinks subscribe to brokers via Triggers
-        if (formData.broker && formData.eventTypes && formData.eventTypes.length > 0) {
-            resources.push({
-                type: 'trigger',
-                name: `${formData.name}-trigger`,
-                yaml: generateSinkTriggerYAML(formData),
-                metadata: RESOURCE_METADATA.trigger
+        // Generate a Trigger for each subscription (when editing)
+        if (formData.eventSubscriptions && formData.eventSubscriptions.length > 0) {
+            formData.eventSubscriptions.forEach((sub, index) => {
+                const triggerName = formData.eventSubscriptions.length === 1
+                    ? `${formData.name}-trigger`
+                    : `${formData.name}-trigger-${index + 1}`;
+
+                resources.push({
+                    type: 'trigger',
+                    name: triggerName,
+                    yaml: generateSinkSubscriptionTriggerYAML(formData, sub),
+                    metadata: RESOURCE_METADATA.trigger
+                });
             });
         }
 
         // Update UI
         eventSinkPlatformView.style.display = 'block';
+
+        const subscriptionCount = formData.eventSubscriptions ? formData.eventSubscriptions.length : 0;
+        const subscriptionDesc = subscriptionCount > 0
+            ? `<br>This sink has <strong>${subscriptionCount}</strong> event subscription${subscriptionCount > 1 ? 's' : ''}. Triggers will be created for each subscription.`
+            : `<br>This sink has no event subscriptions yet. After creating the sink, use "Manage Event Subscriptions" to subscribe to CloudEvents from brokers.`;
+
         eventSinkPlatformDescription.innerHTML = `
-            The UI composed <strong>${resources.length}</strong> Kubernetes resource${resources.length > 1 ? 's' : ''} from your event sink configuration.
-            <br>This sink subscribes to the <strong>${formData.broker}</strong> Broker via Trigger and filters events by type.
+            The UI will compose <strong>${resources.length}</strong> Kubernetes resource${resources.length > 1 ? 's' : ''} from your event sink configuration.
+            ${subscriptionDesc}
         `;
 
         eventSinkResourceCards.innerHTML = '';
@@ -3214,21 +3231,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    /**
-     * Populate broker dropdown for standalone mode
-     */
-    function populateEventSinkBrokerDropdown() {
-        const dropdown = document.getElementById('eventSinkBroker');
-        const brokers = getBrokers();
-
-        dropdown.innerHTML = '<option value="">Select a broker...</option>';
-        brokers.forEach(broker => {
-            const option = document.createElement('option');
-            option.value = broker.name;
-            option.textContent = `${broker.name} (${broker.namespace})`;
-            dropdown.appendChild(option);
-        });
-    }
 
     /**
      * Render event sinks list
@@ -3252,17 +3254,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get type display name (capitalize first letter)
             const typeDisplayName = sink.type.charAt(0).toUpperCase() + sink.type.slice(1);
 
-            // Event sinks always subscribe to brokers
-            const broker = sink.broker || 'N/A';
-            const eventTypes = (sink.eventTypes || []).join(', ') || 'N/A';
+            // Show subscription count and brokers
+            const subscriptionCount = sink.eventSubscriptions ? sink.eventSubscriptions.length : 0;
+            const brokers = sink.eventSubscriptions && sink.eventSubscriptions.length > 0
+                ? [...new Set(sink.eventSubscriptions.map(sub => sub.broker))].join(', ')
+                : 'None';
+            const eventTypes = sink.eventSubscriptions && sink.eventSubscriptions.length > 0
+                ? sink.eventSubscriptions.map(sub => sub.eventType).join(', ')
+                : 'None';
 
             row.innerHTML = `
                 <td>
                     <a href="#" class="event-sink-name-link" data-id="${sink.id}">${sink.name}</a>
                 </td>
                 <td>${typeDisplayName}</td>
-                <td>${broker}</td>
-                <td>${eventTypes}</td>
+                <td>${brokers}</td>
+                <td><code style="font-size: 0.85em">${eventTypes}</code></td>
                 <td class="actions-column">
                     <div class="table-actions">
                         <button class="btn-secondary btn-small edit-sink-btn" data-id="${sink.id}">Edit</button>
@@ -3326,54 +3333,54 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('detailEventSinkName').textContent = sinkData.name;
         document.getElementById('diagramEventSinkName').textContent = sinkData.name;
         document.getElementById('detailEventSinkType').textContent = sinkData.type;
-        document.getElementById('detailEventSinkMode').textContent = sinkData.mode;
         document.getElementById('detailEventSinkNamespace').textContent = sinkData.namespace;
 
-        // Render sources based on mode
+        // Render event subscriptions summary
+        const eventSinkSubscriptionsSummaryText = document.getElementById('eventSinkSubscriptionsSummaryText');
+        if (!sinkData.eventSubscriptions || sinkData.eventSubscriptions.length === 0) {
+            eventSinkSubscriptionsSummaryText.textContent = 'No event subscriptions configured.';
+        } else {
+            const count = sinkData.eventSubscriptions.length;
+            const types = sinkData.eventSubscriptions.map(s => s.eventType).join(', ');
+            eventSinkSubscriptionsSummaryText.textContent = `${count} subscription${count > 1 ? 's' : ''}: ${types}`;
+        }
+
+        // Render sources (brokers from subscriptions)
         const eventSinkSourcesList = document.getElementById('eventSinkSourcesList');
         const eventSinkSourceTitle = document.getElementById('eventSinkSourceTitle');
         eventSinkSourcesList.innerHTML = '';
+        eventSinkSourceTitle.textContent = 'Event Sources';
 
-        if (sinkData.mode === 'standalone') {
-            // Show broker as source
-            eventSinkSourceTitle.textContent = 'Event Source';
-            const sourceBox = document.createElement('div');
-            sourceBox.className = 'source-box';
-            sourceBox.innerHTML = `
-                <div class="source-icon">📨</div>
-                <div class="source-info">
-                    <div class="source-name">${sinkData.broker}</div>
-                    <div class="source-details">Broker</div>
-                    <div class="source-details">Event Types: ${sinkData.eventTypes.join(', ')}</div>
-                </div>
-            `;
-            eventSinkSourcesList.appendChild(sourceBox);
+        if (!sinkData.eventSubscriptions || sinkData.eventSubscriptions.length === 0) {
+            const emptyBox = document.createElement('div');
+            emptyBox.className = 'source-box empty';
+            emptyBox.innerHTML = '<div class="source-info"><div class="source-name">No event subscriptions configured</div></div>';
+            eventSinkSourcesList.appendChild(emptyBox);
         } else {
-            // Show functions that reference this sink
-            eventSinkSourceTitle.textContent = 'Event Sources';
-            const functions = getFunctions().filter(f =>
-                f.sinkMethod === 'sink' && f.sinkConfig && f.sinkConfig.sinkName === sinkData.name
-            );
+            // Group subscriptions by broker
+            const brokerSubscriptions = {};
+            sinkData.eventSubscriptions.forEach(sub => {
+                if (!brokerSubscriptions[sub.broker]) {
+                    brokerSubscriptions[sub.broker] = [];
+                }
+                brokerSubscriptions[sub.broker].push(sub.eventType);
+            });
 
-            if (functions.length === 0) {
-                const emptyBox = document.createElement('div');
-                emptyBox.className = 'source-box empty';
-                emptyBox.innerHTML = '<div class="source-info"><div class="source-name">No event sources using this sink</div></div>';
-                eventSinkSourcesList.appendChild(emptyBox);
-            } else {
-                functions.forEach(func => {
-                    const sourceBox = document.createElement('div');
-                    sourceBox.className = 'source-box';
-                    sourceBox.innerHTML = `
-                        <div class="source-icon">λ</div>
-                        <div class="source-info">
-                            <div class="source-name">${func.name}</div>
-                            <div class="source-details">Function</div>
-                        </div>
-                    `;
-                    eventSinkSourcesList.appendChild(sourceBox);
-                });
-            }
+            // Display a box for each broker
+            Object.keys(brokerSubscriptions).forEach(brokerName => {
+                const eventTypes = brokerSubscriptions[brokerName];
+                const sourceBox = document.createElement('div');
+                sourceBox.className = 'source-box';
+                sourceBox.innerHTML = `
+                    <div class="source-icon">📨</div>
+                    <div class="source-info">
+                        <div class="source-name">${brokerName}</div>
+                        <div class="source-details">Broker</div>
+                        <div class="source-details">Event Types: ${eventTypes.join(', ')}</div>
+                    </div>
+                `;
+                eventSinkSourcesList.appendChild(sourceBox);
+            });
         }
 
         // Render external destination
@@ -3425,12 +3432,19 @@ document.addEventListener('DOMContentLoaded', function() {
             metadata: RESOURCE_METADATA[sinkResourceType]
         });
 
-        if (sinkData.mode === 'standalone' && sinkData.eventTypes && sinkData.eventTypes.length > 0) {
-            resources.push({
-                type: 'trigger',
-                name: `${sinkData.name}-trigger`,
-                yaml: generateSinkTriggerYAML(sinkData),
-                metadata: RESOURCE_METADATA.trigger
+        // Generate a Trigger for each subscription
+        if (sinkData.eventSubscriptions && sinkData.eventSubscriptions.length > 0) {
+            sinkData.eventSubscriptions.forEach((sub, index) => {
+                const triggerName = sinkData.eventSubscriptions.length === 1
+                    ? `${sinkData.name}-trigger`
+                    : `${sinkData.name}-trigger-${index + 1}`;
+
+                resources.push({
+                    type: 'trigger',
+                    name: triggerName,
+                    yaml: generateSinkSubscriptionTriggerYAML(sinkData, sub),
+                    metadata: RESOURCE_METADATA.trigger
+                });
             });
         }
 
@@ -3439,9 +3453,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const eventSinkDetailResourceCards = document.getElementById('eventSinkDetailResourceCards');
 
         eventSinkDetailResourceCount.textContent = resources.length;
+        const subscriptionCount = sinkData.eventSubscriptions ? sinkData.eventSubscriptions.length : 0;
+        const subscriptionDesc = subscriptionCount > 0
+            ? `<br>This sink has <strong>${subscriptionCount}</strong> event subscription${subscriptionCount > 1 ? 's' : ''} and sends events to ${getDestinationDisplay(sinkData.type, sinkData.config)}.`
+            : `<br>This sink has no event subscriptions yet. Use "Manage Event Subscriptions" to subscribe to CloudEvents from brokers.`;
+
         eventSinkDetailPlatformDescription.innerHTML = `
             The UI composed <strong>${resources.length}</strong> Kubernetes resource${resources.length > 1 ? 's' : ''} from your event sink configuration.
-            ${sinkData.mode === 'standalone' ? `<br>This sink subscribes to the <strong>${sinkData.broker}</strong> Broker and sends events to ${getDestinationDisplay(sinkData.type, sinkData.config)}.` : `<br>This sink can be referenced by Functions as a destination.`}
+            ${subscriptionDesc}
         `;
 
         eventSinkDetailResourceCards.innerHTML = '';
@@ -3449,6 +3468,150 @@ document.addEventListener('DOMContentLoaded', function() {
             const card = createResourceCard(resource, sinkData.name, index);
             eventSinkDetailResourceCards.appendChild(card);
         });
+    }
+
+    /**
+     * Show event sink subscriptions management view
+     */
+    function showEventSinkSubscriptionsView(sinkData) {
+        hideAllViews();
+        const eventSinkSubscriptionsView = document.getElementById('eventSinkSubscriptionsView');
+        eventSinkSubscriptionsView.style.display = 'block';
+
+        setCurrentEditingEventSink(sinkData);
+        const eventSinkSubscriptionsViewName = document.getElementById('eventSinkSubscriptionsViewName');
+        eventSinkSubscriptionsViewName.textContent = `Event Sink: ${sinkData.name}`;
+
+        // Populate broker dropdown in subscription form
+        populateEventSinkSubscriptionBrokerDropdown();
+
+        // Initialize event type dropdown to disabled state
+        populateEventSinkSubscriptionEventTypeDropdown(null);
+
+        renderEventSinkSubscriptions(sinkData);
+    }
+
+    /**
+     * Populate event sink subscription broker dropdown with existing brokers
+     */
+    function populateEventSinkSubscriptionBrokerDropdown() {
+        const dropdown = document.getElementById('eventSinkSubscriptionBroker');
+        const brokers = getBrokers();
+
+        // Clear existing options except first
+        dropdown.innerHTML = '<option value="">Select a broker...</option>';
+
+        // Add broker options
+        brokers.forEach(broker => {
+            const option = document.createElement('option');
+            option.value = broker.name;
+            option.textContent = `${broker.name} (${broker.namespace})`;
+            dropdown.appendChild(option);
+        });
+    }
+
+    /**
+     * Populate event sink subscription event type dropdown based on selected broker
+     */
+    function populateEventSinkSubscriptionEventTypeDropdown(brokerName) {
+        const dropdown = document.getElementById('eventSinkSubscriptionEventType');
+
+        if (!brokerName) {
+            dropdown.innerHTML = '<option value="">Select a broker first...</option>';
+            dropdown.disabled = true;
+            return;
+        }
+
+        // Get all event sources connected to this broker
+        const eventSources = getEventSources().filter(es =>
+            (es.sinkMethod === 'broker' && es.sinkConfig && es.sinkConfig.broker === brokerName) ||
+            es.broker === brokerName
+        );
+
+        // Collect all event types from these sources
+        const eventTypesSet = new Set();
+        eventSources.forEach(es => {
+            if (es.eventTypes) {
+                es.eventTypes.forEach(type => eventTypesSet.add(type));
+            }
+        });
+
+        const eventTypes = Array.from(eventTypesSet).sort();
+
+        // Clear and populate dropdown
+        dropdown.innerHTML = '<option value="">Select an event type...</option>';
+
+        if (eventTypes.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No event types available from this broker';
+            option.disabled = true;
+            dropdown.appendChild(option);
+            dropdown.disabled = true;
+        } else {
+            eventTypes.forEach(eventType => {
+                const option = document.createElement('option');
+                option.value = eventType;
+                option.textContent = eventType;
+                dropdown.appendChild(option);
+            });
+
+            // Add "custom" option for advanced users
+            const customOption = document.createElement('option');
+            customOption.value = 'custom';
+            customOption.textContent = 'Custom event type...';
+            dropdown.appendChild(customOption);
+
+            dropdown.disabled = false;
+        }
+    }
+
+    /**
+     * Render event sink subscriptions list
+     */
+    function renderEventSinkSubscriptions(sinkData) {
+        const eventSinkSubscriptionsList = document.getElementById('eventSinkSubscriptionsList');
+        eventSinkSubscriptionsList.innerHTML = '';
+
+        if (!sinkData.eventSubscriptions || sinkData.eventSubscriptions.length === 0) {
+            eventSinkSubscriptionsList.innerHTML = '<div id="emptyEventSinkSubscriptions" class="empty-subscriptions"><p>No event subscriptions configured. Add one below.</p></div>';
+            return;
+        }
+
+        sinkData.eventSubscriptions.forEach((sub, index) => {
+            const subCard = document.createElement('div');
+            subCard.className = 'subscription-card';
+            subCard.innerHTML = `
+                <div class="subscription-info">
+                    <div class="subscription-broker">Broker: <strong>${sub.broker}</strong></div>
+                    <div class="subscription-event-type">Event Type: <code>${sub.eventType}</code></div>
+                </div>
+                <button class="btn-danger btn-small remove-event-sink-subscription-btn" data-index="${index}">Remove</button>
+            `;
+            eventSinkSubscriptionsList.appendChild(subCard);
+        });
+
+        // Add remove handlers
+        document.querySelectorAll('.remove-event-sink-subscription-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.dataset.index);
+                removeEventSinkSubscription(index);
+            });
+        });
+    }
+
+    /**
+     * Remove event sink subscription
+     */
+    function removeEventSinkSubscription(index) {
+        const currentSink = getCurrentEditingEventSink();
+        if (!currentSink) return;
+
+        if (confirm('Are you sure you want to remove this event subscription?')) {
+            currentSink.eventSubscriptions.splice(index, 1);
+            saveEventSink(currentSink);
+            renderEventSinkSubscriptions(currentSink);
+        }
     }
 
     /**
@@ -3470,6 +3633,7 @@ document.addEventListener('DOMContentLoaded', function() {
         eventSinksListView.style.display = 'none';
         eventSinkFormView.style.display = 'none';
         eventSinkDetailView.style.display = 'none';
+        eventSinkSubscriptionsView.style.display = 'none';
     }
 
     // Event Sink button handlers
@@ -3500,6 +3664,103 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = collectEventSinkFormData();
             saveEventSink(formData);
             showEventSinksList();
+        });
+    }
+
+    // Event Sink subscription management handlers
+    const manageEventSinkSubscriptionsBtn = document.getElementById('manageEventSinkSubscriptionsBtn');
+    const backToEventSinkDetailFromSubscriptionsBtn = document.getElementById('backToEventSinkDetailFromSubscriptionsBtn');
+    const eventSinkSubscriptionForm = document.getElementById('eventSinkSubscriptionForm');
+    const eventSinkSubscriptionBroker = document.getElementById('eventSinkSubscriptionBroker');
+    const eventSinkSubscriptionEventType = document.getElementById('eventSinkSubscriptionEventType');
+
+    if (manageEventSinkSubscriptionsBtn) {
+        manageEventSinkSubscriptionsBtn.addEventListener('click', function() {
+            const currentSink = getCurrentEditingEventSink();
+            if (currentSink) {
+                showEventSinkSubscriptionsView(currentSink);
+            }
+        });
+    }
+
+    if (backToEventSinkDetailFromSubscriptionsBtn) {
+        backToEventSinkDetailFromSubscriptionsBtn.addEventListener('click', function() {
+            const currentSink = getCurrentEditingEventSink();
+            if (currentSink) {
+                showEventSinkDetailView(currentSink);
+            }
+        });
+    }
+
+    // Handle event sink subscription broker dropdown change
+    if (eventSinkSubscriptionBroker) {
+        eventSinkSubscriptionBroker.addEventListener('change', function() {
+            populateEventSinkSubscriptionEventTypeDropdown(this.value);
+        });
+    }
+
+    // Handle event sink subscription event type dropdown change
+    if (eventSinkSubscriptionEventType) {
+        eventSinkSubscriptionEventType.addEventListener('change', function() {
+            const customField = document.getElementById('customEventSinkEventTypeField');
+            if (this.value === 'custom') {
+                customField.style.display = 'block';
+            } else {
+                customField.style.display = 'none';
+            }
+        });
+    }
+
+    // Handle event sink subscription form submission
+    if (eventSinkSubscriptionForm) {
+        eventSinkSubscriptionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const currentSink = getCurrentEditingEventSink();
+            if (!currentSink) return;
+
+            const broker = document.getElementById('eventSinkSubscriptionBroker').value.trim();
+            let eventType = eventSinkSubscriptionEventType.value;
+
+            if (eventType === 'custom') {
+                eventType = document.getElementById('customEventSinkEventType').value.trim();
+            }
+
+            if (!broker || !eventType || eventType === '') {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            // Initialize eventSubscriptions if needed
+            if (!currentSink.eventSubscriptions) {
+                currentSink.eventSubscriptions = [];
+            }
+
+            // Check if this subscription already exists
+            const existing = currentSink.eventSubscriptions.find(
+                sub => sub.broker === broker && sub.eventType === eventType
+            );
+
+            if (existing) {
+                alert('This event subscription already exists');
+                return;
+            }
+
+            // Add subscription
+            currentSink.eventSubscriptions.push({
+                broker: broker,
+                eventType: eventType
+            });
+
+            // Save to state
+            saveEventSink(currentSink);
+
+            // Refresh subscriptions view
+            renderEventSinkSubscriptions(currentSink);
+
+            // Reset form
+            eventSinkSubscriptionForm.reset();
+            document.getElementById('customEventSinkEventTypeField').style.display = 'none';
         });
     }
 

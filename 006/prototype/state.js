@@ -117,12 +117,16 @@ let eventSinks = [
         name: 'http-webhook',
         namespace: 'default',
         type: 'http',
-        broker: 'default',
-        eventTypes: ['dev.knative.sources.github.event'],
         config: {
             url: 'https://example.com/webhook',
             headers: { 'Content-Type': 'application/cloudevents+json' }
         },
+        eventSubscriptions: [
+            {
+                broker: 'default',
+                eventType: 'dev.knative.sources.github.event'
+            }
+        ],
         createdAt: new Date().toISOString()
     }
 ];
