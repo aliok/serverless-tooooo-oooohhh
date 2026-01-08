@@ -99,21 +99,50 @@ This repository contains paper prototypes and working implementations exploring 
 
 ---
 
+### [005](005) - Approach 004 + Event Type Discovery
+**Philosophy**: Same as 004, with automatic discovery of event types produced by Functions
+
+**How it works**:
+- Same as approach 004 (UI as composition layer, event sinks)
+- **Addition**: Function controller observes CloudEvents produced by Functions
+- Controller populates `status.replyEventTypes` with discovered event types
+- Network graph visualization shows actual event flow with real event types
+
+**Event type discovery**:
+- Function controller watches CloudEvents sent by Functions
+- Observes `ce-type` header from produced events
+- Updates Function CR status with discovered types
+- UI reflects real event flow (not just declared subscriptions)
+
+**Key characteristics**:
+- ✅ Everything from approach 004
+- ✅ Plus: Automatic event type discovery by Function controller
+- ✅ Plus: Status field shows actual produced event types
+- ✅ Plus: Interactive network graph with real-time event flow
+- ✅ Improved observability - see what Functions actually produce
+
+**Status**: Working prototype with interactive network graph
+
+---
+
 ## Comparison Matrix
 
-| Aspect                    | 001 (God CRD)          | 002 (UI Composition)              | 003 (Broker-Free)                 | 004 (002 + Sinks)                       |
-|---------------------------|------------------------|-----------------------------------|-----------------------------------|-----------------------------------------|
-| **Function CRD Size**     | Large, comprehensive   | Minimal, eventing-only            | Minimal, eventing-only            | Minimal, eventing + sinks               |
-| **Controller Scope**      | All subsystems         | Eventing only                     | Eventing only                     | Eventing only                           |
-| **Resource Creation**     | Controller creates all | UI creates most                   | UI creates most                   | UI creates most                         |
-| **User Complexity**       | Single API             | Multiple resources (hidden by UI) | Multiple resources (hidden by UI) | Multiple resources (hidden by UI)       |
-| **Flexibility**           | Limited                | High                              | Medium                            | High                                    |
-| **Broker Visibility**     | Configurable           | Visible                           | Hidden                            | Visible                                 |
-| **Event Sinks**           | Configurable           | Not in spec                       | Not in spec                       | ✅ Supported (destination configuration) |
-| **Function Chaining**     | Configurable           | Not in spec                       | Not in spec                       | ✅ Supported                             |
-| **Advanced Use Cases**    | Hard to support        | Well supported                    | Limited                           | Well supported                          |
-| **UI Dependency**         | Optional               | Critical                          | Critical                          | Critical                                |
-| **Implementation Status** | Spec only              | Prototype                         | Prototype                         | Prototype                               |
+| Aspect                      | 001 (God CRD)          | 002 (UI Composition)              | 003 (Broker-Free)                 | 004 (002 + Sinks)                       | 005 (004 + Discovery)                            |
+|-----------------------------|------------------------|-----------------------------------|-----------------------------------|-----------------------------------------|--------------------------------------------------|
+| **Function CRD Size**       | Large, comprehensive   | Minimal, eventing-only            | Minimal, eventing-only            | Minimal, eventing + sinks               | Minimal, eventing + sinks + status               |
+| **Controller Scope**        | All subsystems         | Eventing only                     | Eventing only                     | Eventing only                           | Eventing + event type discovery                  |
+| **Resource Creation**       | Controller creates all | UI creates most                   | UI creates most                   | UI creates most                         | UI creates most                                  |
+| **User Complexity**         | Single API             | Multiple resources (hidden by UI) | Multiple resources (hidden by UI) | Multiple resources (hidden by UI)       | Multiple resources (hidden by UI)                |
+| **Flexibility**             | Limited                | High                              | Medium                            | High                                    | High                                             |
+| **Broker Visibility**       | Configurable           | Visible                           | Hidden                            | Visible                                 | Visible                                          |
+| **Event Sinks**             | Configurable           | Not in spec                       | Not in spec                       | ✅ Supported (destination configuration) | ✅ Supported                                      |
+| **Function Chaining**       | Configurable           | Not in spec                       | Not in spec                       | ✅ Supported                             | ✅ Supported                                      |
+| **Event Type Discovery**    | Not supported          | Not supported                     | Not supported                     | Not supported                           | ✅ Automatic (by Function controller)             |
+| **Network Graph**           | Not implemented        | Not implemented                   | Not implemented                   | Not implemented                         | ✅ Interactive with real event types              |
+| **Observability**           | Basic                  | Basic                             | Basic                             | Basic                                   | ✅ Enhanced (shows actual produced event types)   |
+| **Advanced Use Cases**      | Hard to support        | Well supported                    | Limited                           | Well supported                          | Well supported                                   |
+| **UI Dependency**           | Optional               | Critical                          | Critical                          | Critical                                | Critical                                         |
+| **Implementation Status**   | Spec only              | Prototype                         | Prototype                         | Prototype                               | ✅ Prototype with network visualization           |
 
 
 

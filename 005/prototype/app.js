@@ -2054,11 +2054,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create SVG
         let svg = `<svg id="networkGraphSvg" width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
 
-        // Add arrowhead marker definition
+        // Add arrowhead marker definitions
         svg += `
             <defs>
                 <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
                     <polygon points="0 0, 10 3, 0 6" fill="#999" />
+                </marker>
+                <marker id="arrowhead-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <polygon points="0 0, 10 3, 0 6" fill="#2196F3" />
                 </marker>
             </defs>
         `;
@@ -2103,21 +2106,29 @@ document.addEventListener('DOMContentLoaded', function() {
             if (func.sinkMethod === 'broker' && func.sinkConfig) {
                 const targetBroker = columns.brokers.nodes.find(b => b.name === func.sinkConfig.broker);
                 if (targetBroker) {
+                    // Use event types from Function status (discovered by Function controller)
+                    const eventTypesLabel = func.replyEventTypes && func.replyEventTypes.length > 0
+                        ? func.replyEventTypes.join(', ')
+                        : 'events';
                     edges.push({
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
                         to: { x: targetBroker.x, y: targetBroker.y + nodeHeight / 2 },
-                        label: 'produces',
+                        label: eventTypesLabel,
                         color: '#2196F3',
-                        direction: 'incoming' // right-to-left, back to broker
+                        direction: 'incoming', // right-to-left, back to broker
+                        reverse: true // needed for proper arrow direction
                     });
                 }
             } else if (func.sinkMethod === 'sink' && func.sinkConfig) {
                 const targetSink = columns.sinks.nodes.find(s => s.name === func.sinkConfig.sinkName);
                 if (targetSink) {
+                    const eventTypesLabel = func.replyEventTypes && func.replyEventTypes.length > 0
+                        ? func.replyEventTypes.join(', ')
+                        : 'events';
                     edges.push({
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
                         to: { x: targetSink.x, y: targetSink.y + nodeHeight / 2 },
-                        label: 'produces',
+                        label: eventTypesLabel,
                         color: '#2196F3',
                         direction: 'outgoing' // left-to-right
                     });
@@ -2125,10 +2136,13 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (func.sinkMethod === 'function' && func.sinkConfig) {
                 const targetFunc = columns.functions.nodes.find(f => f.name === func.sinkConfig.functionName);
                 if (targetFunc) {
+                    const eventTypesLabel = func.replyEventTypes && func.replyEventTypes.length > 0
+                        ? func.replyEventTypes.join(', ')
+                        : 'events';
                     edges.push({
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
                         to: { x: targetFunc.x, y: targetFunc.y + nodeHeight / 2 },
-                        label: 'produces',
+                        label: eventTypesLabel,
                         curved: true,
                         color: '#2196F3',
                         direction: 'outgoing' // curved, special case
@@ -2144,7 +2158,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 : `M ${edge.from.x} ${edge.from.y} L ${edge.to.x} ${edge.to.y}`;
 
             const strokeColor = edge.color || '#999';
-            svg += `<path d="${path}" class="edge-path" stroke="${strokeColor}" />`;
+            // Use blue arrowhead for blue edges, gray for others
+            const markerEnd = edge.color === '#2196F3' ? 'url(#arrowhead-blue)' : 'url(#arrowhead)';
+            svg += `<path d="${path}" stroke="${strokeColor}" stroke-width="2" fill="none" marker-end="${markerEnd}" />`;
 
             // Add label with different offsets for outgoing vs incoming
             if (edge.label) {
