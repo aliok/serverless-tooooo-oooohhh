@@ -43,6 +43,8 @@ function generateFunctionYAML(config) {
     } else if (config.sinkMethod === 'sink' && config.sinkConfig && config.sinkConfig.sinkName) {
         const sinkKind = getSinkKind(config.sinkConfig.sinkType);
         sinkYAML = `\n    sink:\n      ref:\n        apiVersion: sinks.knative.dev/v1alpha1\n        kind: ${sinkKind}\n        name: ${config.sinkConfig.sinkName}`;
+    } else if (config.sinkMethod === 'function' && config.sinkConfig && config.sinkConfig.functionName) {
+        sinkYAML = `\n    sink:\n      ref:\n        apiVersion: v1\n        kind: Service\n        name: ${config.sinkConfig.functionName}`;
     }
 
     return `apiVersion: serverless.openshift.io/v1alpha1
