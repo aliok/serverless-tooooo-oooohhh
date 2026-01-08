@@ -2784,7 +2784,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const typeDisplayName = eventSourceData.type.charAt(0).toUpperCase() + eventSourceData.type.slice(1);
         detailEventSourceType.textContent = typeDisplayName;
         detailEventSourceNamespace.textContent = eventSourceData.namespace;
-        detailEventSourceBroker.textContent = eventSourceData.broker;
+
+        // Determine target details
+        const sinkMethod = eventSourceData.sinkMethod || 'broker';
+        const sinkConfig = eventSourceData.sinkConfig || {};
+        let targetName = '';
+        let targetType = '';
+
+        if (sinkMethod === 'broker') {
+            targetName = sinkConfig.broker || eventSourceData.broker || '';
+            targetType = 'Broker';
+        } else if (sinkMethod === 'sink') {
+            targetName = sinkConfig.sinkName || '';
+            targetType = `Event Sink (${sinkConfig.sinkType || ''})`;
+        } else if (sinkMethod === 'function') {
+            targetName = sinkConfig.functionName || '';
+            targetType = 'Function';
+        }
+
+        detailEventSourceBroker.textContent = targetName;
         detailEventSourceEventTypes.textContent = eventSourceData.eventTypes.join(', ');
 
         // Render external source
@@ -2812,24 +2830,46 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         eventSourceExternalSource.appendChild(externalBox);
 
-        // Render target broker
+        // Render target (broker, sink, or function)
         eventSourceTargetBroker.innerHTML = '';
-        const brokerBox = document.createElement('div');
-        brokerBox.className = 'destination-box';
-        brokerBox.innerHTML = `
-            <div class="destination-icon">📨</div>
+        const targetBox = document.createElement('div');
+        targetBox.className = 'destination-box';
+
+        let targetIcon = '📨';  // Default broker icon
+        if (sinkMethod === 'sink') {
+            targetIcon = getSinkIcon(sinkConfig.sinkType);
+        } else if (sinkMethod === 'function') {
+            targetIcon = 'λ';
+        }
+
+        targetBox.innerHTML = `
+            <div class="destination-icon">${targetIcon}</div>
             <div class="destination-info">
-                <div class="destination-name">${eventSourceData.broker}</div>
-                <div class="destination-details">Knative Broker</div>
+                <div class="destination-name">${targetName}</div>
+                <div class="destination-details">${targetType}</div>
             </div>
         `;
-        eventSourceTargetBroker.appendChild(brokerBox);
+        eventSourceTargetBroker.appendChild(targetBox);
     }
 
     /**
      * Render event source detail resources
      */
     function renderEventSourceDetailResources(eventSourceData) {
+        // Determine target description
+        const sinkMethod = eventSourceData.sinkMethod || 'broker';
+        const sinkConfig = eventSourceData.sinkConfig || {};
+        let targetDescription = '';
+
+        if (sinkMethod === 'broker') {
+            const broker = sinkConfig.broker || eventSourceData.broker || '';
+            targetDescription = `<strong>${broker}</strong> Broker`;
+        } else if (sinkMethod === 'sink') {
+            targetDescription = `<strong>${sinkConfig.sinkName}</strong> Event Sink`;
+        } else if (sinkMethod === 'function') {
+            targetDescription = `<strong>${sinkConfig.functionName}</strong> Function`;
+        }
+
         const resourceType = `${eventSourceData.type}Source`;
         const resource = {
             type: resourceType,
@@ -2838,7 +2878,7 @@ document.addEventListener('DOMContentLoaded', function() {
             metadata: RESOURCE_METADATA[resourceType] || {
                 kind: `${eventSourceData.type.charAt(0).toUpperCase() + eventSourceData.type.slice(1)}Source`,
                 apiVersion: 'sources.knative.dev/v1',
-                description: `Produces CloudEvents from ${eventSourceData.type} to the ${eventSourceData.broker} Broker.`
+                description: `Produces CloudEvents from ${eventSourceData.type} to ${targetDescription}.`
             }
         };
 
@@ -2847,7 +2887,7 @@ document.addEventListener('DOMContentLoaded', function() {
         eventSourceDetailPlatformDescription.innerHTML = `
             The UI composed <strong>1</strong> Kubernetes resource from your event source configuration.
             <br>
-            This ${typeDisplayName} Source produces CloudEvents and sends them to the <strong>${eventSourceData.broker}</strong> Broker.
+            This ${typeDisplayName} Source produces CloudEvents and sends them to ${targetDescription}.
         `;
 
         eventSourceDetailResourceCards.innerHTML = '';
