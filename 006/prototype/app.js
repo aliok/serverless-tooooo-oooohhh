@@ -1876,7 +1876,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Functions only receive events from brokers (no outgoing edges)
+        // Broker → Event Sink edges (subscriptions, left-to-right, incoming to sink)
+        columns.sinks.nodes.forEach(sink => {
+            if (sink.eventSubscriptions) {
+                sink.eventSubscriptions.forEach(sub => {
+                    const sourceBroker = columns.brokers.nodes.find(b => b.name === sub.broker);
+                    if (sourceBroker) {
+                        edges.push({
+                            from: { x: sourceBroker.x + nodeWidth, y: sourceBroker.y + nodeHeight / 2 },
+                            to: { x: sink.x - arrowPadding, y: sink.y + nodeHeight / 2 },
+                            label: sub.eventType,
+                            direction: 'outgoing' // left-to-right
+                        });
+                    }
+                });
+            }
+        });
+
+        // Functions and sinks only receive events from brokers (no outgoing edges)
 
         // Draw edges
         edges.forEach(edge => {
@@ -2799,12 +2816,12 @@ document.addEventListener('DOMContentLoaded', function() {
             f.eventSubscriptions && f.eventSubscriptions.some(sub => sub.broker === brokerData.name)
         );
 
-        // Get standalone event sinks subscribed to this broker
-        const standaloneSinks = getEventSinks().filter(s =>
-            s.mode === 'standalone' && s.broker === brokerData.name
+        // Get event sinks subscribed to this broker
+        const sinks = getEventSinks().filter(s =>
+            s.eventSubscriptions && s.eventSubscriptions.some(sub => sub.broker === brokerData.name)
         );
 
-        const totalSubscribers = functions.length + standaloneSinks.length;
+        const totalSubscribers = functions.length + sinks.length;
 
         if (totalSubscribers === 0) {
             brokerFunctionsList.innerHTML = '<p class="empty-list">No subscribers for this broker.</p>';
@@ -2823,16 +2840,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 brokerFunctionsList.appendChild(funcBox);
             });
 
-            // Render standalone event sinks
-            standaloneSinks.forEach(sink => {
+            // Render event sinks
+            sinks.forEach(sink => {
                 const sinkBox = document.createElement('div');
                 sinkBox.className = 'destination-box';
                 const sinkIcon = getSinkIcon(sink.type);
+                const typeDisplayName = sink.type.charAt(0).toUpperCase() + sink.type.slice(1);
                 sinkBox.innerHTML = `
                     <div class="destination-icon">${sinkIcon}</div>
                     <div class="destination-info">
                         <div class="destination-name">${sink.name}</div>
-                        <div class="destination-details">Event Sink (${sink.type})</div>
+                        <div class="destination-details">Event Sink (${typeDisplayName})</div>
                     </div>
                 `;
                 brokerFunctionsList.appendChild(sinkBox);
