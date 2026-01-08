@@ -38,6 +38,7 @@ let functions = [
                 eventType: 'dev.knative.sources.github.event'
             }
         ],
+        replyEventTypes: ['com.example.function.processed', 'com.example.function.validation.failed'],
         createdAt: new Date().toISOString()
     },
     {
@@ -72,6 +73,7 @@ let functions = [
                 eventType: 'dev.knative.sources.github.event'
             }
         ],
+        replyEventTypes: ['com.processor.data.transformed'],
         createdAt: new Date().toISOString()
     }
 ];

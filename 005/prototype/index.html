@@ -14,11 +14,25 @@
 
     <!-- Navigation Tabs -->
     <nav class="main-nav">
-        <button class="nav-tab active" data-view="functions">Functions</button>
+        <button class="nav-tab active" data-view="overview">Overview</button>
+        <button class="nav-tab" data-view="functions">Functions</button>
         <button class="nav-tab" data-view="brokers">Brokers</button>
         <button class="nav-tab" data-view="eventSources">Event Sources</button>
         <button class="nav-tab" data-view="eventSinks">Event Sinks</button>
     </nav>
+
+    <!-- Overview/Network Graph View -->
+    <div id="overviewView" class="container">
+        <section class="overview-panel">
+            <div class="overview-header">
+                <h2>Event Flow Overview</h2>
+                <p class="subtitle">Visual representation of event sources, brokers, functions, and sinks</p>
+            </div>
+            <div id="networkGraph" class="network-graph-container">
+                <!-- Network graph will be rendered here -->
+            </div>
+        </section>
+    </div>
 
     <!-- Function List View -->
     <div id="listView" class="container">
@@ -736,12 +750,12 @@ awsRegion: us-east-1"></textarea>
                         </svg>
                     </div>
 
-                    <!-- Reply Destinations (Right) -->
+                    <!-- Event Sinks (Right) -->
                     <div class="diagram-column diagram-destinations">
                         <div id="destinationsList" class="destination-items">
-                            <!-- Reply destination boxes will be inserted here -->
+                            <!-- Event sink boxes will be inserted here -->
                         </div>
-                        <button type="button" id="addDestinationBtn" class="diagram-add-btn">+ Add reply destination</button>
+                        <button type="button" id="addDestinationBtn" class="diagram-add-btn">+ Configure sink</button>
                     </div>
                 </div>
             </div>
@@ -827,20 +841,20 @@ awsRegion: us-east-1"></textarea>
         </section>
     </div>
 
-    <!-- Reply Destinations Management View -->
+    <!-- Event Sink Management View -->
     <div id="destinationsView" class="container" style="display: none;">
         <section class="detail-panel">
             <div class="detail-header">
                 <div>
                     <button type="button" id="backToDetailFromDestinationsBtn" class="btn-secondary">← Back to Function</button>
-                    <h2>Manage Reply Destination</h2>
+                    <h2>Manage Event Sink</h2>
                     <p class="subtitle" id="destinationsViewFunctionName"></p>
                 </div>
             </div>
 
             <div id="destinationSection" class="event-subscriptions-section">
-                <h3>Current Reply Destination</h3>
-                <p class="helper-text">When your function processes an event and returns a CloudEvent in the HTTP response, it will be routed to this destination. The function sets the event type in the reply CloudEvent.</p>
+                <h3>Current Event Sink Configuration</h3>
+                <p class="helper-text">The Function controller will create a SinkBinding to inject this sink into your function. When your function produces CloudEvents, they will be sent to this sink.</p>
 
                 <div id="destinationDisplay" class="subscriptions-list">
                     <div id="emptyDestination" class="empty-subscriptions">
@@ -849,16 +863,16 @@ awsRegion: us-east-1"></textarea>
                 </div>
 
                 <div class="add-subscription-section">
-                    <h3>Set Reply Destination</h3>
+                    <h3>Configure Event Sink</h3>
                     <form id="destinationForm" class="subscription-form-inline">
                         <div class="form-group">
-                            <label for="destinationMethod">Reply Destination Type</label>
+                            <label for="destinationMethod">Sink Type</label>
                             <select id="destinationMethod" name="destinationMethod" required>
                                 <option value="broker">Broker</option>
-                                <option value="sink">Event Sink</option>
-                                <option value="function">Function</option>
+                                <option value="sink">Event Sink (HTTP/Kafka/etc.)</option>
+                                <option value="function">Function (chaining)</option>
                             </select>
-                            <small class="helper-text">Where reply CloudEvents from this function will be sent</small>
+                            <small class="helper-text">The Function controller will create a SinkBinding to inject this sink reference</small>
                         </div>
 
                         <!-- Broker Destination Fields -->
@@ -898,7 +912,7 @@ awsRegion: us-east-1"></textarea>
                         </div>
 
                         <div class="form-actions">
-                            <button type="submit" id="saveDestinationBtn" class="btn-primary">Set Reply Destination</button>
+                            <button type="submit" id="saveDestinationBtn" class="btn-primary">Configure Sink</button>
                         </div>
                     </form>
                 </div>

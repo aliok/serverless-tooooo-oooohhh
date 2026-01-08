@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const navTabs = document.querySelectorAll('.nav-tab');
 
     // Views
+    const overviewView = document.getElementById('overviewView');
     const listView = document.getElementById('listView');
     const formView = document.getElementById('formView');
     const detailView = document.getElementById('detailView');
@@ -181,7 +182,9 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('active');
 
             // Show appropriate view
-            if (view === 'functions') {
+            if (view === 'overview') {
+                showOverview();
+            } else if (view === 'functions') {
                 showFunctionsList();
             } else if (view === 'brokers') {
                 showBrokersList();
@@ -1346,6 +1349,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
+     * Show overview/network graph view
+     */
+    function showOverview() {
+        hideAllViews();
+        overviewView.style.display = 'block';
+        renderNetworkGraph();
+    }
+
+    /**
      * Show list view (deprecated - use showFunctionsList instead)
      */
     function showListView() {
@@ -1925,6 +1937,126 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
+     * Render network graph showing event flow
+     */
+    function renderNetworkGraph() {
+        const graphContainer = document.getElementById('networkGraph');
+        if (!graphContainer) return;
+
+        const eventSources = getEventSources();
+        const brokers = getBrokers();
+        const functions = getFunctions();
+        const eventSinks = getEventSinks();
+
+        let html = '<div class="graph-layer">';
+
+        // Row 1: Event Sources
+        if (eventSources.length > 0) {
+            html += '<div class="graph-row">';
+            html += '<h3 style="margin-bottom: 1rem; color: #666;">Event Sources</h3>';
+            html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">';
+            eventSources.forEach(source => {
+                const icon = source.type === 'github' ? '🐙' :
+                           source.type === 'kafka' ? '📨' :
+                           source.type === 'slack' ? '💬' :
+                           source.type === 'cron' ? '⏰' : '📡';
+                html += `
+                    <div class="graph-node event-source" onclick="window.viewEventSourceDetails('${source.id}')">
+                        <div class="graph-node-icon">${icon}</div>
+                        <div class="graph-node-name">${source.name}</div>
+                        <div class="graph-node-type">${source.type}</div>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+        }
+
+        // Row 2: Brokers
+        if (brokers.length > 0) {
+            html += '<div class="graph-row">';
+            html += '<h3 style="margin-bottom: 1rem; color: #666;">Brokers</h3>';
+            html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">';
+            brokers.forEach(broker => {
+                html += `
+                    <div class="graph-node broker" onclick="window.viewBrokerDetails('${broker.id}')">
+                        <div class="graph-node-icon">🔀</div>
+                        <div class="graph-node-name">${broker.name}</div>
+                        <div class="graph-node-type">Broker</div>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+        }
+
+        // Row 3: Functions
+        if (functions.length > 0) {
+            html += '<div class="graph-row">';
+            html += '<h3 style="margin-bottom: 1rem; color: #666;">Functions</h3>';
+            html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">';
+            functions.forEach(func => {
+                const subscriptionCount = func.eventSubscriptions ? func.eventSubscriptions.length : 0;
+                const hasSink = func.sinkMethod && func.sinkMethod !== 'none';
+                html += `
+                    <div class="graph-node function" onclick="window.viewFunctionDetails('${func.id}')">
+                        ${subscriptionCount > 0 ? `<div class="graph-node-badge">${subscriptionCount}</div>` : ''}
+                        <div class="graph-node-icon">λ</div>
+                        <div class="graph-node-name">${func.name}</div>
+                        <div class="graph-node-type">Function</div>
+                        ${hasSink ? '<div style="font-size: 0.7rem; color: #666; margin-top: 0.25rem;">→ has sink</div>' : ''}
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+        }
+
+        // Row 4: Event Sinks
+        if (eventSinks.length > 0) {
+            html += '<div class="graph-row">';
+            html += '<h3 style="margin-bottom: 1rem; color: #666;">Event Sinks</h3>';
+            html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">';
+            eventSinks.forEach(sink => {
+                const icon = sink.type === 'http' ? '🌐' :
+                           sink.type === 'kafka' ? '📨' :
+                           sink.type === 's3' ? '🪣' : '📦';
+                html += `
+                    <div class="graph-node event-sink" onclick="window.viewEventSinkDetails('${sink.id}')">
+                        <div class="graph-node-icon">${icon}</div>
+                        <div class="graph-node-name">${sink.name}</div>
+                        <div class="graph-node-type">${sink.type}</div>
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+        }
+
+        html += '</div>';
+
+        // Add legend
+        html += `
+            <div class="graph-legend">
+                <div class="legend-item">
+                    <div class="legend-icon event-source"></div>
+                    <div class="legend-label">Event Source</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon broker"></div>
+                    <div class="legend-label">Broker</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon function"></div>
+                    <div class="legend-label">Function</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-icon event-sink"></div>
+                    <div class="legend-label">Event Sink</div>
+                </div>
+            </div>
+        `;
+
+        graphContainer.innerHTML = html;
+    }
+
+    /**
      * Render functions list
      */
     function renderFunctionsList() {
@@ -2453,7 +2585,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * Render reply destinations in diagram
+     * Render event sink configuration in diagram
      */
     function renderSinkDestinations(functionData) {
         destinationsList.innerHTML = '';
@@ -2470,7 +2602,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="destination-icon">📨</div>
                 <div class="destination-info">
                     <div class="destination-name">${functionData.sinkConfig.broker}</div>
-                    <div class="destination-details">Broker (Reply Destination)</div>
+                    <div class="destination-details">Broker (via SinkBinding)</div>
                 </div>
             `;
 
@@ -2484,7 +2616,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="destination-icon">${sinkIcon}</div>
                 <div class="destination-info">
                     <div class="destination-name">${functionData.sinkConfig.sinkName}</div>
-                    <div class="destination-details">Event Sink (Reply Destination)</div>
+                    <div class="destination-details">Event Sink (via SinkBinding)</div>
                 </div>
             `;
 
@@ -2497,7 +2629,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="destination-icon">λ</div>
                 <div class="destination-info">
                     <div class="destination-name">${functionData.sinkConfig.functionName}</div>
-                    <div class="destination-details">Function (Reply Destination)</div>
+                    <div class="destination-details">Function (via SinkBinding)</div>
                 </div>
             `;
 
@@ -2663,7 +2795,7 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationDisplay.innerHTML = '';
 
         if (!functionData.sinkMethod || functionData.sinkMethod === 'none') {
-            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No reply destination configured. When your function returns a CloudEvent in the HTTP response, you can route it to a Broker, Event Sink, or another Function. The function sets the event type in the reply.</p></div>';
+            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No event sink configured. The Function controller can create a SinkBinding to inject a sink where your function sends CloudEvents.</p></div>';
             return;
         }
 
@@ -2673,7 +2805,7 @@ document.addEventListener('DOMContentLoaded', function() {
             destCard.innerHTML = `
                 <div class="subscription-info">
                     <div class="subscription-broker">Broker: <strong>${functionData.sinkConfig.broker}</strong></div>
-                    <div class="subscription-type">Reply CloudEvents will be sent to this Broker</div>
+                    <div class="subscription-type">Function controller creates SinkBinding to inject this sink</div>
                 </div>
                 <button class="btn-danger btn-small remove-destination-btn">Remove</button>
             `;
@@ -2689,7 +2821,7 @@ document.addEventListener('DOMContentLoaded', function() {
             destCard.innerHTML = `
                 <div class="subscription-info">
                     <div class="subscription-broker">Event Sink: <strong>${functionData.sinkConfig.sinkName}</strong></div>
-                    <div class="subscription-type">Reply CloudEvents will be sent to this ${functionData.sinkConfig.sinkType} sink</div>
+                    <div class="subscription-type">Function controller creates SinkBinding to inject this ${functionData.sinkConfig.sinkType} sink</div>
                 </div>
                 <button class="btn-danger btn-small remove-destination-btn">Remove</button>
             `;
@@ -2705,7 +2837,7 @@ document.addEventListener('DOMContentLoaded', function() {
             destCard.innerHTML = `
                 <div class="subscription-info">
                     <div class="subscription-broker">Function: <strong>${functionData.sinkConfig.functionName}</strong></div>
-                    <div class="subscription-type">Reply CloudEvents will be sent to this function (function chaining)</div>
+                    <div class="subscription-type">Function controller creates SinkBinding for function chaining</div>
                 </div>
                 <button class="btn-danger btn-small remove-destination-btn">Remove</button>
             `;
@@ -3447,6 +3579,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * Helper function to hide all views
      */
     function hideAllViews() {
+        overviewView.style.display = 'none';
         listView.style.display = 'none';
         formView.style.display = 'none';
         detailView.style.display = 'none';
@@ -3533,5 +3666,40 @@ document.addEventListener('DOMContentLoaded', function() {
             updateEventSinkResourcePreview();
         });
     }
+
+    // Add global functions for network graph node clicks
+    window.viewEventSourceDetails = function(id) {
+        const source = getEventSource(id);
+        if (source) {
+            setCurrentEditingEventSource(source);
+            showEventSourceDetailView();
+        }
+    };
+
+    window.viewBrokerDetails = function(id) {
+        const broker = getBroker(id);
+        if (broker) {
+            setCurrentEditingBroker(broker);
+            showBrokerDetailView();
+        }
+    };
+
+    window.viewFunctionDetails = function(id) {
+        const func = getFunction(id);
+        if (func) {
+            showDetailView(func);
+        }
+    };
+
+    window.viewEventSinkDetails = function(id) {
+        const sink = getEventSink(id);
+        if (sink) {
+            setCurrentEditingEventSink(sink);
+            showEventSinkDetailView();
+        }
+    };
+
+    // Initialize with overview page
+    showOverview();
 
 });

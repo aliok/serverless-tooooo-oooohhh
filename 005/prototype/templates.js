@@ -47,6 +47,13 @@ function generateFunctionYAML(config) {
         sinkYAML = `\n    sink:\n      ref:\n        apiVersion: v1\n        kind: Service\n        name: ${config.sinkConfig.functionName}`;
     }
 
+    // Add status with reply event types (populated by controller/broker)
+    let statusYAML = '';
+    if (config.replyEventTypes && config.replyEventTypes.length > 0) {
+        const replyTypesYAML = config.replyEventTypes.map(type => `    - ${type}`).join('\n');
+        statusYAML = `\nstatus:\n  # Discovered by Broker controller watching actual CloudEvents produced\n  replyEventTypes:\n${replyTypesYAML}`;
+    }
+
     return `apiVersion: serverless.openshift.io/v1alpha1
 kind: Function
 metadata:
@@ -54,7 +61,7 @@ metadata:
   namespace: ${config.namespace}
 spec:
   eventing:
-${subscriptionsYAML}${sinkYAML}`;
+${subscriptionsYAML}${sinkYAML}${statusYAML}`;
 }
 
 /**
