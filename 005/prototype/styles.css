@@ -1206,50 +1206,63 @@ footer a:hover {
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     padding: 2rem;
-    min-height: 600px;
+    min-height: 700px;
     position: relative;
+    overflow: auto;
 }
 
-.graph-layer {
-    display: flex;
-    flex-direction: column;
-    gap: 3rem;
-}
-
-.graph-row {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    position: relative;
-    min-height: 100px;
-}
-
-.graph-row-label {
-    position: absolute;
-    left: -100px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-weight: 600;
-    color: #666;
-    font-size: 0.9rem;
+#networkGraphSvg {
+    width: 100%;
+    min-height: 650px;
 }
 
 .graph-node {
-    background: #fff;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 1rem 1.5rem;
-    min-width: 150px;
-    text-align: center;
     cursor: pointer;
     transition: all 0.2s;
-    position: relative;
 }
 
-.graph-node:hover {
-    border-color: #0066cc;
-    box-shadow: 0 4px 12px rgba(0, 102, 204, 0.15);
-    transform: translateY(-2px);
+.graph-node:hover .node-rect {
+    stroke: #0066cc;
+    stroke-width: 3;
+    filter: drop-shadow(0 4px 8px rgba(0, 102, 204, 0.3));
+}
+
+.graph-node:hover .node-text {
+    font-weight: 600;
+}
+
+.node-rect {
+    transition: all 0.2s;
+}
+
+.node-text {
+    font-size: 14px;
+    font-weight: 500;
+    pointer-events: none;
+}
+
+.node-type-text {
+    font-size: 11px;
+    fill: #666;
+    pointer-events: none;
+}
+
+.node-icon {
+    font-size: 24px;
+    pointer-events: none;
+}
+
+.edge-path {
+    fill: none;
+    stroke: #999;
+    stroke-width: 2;
+    marker-end: url(#arrowhead);
+}
+
+.edge-label {
+    font-size: 10px;
+    fill: #666;
+    pointer-events: none;
 }
 
 .graph-node-icon {

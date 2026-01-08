@@ -1937,7 +1937,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * Render network graph showing event flow
+     * Render network graph showing event flow using SVG
      */
     function renderNetworkGraph() {
         const graphContainer = document.getElementById('networkGraph');
@@ -1948,91 +1948,223 @@ document.addEventListener('DOMContentLoaded', function() {
         const functions = getFunctions();
         const eventSinks = getEventSinks();
 
-        let html = '<div class="graph-layer">';
+        // Calculate dimensions
+        const nodeWidth = 140;
+        const nodeHeight = 80;
+        const columnGap = 200;
+        const rowGap = 100;
+        const padding = 50;
 
-        // Row 1: Event Sources
-        if (eventSources.length > 0) {
-            html += '<div class="graph-row">';
-            html += '<h3 style="margin-bottom: 1rem; color: #666;">Event Sources</h3>';
-            html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">';
-            eventSources.forEach(source => {
-                const icon = source.type === 'github' ? '🐙' :
-                           source.type === 'kafka' ? '📨' :
-                           source.type === 'slack' ? '💬' :
-                           source.type === 'cron' ? '⏰' : '📡';
-                html += `
-                    <div class="graph-node event-source" onclick="window.viewEventSourceDetails('${source.id}')">
-                        <div class="graph-node-icon">${icon}</div>
-                        <div class="graph-node-name">${source.name}</div>
-                        <div class="graph-node-type">${source.type}</div>
-                    </div>
-                `;
+        // Position nodes in columns
+        const columns = {
+            sources: { x: padding, nodes: [] },
+            brokers: { x: padding + nodeWidth + columnGap, nodes: [] },
+            functions: { x: padding + 2 * (nodeWidth + columnGap), nodes: [] },
+            sinks: { x: padding + 3 * (nodeWidth + columnGap), nodes: [] }
+        };
+
+        // Position event sources
+        eventSources.forEach((source, i) => {
+            columns.sources.nodes.push({
+                ...source,
+                x: columns.sources.x,
+                y: padding + i * (nodeHeight + rowGap),
+                type: 'source',
+                sourceType: source.type
             });
-            html += '</div></div>';
-        }
+        });
 
-        // Row 2: Brokers
-        if (brokers.length > 0) {
-            html += '<div class="graph-row">';
-            html += '<h3 style="margin-bottom: 1rem; color: #666;">Brokers</h3>';
-            html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">';
-            brokers.forEach(broker => {
-                html += `
-                    <div class="graph-node broker" onclick="window.viewBrokerDetails('${broker.id}')">
-                        <div class="graph-node-icon">🔀</div>
-                        <div class="graph-node-name">${broker.name}</div>
-                        <div class="graph-node-type">Broker</div>
-                    </div>
-                `;
+        // Position brokers
+        brokers.forEach((broker, i) => {
+            columns.brokers.nodes.push({
+                ...broker,
+                x: columns.brokers.x,
+                y: padding + i * (nodeHeight + rowGap),
+                type: 'broker'
             });
-            html += '</div></div>';
-        }
+        });
 
-        // Row 3: Functions
-        if (functions.length > 0) {
-            html += '<div class="graph-row">';
-            html += '<h3 style="margin-bottom: 1rem; color: #666;">Functions</h3>';
-            html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">';
-            functions.forEach(func => {
-                const subscriptionCount = func.eventSubscriptions ? func.eventSubscriptions.length : 0;
-                const hasSink = func.sinkMethod && func.sinkMethod !== 'none';
-                html += `
-                    <div class="graph-node function" onclick="window.viewFunctionDetails('${func.id}')">
-                        ${subscriptionCount > 0 ? `<div class="graph-node-badge">${subscriptionCount}</div>` : ''}
-                        <div class="graph-node-icon">λ</div>
-                        <div class="graph-node-name">${func.name}</div>
-                        <div class="graph-node-type">Function</div>
-                        ${hasSink ? '<div style="font-size: 0.7rem; color: #666; margin-top: 0.25rem;">→ has sink</div>' : ''}
-                    </div>
-                `;
+        // Position functions
+        functions.forEach((func, i) => {
+            columns.functions.nodes.push({
+                ...func,
+                x: columns.functions.x,
+                y: padding + i * (nodeHeight + rowGap),
+                type: 'function'
             });
-            html += '</div></div>';
-        }
+        });
 
-        // Row 4: Event Sinks
-        if (eventSinks.length > 0) {
-            html += '<div class="graph-row">';
-            html += '<h3 style="margin-bottom: 1rem; color: #666;">Event Sinks</h3>';
-            html += '<div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">';
-            eventSinks.forEach(sink => {
-                const icon = sink.type === 'http' ? '🌐' :
-                           sink.type === 'kafka' ? '📨' :
-                           sink.type === 's3' ? '🪣' : '📦';
-                html += `
-                    <div class="graph-node event-sink" onclick="window.viewEventSinkDetails('${sink.id}')">
-                        <div class="graph-node-icon">${icon}</div>
-                        <div class="graph-node-name">${sink.name}</div>
-                        <div class="graph-node-type">${sink.type}</div>
-                    </div>
-                `;
+        // Position event sinks
+        eventSinks.forEach((sink, i) => {
+            columns.sinks.nodes.push({
+                ...sink,
+                x: columns.sinks.x,
+                y: padding + i * (nodeHeight + rowGap),
+                type: 'sink',
+                sinkType: sink.type
             });
-            html += '</div></div>';
-        }
+        });
 
-        html += '</div>';
+        // Calculate SVG dimensions
+        const maxY = Math.max(
+            ...Object.values(columns).map(col =>
+                col.nodes.length > 0 ? col.nodes[col.nodes.length - 1].y + nodeHeight + padding : 0
+            )
+        );
+        const svgWidth = padding + 4 * (nodeWidth + columnGap) + padding;
+        const svgHeight = Math.max(maxY, 400);
+
+        // Create SVG
+        let svg = `<svg id="networkGraphSvg" width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
+
+        // Add arrowhead marker definition
+        svg += `
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <polygon points="0 0, 10 3, 0 6" fill="#999" />
+                </marker>
+            </defs>
+        `;
+
+        // Draw edges first (so they appear behind nodes)
+        const edges = [];
+
+        // Source → Broker edges
+        columns.sources.nodes.forEach(source => {
+            if (source.sinkMethod === 'broker' && source.sinkConfig) {
+                const targetBroker = columns.brokers.nodes.find(b => b.name === source.sinkConfig.broker);
+                if (targetBroker) {
+                    edges.push({
+                        from: { x: source.x + nodeWidth, y: source.y + nodeHeight / 2 },
+                        to: { x: targetBroker.x, y: targetBroker.y + nodeHeight / 2 },
+                        label: source.eventTypes ? source.eventTypes.join(', ') : ''
+                    });
+                }
+            }
+        });
+
+        // Broker → Function edges (subscriptions)
+        columns.functions.nodes.forEach(func => {
+            if (func.eventSubscriptions) {
+                func.eventSubscriptions.forEach(sub => {
+                    const sourceBroker = columns.brokers.nodes.find(b => b.name === sub.broker);
+                    if (sourceBroker) {
+                        edges.push({
+                            from: { x: sourceBroker.x + nodeWidth, y: sourceBroker.y + nodeHeight / 2 },
+                            to: { x: func.x, y: func.y + nodeHeight / 2 },
+                            label: sub.eventType
+                        });
+                    }
+                });
+            }
+        });
+
+        // Function → Sink edges
+        columns.functions.nodes.forEach(func => {
+            if (func.sinkMethod === 'broker' && func.sinkConfig) {
+                const targetBroker = columns.brokers.nodes.find(b => b.name === func.sinkConfig.broker);
+                if (targetBroker) {
+                    edges.push({
+                        from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
+                        to: { x: targetBroker.x, y: targetBroker.y + nodeHeight / 2 },
+                        label: 'reply',
+                        dashed: true
+                    });
+                }
+            } else if (func.sinkMethod === 'sink' && func.sinkConfig) {
+                const targetSink = columns.sinks.nodes.find(s => s.name === func.sinkConfig.sinkName);
+                if (targetSink) {
+                    edges.push({
+                        from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
+                        to: { x: targetSink.x, y: targetSink.y + nodeHeight / 2 },
+                        label: 'reply'
+                    });
+                }
+            } else if (func.sinkMethod === 'function' && func.sinkConfig) {
+                const targetFunc = columns.functions.nodes.find(f => f.name === func.sinkConfig.functionName);
+                if (targetFunc) {
+                    edges.push({
+                        from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
+                        to: { x: targetFunc.x, y: targetFunc.y + nodeHeight / 2 },
+                        label: 'chain',
+                        curved: true
+                    });
+                }
+            }
+        });
+
+        // Draw edges
+        edges.forEach(edge => {
+            const path = edge.curved
+                ? `M ${edge.from.x} ${edge.from.y} Q ${edge.from.x + 50} ${edge.from.y - 60}, ${edge.to.x} ${edge.to.y}`
+                : `M ${edge.from.x} ${edge.from.y} L ${edge.to.x} ${edge.to.y}`;
+
+            const dashArray = edge.dashed ? 'stroke-dasharray="5,5"' : '';
+            svg += `<path d="${path}" class="edge-path" ${dashArray} />`;
+
+            // Add label
+            if (edge.label) {
+                const midX = (edge.from.x + edge.to.x) / 2;
+                const midY = (edge.from.y + edge.to.y) / 2 - 10;
+                svg += `<text x="${midX}" y="${midY}" class="edge-label" text-anchor="middle">${edge.label}</text>`;
+            }
+        });
+
+        // Draw nodes
+        const allNodes = [
+            ...columns.sources.nodes,
+            ...columns.brokers.nodes,
+            ...columns.functions.nodes,
+            ...columns.sinks.nodes
+        ];
+
+        allNodes.forEach(node => {
+            const colors = {
+                source: { fill: '#E8F5E9', stroke: '#4CAF50' },
+                broker: { fill: '#FFF3E0', stroke: '#FF9800' },
+                function: { fill: '#E3F2FD', stroke: '#2196F3' },
+                sink: { fill: '#F3E5F5', stroke: '#9C27B0' }
+            };
+
+            const color = colors[node.type];
+
+            // Get icon based on node type
+            let icon = '📦';
+            if (node.type === 'source') {
+                icon = node.sourceType === 'github' ? '🐙' :
+                       node.sourceType === 'kafka' ? '📨' :
+                       node.sourceType === 'slack' ? '💬' :
+                       node.sourceType === 'cron' ? '⏰' : '📡';
+            } else if (node.type === 'broker') {
+                icon = '🔀';
+            } else if (node.type === 'function') {
+                icon = 'λ';
+            } else if (node.type === 'sink') {
+                icon = node.sinkType === 'http' ? '🌐' :
+                       node.sinkType === 'kafka' ? '📨' :
+                       node.sinkType === 's3' ? '🪣' : '📦';
+            }
+
+            const clickHandler = node.type === 'source' ? `window.viewEventSourceDetails('${node.id}')` :
+                               node.type === 'broker' ? `window.viewBrokerDetails('${node.id}')` :
+                               node.type === 'function' ? `window.viewFunctionDetails('${node.id}')` :
+                               `window.viewEventSinkDetails('${node.id}')`;
+
+            svg += `
+                <g class="graph-node" onclick="${clickHandler}">
+                    <rect class="node-rect" x="${node.x}" y="${node.y}" width="${nodeWidth}" height="${nodeHeight}"
+                          rx="8" fill="${color.fill}" stroke="${color.stroke}" stroke-width="2"/>
+                    <text x="${node.x + nodeWidth/2}" y="${node.y + 30}" class="node-icon" text-anchor="middle">${icon}</text>
+                    <text x="${node.x + nodeWidth/2}" y="${node.y + 52}" class="node-text" text-anchor="middle">${node.name}</text>
+                    <text x="${node.x + nodeWidth/2}" y="${node.y + 68}" class="node-type-text" text-anchor="middle">${node.type}</text>
+                </g>
+            `;
+        });
+
+        svg += '</svg>';
 
         // Add legend
-        html += `
+        svg += `
             <div class="graph-legend">
                 <div class="legend-item">
                     <div class="legend-icon event-source"></div>
@@ -2053,7 +2185,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
 
-        graphContainer.innerHTML = html;
+        graphContainer.innerHTML = svg;
     }
 
     /**
