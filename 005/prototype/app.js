@@ -2051,8 +2051,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // Create SVG
-        let svg = `<svg id="networkGraphSvg" width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
+        // Create SVG with viewBox for proper scaling
+        let svg = `<svg id="networkGraphSvg" width="100%" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
 
         // Add arrowhead marker definitions
         svg += `
