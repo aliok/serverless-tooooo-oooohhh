@@ -1494,33 +1494,19 @@ awsRegion: us-east-1"></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="eventSinkMode">Mode</label>
-                        <select id="eventSinkMode" name="eventSinkMode" required>
-                            <option value="referenced">Referenced (used by Functions)</option>
-                            <option value="standalone">Standalone (subscribes to Broker)</option>
-                        </select>
-                        <small class="helper-text">Referenced mode: sink is used by functions as destination. Standalone mode: sink subscribes directly to a broker.</small>
-                    </div>
-                </fieldset>
-
-                <!-- Standalone Mode Fields -->
-                <fieldset id="standaloneModeFields" style="display: none;">
-                    <legend>Standalone Mode Configuration</legend>
-
-                    <div class="form-group">
                         <label for="eventSinkBroker">Source Broker</label>
-                        <select id="eventSinkBroker" name="eventSinkBroker">
+                        <select id="eventSinkBroker" name="eventSinkBroker" required>
                             <option value="">Select a broker...</option>
                             <!-- Will be populated dynamically from brokers list -->
                         </select>
-                        <small class="helper-text">The Broker to subscribe to</small>
+                        <small class="helper-text">The Broker to subscribe to via Trigger</small>
                     </div>
 
                     <div class="form-group">
                         <label for="eventSinkEventTypes">Event Types (comma-separated)</label>
                         <input type="text" id="eventSinkEventTypes" name="eventSinkEventTypes"
-                               placeholder="com.example.order.created,com.example.order.updated" value="">
-                        <small class="helper-text">Filter events by type (e.g., "com.example.order.created")</small>
+                               placeholder="com.example.order.created,com.example.order.updated" value="" required>
+                        <small class="helper-text">CloudEvent types to subscribe to (e.g., "com.example.order.created")</small>
                     </div>
                 </fieldset>
 
@@ -1724,11 +1710,11 @@ awsRegion: us-east-1"></textarea>
                                 Type
                                 <span class="sort-icon">▼</span>
                             </th>
-                            <th class="sortable" data-sort="mode">
-                                Mode
+                            <th class="sortable" data-sort="broker">
+                                Broker
                                 <span class="sort-icon">▼</span>
                             </th>
-                            <th>Destination</th>
+                            <th>Event Types</th>
                             <th class="actions-column">Actions</th>
                         </tr>
                     </thead>

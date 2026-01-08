@@ -2997,8 +2997,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveEventSinkBtn = document.getElementById('saveEventSinkBtn');
     const eventSinkForm = document.getElementById('eventSinkForm');
     const eventSinkFormTitle = document.getElementById('eventSinkFormTitle');
-    const eventSinkMode = document.getElementById('eventSinkMode');
-    const standaloneModeFields = document.getElementById('standaloneModeFields');
     const eventSinkTypeRadios = document.querySelectorAll('input[name="eventSinkType"]');
     const eventSinkPlatformView = document.getElementById('eventSinkPlatformView');
     const eventSinkPlatformDescription = document.getElementById('eventSinkPlatformDescription');
@@ -3057,7 +3055,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function collectEventSinkFormData() {
         const currentSink = getCurrentEditingEventSink();
         const eventSinkType = document.querySelector('input[name="eventSinkType"]:checked').value;
-        const mode = eventSinkMode.value;
         let config = {};
 
         // Collect type-specific config
@@ -3093,21 +3090,20 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         }
 
+        // Event sinks always subscribe to brokers via Triggers
+        const broker = document.getElementById('eventSinkBroker').value;
+        const eventTypesStr = document.getElementById('eventSinkEventTypes').value.trim();
+        const eventTypes = eventTypesStr ? eventTypesStr.split(',').map(t => t.trim()).filter(t => t) : [];
+
         const formData = {
             id: currentSink ? currentSink.id : null,
             name: document.getElementById('eventSinkName').value.trim(),
             namespace: document.getElementById('eventSinkNamespace').value.trim(),
             type: eventSinkType,
-            mode: mode,
+            broker: broker,
+            eventTypes: eventTypes,
             config: config
         };
-
-        // Add standalone mode specific fields
-        if (mode === 'standalone') {
-            formData.broker = document.getElementById('eventSinkBroker').value;
-            const eventTypesStr = document.getElementById('eventSinkEventTypes').value.trim();
-            formData.eventTypes = eventTypesStr ? eventTypesStr.split(',').map(t => t.trim()).filter(t => t) : [];
-        }
 
         return formData;
     }
@@ -3124,9 +3120,6 @@ document.addEventListener('DOMContentLoaded', function() {
             panel.classList.remove('active');
         });
         document.getElementById('httpSinkPanel').classList.add('active');
-
-        // Hide standalone mode fields by default
-        standaloneModeFields.style.display = 'none';
     }
 
     /**
@@ -3137,15 +3130,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('eventSinkName').value = sinkData.name;
         document.getElementById('eventSinkNamespace').value = sinkData.namespace;
-        eventSinkMode.value = sinkData.mode;
 
-        // Show/hide standalone mode fields
-        standaloneModeFields.style.display = sinkData.mode === 'standalone' ? 'block' : 'none';
-
-        if (sinkData.mode === 'standalone') {
-            document.getElementById('eventSinkBroker').value = sinkData.broker || '';
-            document.getElementById('eventSinkEventTypes').value = (sinkData.eventTypes || []).join(', ');
-        }
+        // Event sinks always subscribe to brokers via Triggers
+        document.getElementById('eventSinkBroker').value = sinkData.broker || '';
+        document.getElementById('eventSinkEventTypes').value = (sinkData.eventTypes || []).join(', ');
 
         // Set sink type radio and show corresponding panel
         document.querySelectorAll('input[name="eventSinkType"]').forEach(radio => {
@@ -3202,8 +3190,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // For standalone mode, add Trigger
-        if (formData.mode === 'standalone' && formData.broker && formData.eventTypes && formData.eventTypes.length > 0) {
+        // All event sinks subscribe to brokers via Triggers
+        if (formData.broker && formData.eventTypes && formData.eventTypes.length > 0) {
             resources.push({
                 type: 'trigger',
                 name: `${formData.name}-trigger`,
@@ -3216,7 +3204,7 @@ document.addEventListener('DOMContentLoaded', function() {
         eventSinkPlatformView.style.display = 'block';
         eventSinkPlatformDescription.innerHTML = `
             The UI composed <strong>${resources.length}</strong> Kubernetes resource${resources.length > 1 ? 's' : ''} from your event sink configuration.
-            ${formData.mode === 'standalone' ? `<br>This sink subscribes to the <strong>${formData.broker}</strong> Broker and filters events by type.` : `<br>This sink can be referenced by Functions as a destination.`}
+            <br>This sink subscribes to the <strong>${formData.broker}</strong> Broker via Trigger and filters events by type.
         `;
 
         eventSinkResourceCards.innerHTML = '';
@@ -3264,17 +3252,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get type display name (capitalize first letter)
             const typeDisplayName = sink.type.charAt(0).toUpperCase() + sink.type.slice(1);
 
-            const destination = sink.mode === 'standalone'
-                ? sink.broker
-                : getDestinationDisplay(sink.type, sink.config);
+            // Event sinks always subscribe to brokers
+            const broker = sink.broker || 'N/A';
+            const eventTypes = (sink.eventTypes || []).join(', ') || 'N/A';
 
             row.innerHTML = `
                 <td>
                     <a href="#" class="event-sink-name-link" data-id="${sink.id}">${sink.name}</a>
                 </td>
                 <td>${typeDisplayName}</td>
-                <td>${sink.mode}</td>
-                <td>${destination}</td>
+                <td>${broker}</td>
+                <td>${eventTypes}</td>
                 <td class="actions-column">
                     <div class="table-actions">
                         <button class="btn-secondary btn-small edit-sink-btn" data-id="${sink.id}">Edit</button>
@@ -3515,18 +3503,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Event sink mode change handler
-    if (eventSinkMode) {
-        eventSinkMode.addEventListener('change', function() {
-            if (this.value === 'standalone') {
-                standaloneModeFields.style.display = 'block';
-                populateEventSinkBrokerDropdown();
-            } else {
-                standaloneModeFields.style.display = 'none';
-            }
-            updateEventSinkResourcePreview();
-        });
-    }
+    // Event sink mode removed - all sinks subscribe to brokers via Triggers
 
     // Event sink type panel toggle
     eventSinkTypeRadios.forEach(radio => {

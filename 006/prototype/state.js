@@ -117,7 +117,8 @@ let eventSinks = [
         name: 'http-webhook',
         namespace: 'default',
         type: 'http',
-        mode: 'referenced',
+        broker: 'default',
+        eventTypes: ['dev.knative.sources.github.event'],
         config: {
             url: 'https://example.com/webhook',
             headers: { 'Content-Type': 'application/cloudevents+json' }
