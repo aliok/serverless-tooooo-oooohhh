@@ -1936,6 +1936,9 @@ document.addEventListener('DOMContentLoaded', function() {
         brokerResourceCards.appendChild(card);
     }
 
+    // Store node positions for drag and drop
+    let nodePositions = {};
+
     /**
      * Render network graph showing event flow using SVG
      */
@@ -1985,10 +1988,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Position brokers (centerpiece) - centered vertically
         brokers.forEach((broker, i) => {
+            const defaultX = columns.brokers.x;
+            const defaultY = brokerStartY + i * (nodeHeight + verticalGap);
+            const nodeId = `broker-${broker.id}`;
+
             columns.brokers.nodes.push({
                 ...broker,
-                x: columns.brokers.x,
-                y: brokerStartY + i * (nodeHeight + verticalGap),
+                nodeId: nodeId,
+                x: nodePositions[nodeId]?.x ?? defaultX,
+                y: nodePositions[nodeId]?.y ?? defaultY,
                 type: 'broker'
             });
         });
@@ -1996,10 +2004,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Position event sources (left) - centered vertically
         const sourcesStartY = (svgHeight - sourcesHeight) / 2;
         eventSources.forEach((source, i) => {
+            const defaultX = columns.sources.x;
+            const defaultY = sourcesStartY + i * (nodeHeight + verticalGap);
+            const nodeId = `source-${source.id}`;
+
             columns.sources.nodes.push({
                 ...source,
-                x: columns.sources.x,
-                y: sourcesStartY + i * (nodeHeight + verticalGap),
+                nodeId: nodeId,
+                x: nodePositions[nodeId]?.x ?? defaultX,
+                y: nodePositions[nodeId]?.y ?? defaultY,
                 type: 'source',
                 sourceType: source.type
             });
@@ -2008,10 +2021,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Position functions (right of broker) - centered vertically
         const functionsStartY = (svgHeight - functionsHeight) / 2;
         functions.forEach((func, i) => {
+            const defaultX = columns.functions.x;
+            const defaultY = functionsStartY + i * (nodeHeight + verticalGap);
+            const nodeId = `function-${func.id}`;
+
             columns.functions.nodes.push({
                 ...func,
-                x: columns.functions.x,
-                y: functionsStartY + i * (nodeHeight + verticalGap),
+                nodeId: nodeId,
+                x: nodePositions[nodeId]?.x ?? defaultX,
+                y: nodePositions[nodeId]?.y ?? defaultY,
                 type: 'function'
             });
         });
@@ -2019,10 +2037,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Position event sinks (far right) - centered vertically
         const sinksStartY = (svgHeight - sinksHeight) / 2;
         eventSinks.forEach((sink, i) => {
+            const defaultX = columns.sinks.x;
+            const defaultY = sinksStartY + i * (nodeHeight + verticalGap);
+            const nodeId = `sink-${sink.id}`;
+
             columns.sinks.nodes.push({
                 ...sink,
-                x: columns.sinks.x,
-                y: sinksStartY + i * (nodeHeight + verticalGap),
+                nodeId: nodeId,
+                x: nodePositions[nodeId]?.x ?? defaultX,
+                y: nodePositions[nodeId]?.y ?? defaultY,
                 type: 'sink',
                 sinkType: sink.type
             });
@@ -2169,7 +2192,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const shadow = isBroker ? 'filter="drop-shadow(0 4px 8px rgba(255, 152, 0, 0.3))"' : '';
 
             svg += `
-                <g class="graph-node" onclick="${clickHandler}" ${shadow}>
+                <g class="graph-node draggable-node" data-node-id="${node.nodeId}" ${shadow} style="cursor: move;">
                     <rect class="node-rect" x="${node.x}" y="${node.y}" width="${nodeWidth}" height="${nodeHeight}"
                           rx="8" fill="${color.fill}" stroke="${color.stroke}" stroke-width="${color.strokeWidth}"/>
                     <text x="${node.x + nodeWidth/2}" y="${node.y + 35}" class="node-icon" text-anchor="middle">${icon}</text>
@@ -2204,6 +2227,106 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
 
         graphContainer.innerHTML = svg;
+
+        // Add drag and drop functionality
+        setupDragAndDrop();
+    }
+
+    /**
+     * Setup drag and drop for graph nodes
+     */
+    function setupDragAndDrop() {
+        const svg = document.getElementById('networkGraphSvg');
+        if (!svg) return;
+
+        let selectedNode = null;
+        let offset = { x: 0, y: 0 };
+        let textOffsets = [];
+
+        svg.addEventListener('mousedown', function(e) {
+            const target = e.target.closest('.draggable-node');
+            if (!target) return;
+
+            e.preventDefault();
+            selectedNode = target;
+
+            // Get SVG coordinates
+            const svgRect = svg.getBoundingClientRect();
+            const svgX = e.clientX - svgRect.left;
+            const svgY = e.clientY - svgRect.top;
+
+            // Get current node position from the rect element
+            const rect = target.querySelector('.node-rect');
+            const nodeX = parseFloat(rect.getAttribute('x'));
+            const nodeY = parseFloat(rect.getAttribute('y'));
+
+            offset.x = svgX - nodeX;
+            offset.y = svgY - nodeY;
+
+            // Store text element offsets
+            const texts = target.querySelectorAll('text');
+            textOffsets = Array.from(texts).map(text => ({
+                y: parseFloat(text.getAttribute('y')) - nodeY
+            }));
+
+            selectedNode.style.opacity = '0.7';
+        });
+
+        svg.addEventListener('mousemove', function(e) {
+            if (!selectedNode) return;
+
+            e.preventDefault();
+
+            // Get SVG coordinates
+            const svgRect = svg.getBoundingClientRect();
+            const svgX = e.clientX - svgRect.left;
+            const svgY = e.clientY - svgRect.top;
+
+            const newX = svgX - offset.x;
+            const newY = svgY - offset.y;
+
+            // Update all child elements positions
+            const rect = selectedNode.querySelector('.node-rect');
+            const texts = selectedNode.querySelectorAll('text');
+            const nodeWidth = parseFloat(rect.getAttribute('width'));
+
+            rect.setAttribute('x', newX);
+            rect.setAttribute('y', newY);
+
+            texts.forEach((text, i) => {
+                text.setAttribute('x', newX + nodeWidth / 2);
+                text.setAttribute('y', newY + textOffsets[i].y);
+            });
+
+            // Update edges (will be redrawn on mouseup)
+        });
+
+        svg.addEventListener('mouseup', function(e) {
+            if (!selectedNode) return;
+
+            e.preventDefault();
+
+            const rect = selectedNode.querySelector('.node-rect');
+            const nodeId = selectedNode.getAttribute('data-node-id');
+            const newX = parseFloat(rect.getAttribute('x'));
+            const newY = parseFloat(rect.getAttribute('y'));
+
+            // Store new position
+            nodePositions[nodeId] = { x: newX, y: newY };
+
+            selectedNode.style.opacity = '1';
+            selectedNode = null;
+
+            // Redraw graph to update edges
+            renderNetworkGraph();
+        });
+
+        svg.addEventListener('mouseleave', function(e) {
+            if (selectedNode) {
+                selectedNode.style.opacity = '1';
+                selectedNode = null;
+            }
+        });
     }
 
     /**
