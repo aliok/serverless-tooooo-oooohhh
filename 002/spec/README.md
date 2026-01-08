@@ -1,5 +1,21 @@
 # Function API as a Semantic Anchor over Composed Kubernetes Resources
 
+## Approach Summary
+
+**Approach 002** takes a different path from **Approach 001** (comprehensive Function CRD):
+
+| Aspect                    | Approach 001                       | Approach 002 (This)               |
+|---------------------------|------------------------------------|-----------------------------------|
+| **Function CRD**          | Comprehensive, includes everything | Minimal, eventing semantics only  |
+| **Who creates resources** | Function controller                | UI/CLI (composition layer)        |
+| **Controller scope**      | All subsystems                     | Eventing only (Triggers)          |
+| **Flexibility**           | Limited by CRD fields              | High - direct access to resources |
+| **Coupling**              | Tight - all subsystems in one API  | Loose - subsystems independent    |
+
+**Key insight**: The UI acts as the composition layer, preventing API soup while preserving Kubernetes-native resource composition.
+
+---
+
 ## Problem Statement
 
 A single “serverless function” requires coordination across multiple Kubernetes domains:

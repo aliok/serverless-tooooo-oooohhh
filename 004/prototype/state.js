@@ -39,6 +39,40 @@ let functions = [
             }
         ],
         createdAt: new Date().toISOString()
+    },
+    {
+        id: 'processor-function',
+        name: 'processor-function',
+        namespace: 'default',
+        image: 'registry.example.com/functions/processor:latest',
+        containerPort: 8080,
+        buildMethod: 'none',
+        buildConfig: {
+            method: 'none'
+        },
+        scalingMetric: 'concurrency',
+        metricConfig: {
+            minReplicaCount: 0,
+            maxReplicaCount: 5,
+            targetValue: 50
+        },
+        networkingMethod: 'none',
+        networkingConfig: {
+            method: 'none'
+        },
+        sinkMethod: 'sink',
+        sinkConfig: {
+            method: 'sink',
+            sinkName: 'http-webhook',
+            sinkType: 'http'
+        },
+        eventSubscriptions: [
+            {
+                broker: 'default',
+                eventType: 'dev.knative.sources.github.event'
+            }
+        ],
+        createdAt: new Date().toISOString()
     }
 ];
 

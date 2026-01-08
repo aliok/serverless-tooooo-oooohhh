@@ -2453,7 +2453,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * Render sink destinations in diagram
+     * Render reply destinations in diagram
      */
     function renderSinkDestinations(functionData) {
         destinationsList.innerHTML = '';
@@ -2470,7 +2470,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="destination-icon">📨</div>
                 <div class="destination-info">
                     <div class="destination-name">${functionData.sinkConfig.broker}</div>
-                    <div class="destination-details">Broker (Sink)</div>
+                    <div class="destination-details">Broker (Reply Destination)</div>
                 </div>
             `;
 
@@ -2484,7 +2484,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="destination-icon">${sinkIcon}</div>
                 <div class="destination-info">
                     <div class="destination-name">${functionData.sinkConfig.sinkName}</div>
-                    <div class="destination-details">Event Sink (${functionData.sinkConfig.sinkType})</div>
+                    <div class="destination-details">Event Sink (Reply Destination)</div>
                 </div>
             `;
 
@@ -2497,7 +2497,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="destination-icon">λ</div>
                 <div class="destination-info">
                     <div class="destination-name">${functionData.sinkConfig.functionName}</div>
-                    <div class="destination-details">Function (Sink)</div>
+                    <div class="destination-details">Function (Reply Destination)</div>
                 </div>
             `;
 
@@ -2663,7 +2663,7 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationDisplay.innerHTML = '';
 
         if (!functionData.sinkMethod || functionData.sinkMethod === 'none') {
-            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No destination configured. Set one below to send output CloudEvents to a Broker, Event Sink, or another Function.</p></div>';
+            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No reply destination configured. When your function returns a CloudEvent in the HTTP response, you can route it to a Broker, Event Sink, or another Function. The function sets the event type in the reply.</p></div>';
             return;
         }
 
@@ -2673,6 +2673,7 @@ document.addEventListener('DOMContentLoaded', function() {
             destCard.innerHTML = `
                 <div class="subscription-info">
                     <div class="subscription-broker">Broker: <strong>${functionData.sinkConfig.broker}</strong></div>
+                    <div class="subscription-type">Reply CloudEvents will be sent to this Broker</div>
                 </div>
                 <button class="btn-danger btn-small remove-destination-btn">Remove</button>
             `;
@@ -2688,7 +2689,7 @@ document.addEventListener('DOMContentLoaded', function() {
             destCard.innerHTML = `
                 <div class="subscription-info">
                     <div class="subscription-broker">Event Sink: <strong>${functionData.sinkConfig.sinkName}</strong></div>
-                    <div class="subscription-type">Type: ${functionData.sinkConfig.sinkType}</div>
+                    <div class="subscription-type">Reply CloudEvents will be sent to this ${functionData.sinkConfig.sinkType} sink</div>
                 </div>
                 <button class="btn-danger btn-small remove-destination-btn">Remove</button>
             `;
@@ -2704,6 +2705,7 @@ document.addEventListener('DOMContentLoaded', function() {
             destCard.innerHTML = `
                 <div class="subscription-info">
                     <div class="subscription-broker">Function: <strong>${functionData.sinkConfig.functionName}</strong></div>
+                    <div class="subscription-type">Reply CloudEvents will be sent to this function (function chaining)</div>
                 </div>
                 <button class="btn-danger btn-small remove-destination-btn">Remove</button>
             `;

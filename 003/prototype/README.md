@@ -1,6 +1,22 @@
-# 003 Prototype: Broker-Free Eventing
+# Approach 003: Broker-Free Eventing
 
 This prototype demonstrates a broker-free eventing UI where brokers are completely hidden from users.
+
+## Approach Summary
+
+**Approach 003** builds on **Approach 002** but simplifies the eventing model:
+
+| Aspect                | Approach 002                     | Approach 003 (This)                     |
+|-----------------------|----------------------------------|-----------------------------------------|
+| **Broker visibility** | Visible to users                 | Completely hidden                       |
+| **Broker selection**  | User selects broker              | Platform manages "default"              |
+| **Event connections** | Event Source → Broker → Function | Event Source → Function (broker hidden) |
+| **Abstraction level** | Shows Knative topology           | Hides Knative topology                  |
+| **User complexity**   | Must understand brokers          | Only understand sources and functions   |
+
+**Key insight**: Further reduce cognitive load by hiding infrastructure concerns (brokers) and showing only logical connections (Event Source → Function).
+
+---
 
 ## What Changed from 002
 
@@ -101,4 +117,3 @@ Open `index.html` in a browser and verify:
 - **index.html**: Removed all broker views and broker selection fields
 - **app.js**: Updated event source and subscription handling to not use brokers
 
-Total changes: ~500 lines removed/modified across 4 files.

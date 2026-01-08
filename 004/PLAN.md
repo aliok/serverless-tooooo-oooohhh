@@ -1,3 +1,0 @@
-- Function's sink can be a broker / event sink / another function. It is also ok to have no sink at all.
-- Event sources can have a target of a broker / event sink / function. The target is required.
-- Function reply event type - how to handle?
