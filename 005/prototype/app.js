@@ -1963,7 +1963,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const totalHeight = Math.max(sourcesHeight, brokersHeight, functionsHeight, sinksHeight, 500);
         const svgHeight = totalHeight + 2 * padding;
-        const svgWidth = padding + 3 * (nodeWidth + horizontalGap) + nodeWidth + padding;
 
         // Broker is centerpiece - calculate its position first
         const brokerX = padding + nodeWidth + horizontalGap; // Center column
@@ -1976,6 +1975,13 @@ document.addEventListener('DOMContentLoaded', function() {
             functions: { x: brokerX + nodeWidth + horizontalGap, nodes: [] },
             sinks: { x: brokerX + 2 * (nodeWidth + horizontalGap), nodes: [] }
         };
+
+        // Calculate width: ensure we include the rightmost sink node
+        const sinksX = columns.sinks.x;
+        const svgWidth = sinksX + nodeWidth + padding;
+
+        console.log('SVG Dimensions:', { width: svgWidth, height: svgHeight });
+        console.log('Sinks column X:', sinksX, 'Sinks end:', sinksX + nodeWidth);
 
         // Position brokers (centerpiece) - centered vertically
         brokers.forEach((broker, i) => {
