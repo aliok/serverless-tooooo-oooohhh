@@ -2066,7 +2066,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Draw edges first (so they appear behind nodes)
         const edges = [];
 
-        // Source → Broker edges
+        // Source → Broker edges (left-to-right, incoming to broker)
         columns.sources.nodes.forEach(source => {
             if (source.sinkMethod === 'broker' && source.sinkConfig) {
                 const targetBroker = columns.brokers.nodes.find(b => b.name === source.sinkConfig.broker);
@@ -2074,13 +2074,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     edges.push({
                         from: { x: source.x + nodeWidth, y: source.y + nodeHeight / 2 },
                         to: { x: targetBroker.x, y: targetBroker.y + nodeHeight / 2 },
-                        label: source.eventTypes ? source.eventTypes.join(', ') : ''
+                        label: source.eventTypes ? source.eventTypes.join(', ') : '',
+                        direction: 'outgoing' // left-to-right
                     });
                 }
             }
         });
 
-        // Broker → Function edges (subscriptions)
+        // Broker → Function edges (subscriptions, left-to-right, incoming to function)
         columns.functions.nodes.forEach(func => {
             if (func.eventSubscriptions) {
                 func.eventSubscriptions.forEach(sub => {
@@ -2089,7 +2090,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         edges.push({
                             from: { x: sourceBroker.x + nodeWidth, y: sourceBroker.y + nodeHeight / 2 },
                             to: { x: func.x, y: func.y + nodeHeight / 2 },
-                            label: sub.eventType
+                            label: sub.eventType,
+                            direction: 'outgoing' // left-to-right
                         });
                     }
                 });
@@ -2105,7 +2107,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
                         to: { x: targetBroker.x, y: targetBroker.y + nodeHeight / 2 },
                         label: 'produces',
-                        color: '#2196F3'
+                        color: '#2196F3',
+                        direction: 'incoming' // right-to-left, back to broker
                     });
                 }
             } else if (func.sinkMethod === 'sink' && func.sinkConfig) {
@@ -2115,7 +2118,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
                         to: { x: targetSink.x, y: targetSink.y + nodeHeight / 2 },
                         label: 'produces',
-                        color: '#2196F3'
+                        color: '#2196F3',
+                        direction: 'outgoing' // left-to-right
                     });
                 }
             } else if (func.sinkMethod === 'function' && func.sinkConfig) {
@@ -2126,7 +2130,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         to: { x: targetFunc.x, y: targetFunc.y + nodeHeight / 2 },
                         label: 'produces',
                         curved: true,
-                        color: '#2196F3'
+                        color: '#2196F3',
+                        direction: 'outgoing' // curved, special case
                     });
                 }
             }
@@ -2141,10 +2146,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const strokeColor = edge.color || '#999';
             svg += `<path d="${path}" class="edge-path" stroke="${strokeColor}" />`;
 
-            // Add label
+            // Add label with different offsets for outgoing vs incoming
             if (edge.label) {
                 const midX = (edge.from.x + edge.to.x) / 2;
-                const midY = (edge.from.y + edge.to.y) / 2 - 10;
+                // Outgoing (left-to-right): label above the line (negative offset)
+                // Incoming (right-to-left): label below the line (positive offset)
+                const verticalOffset = edge.direction === 'incoming' ? 15 : -10;
+                const midY = (edge.from.y + edge.to.y) / 2 + verticalOffset;
                 svg += `<text x="${midX}" y="${midY}" class="edge-label" text-anchor="middle">${edge.label}</text>`;
             }
         });
