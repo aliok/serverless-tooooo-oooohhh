@@ -997,6 +997,59 @@ footer a:hover {
     }
 }
 
+/* Detail View Graph Container */
+.detail-graph-container {
+    min-height: 400px;
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    overflow: auto;
+}
+
+.detail-graph-container svg {
+    display: block;
+    margin: 0 auto;
+}
+
+.detail-graph-container .graph-node {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.detail-graph-container .graph-node.clickable:hover .node-rect {
+    filter: brightness(0.95);
+    stroke-width: 3;
+}
+
+.detail-graph-container .edge-label {
+    font-size: 12px;
+    fill: #666;
+    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.detail-graph-container .node-text {
+    font-size: 14px;
+    fill: #333;
+    font-weight: 500;
+    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.detail-graph-container .node-type-text {
+    font-size: 11px;
+    fill: #666;
+    text-transform: uppercase;
+    font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.detail-graph-container .node-icon {
+    font-size: 24px;
+}
+
+.detail-graph-container .node-rect {
+    transition: all 0.2s;
+}
+
 /* Event Subscriptions Section */
 .event-subscriptions-section {
     margin-top: 2rem;

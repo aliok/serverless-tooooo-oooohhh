@@ -698,51 +698,32 @@ awsRegion: us-east-1"></textarea>
             <div id="functionOverview" class="function-overview">
                 <h3>Function Overview</h3>
 
-                <!-- AWS Lambda-style diagram -->
-                <div class="function-diagram">
-                    <!-- Event Sources (Triggers) -->
-                    <div class="diagram-column diagram-sources">
-                        <div id="eventSourcesList" class="source-items">
-                            <!-- Event source boxes will be inserted here -->
+                <!-- Interactive SVG diagram -->
+                <div id="functionDetailGraphContainer" class="detail-graph-container">
+                    <!-- SVG will be injected here by renderFunctionDetailGraph() -->
+                </div>
+
+                <!-- Function metadata below graph -->
+                <div class="function-metadata">
+                    <h4 id="diagramFunctionName" style="margin-top: 20px;"></h4>
+                    <div class="function-meta-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <div class="meta-item">
+                            <span class="meta-label">Namespace:</span>
+                            <span id="detailNamespace"></span>
                         </div>
-                        <button type="button" id="addTriggerBtn" class="diagram-add-btn">+ Add trigger</button>
-                    </div>
-
-                    <!-- Arrow: Sources → Function -->
-                    <div class="diagram-arrow">
-                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 5 20 L 45 20" />
-                            <polygon points="45,15 55,20 45,25" />
-                        </svg>
-                    </div>
-
-                    <!-- Function (Center) -->
-                    <div class="diagram-column diagram-function">
-                        <div class="function-box">
-                            <div class="function-icon">λ</div>
-                            <div class="function-name" id="diagramFunctionName"></div>
-                            <div class="function-meta">
-                                <div class="meta-item">
-                                    <span class="meta-label">Namespace:</span>
-                                    <span id="detailNamespace"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Image:</span>
-                                    <code id="detailImage"></code>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Scaling:</span>
-                                    <span id="detailScaling"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Networking:</span>
-                                    <span id="detailNetworking"></span>
-                                </div>
-                            </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Scaling:</span>
+                            <span id="detailScaling"></span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Image:</span>
+                            <code id="detailImage"></code>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Networking:</span>
+                            <span id="detailNetworking"></span>
                         </div>
                     </div>
-
-                    <!-- Functions only receive events from brokers (no outgoing destinations) -->
                 </div>
             </div>
 
@@ -922,62 +903,30 @@ awsRegion: us-east-1"></textarea>
             <div class="function-overview">
                 <h3>Broker Overview</h3>
 
-                <div class="function-diagram">
-                    <!-- Event Sources (Left) -->
-                    <div class="diagram-column diagram-sources">
-                        <h4>Event Sources</h4>
-                        <div id="brokerEventSourcesList" class="source-items">
-                            <!-- Event source boxes will be inserted here -->
+                <!-- Interactive SVG diagram -->
+                <div id="brokerDetailGraphContainer" class="detail-graph-container">
+                    <!-- SVG will be injected here by renderBrokerDetailGraph() -->
+                </div>
+
+                <!-- Broker metadata below graph -->
+                <div class="function-metadata">
+                    <h4 id="diagramBrokerName" style="margin-top: 20px;"></h4>
+                    <div class="function-meta-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <div class="meta-item">
+                            <span class="meta-label">Namespace:</span>
+                            <span id="detailBrokerNamespace"></span>
                         </div>
-                    </div>
-
-                    <!-- Arrow: Event Sources → Broker -->
-                    <div class="diagram-arrow">
-                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 5 20 L 45 20" />
-                            <polygon points="45,15 55,20 45,25" />
-                        </svg>
-                    </div>
-
-                    <!-- Broker (Center) -->
-                    <div class="diagram-column diagram-function">
-                        <div class="function-box">
-                            <div class="function-icon">📨</div>
-                            <div class="function-name" id="diagramBrokerName"></div>
-                            <div class="function-meta">
-                                <div class="meta-item">
-                                    <span class="meta-label">Namespace:</span>
-                                    <span id="detailBrokerNamespace"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Retry:</span>
-                                    <span id="detailBrokerRetry"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Backoff Policy:</span>
-                                    <span id="detailBrokerBackoffPolicy"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Event Types:</span>
-                                    <span id="detailBrokerEventTypes"></span>
-                                </div>
-                            </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Retry:</span>
+                            <span id="detailBrokerRetry"></span>
                         </div>
-                    </div>
-
-                    <!-- Arrow: Broker → Functions -->
-                    <div class="diagram-arrow">
-                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 5 20 L 45 20" />
-                            <polygon points="45,15 55,20 45,25" />
-                        </svg>
-                    </div>
-
-                    <!-- Subscribers (Right) -->
-                    <div class="diagram-column diagram-destinations">
-                        <h4>Subscribers</h4>
-                        <div id="brokerFunctionsList" class="destination-items">
-                            <!-- Subscriber boxes will be inserted here -->
+                        <div class="meta-item">
+                            <span class="meta-label">Backoff Policy:</span>
+                            <span id="detailBrokerBackoffPolicy"></span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Event Types:</span>
+                            <span id="detailBrokerEventTypes"></span>
                         </div>
                     </div>
                 </div>
@@ -1015,62 +964,30 @@ awsRegion: us-east-1"></textarea>
             <div class="function-overview">
                 <h3>Event Source Overview</h3>
 
-                <div class="function-diagram">
-                    <!-- Source (Left) -->
-                    <div class="diagram-column diagram-sources">
-                        <h4>External Source</h4>
-                        <div id="eventSourceExternalSource" class="source-items">
-                            <!-- External source box will be inserted here -->
+                <!-- Interactive SVG diagram -->
+                <div id="eventSourceDetailGraphContainer" class="detail-graph-container">
+                    <!-- SVG will be injected here by renderEventSourceDetailGraph() -->
+                </div>
+
+                <!-- Event Source metadata below graph -->
+                <div class="function-metadata">
+                    <h4 id="diagramEventSourceName" style="margin-top: 20px;"></h4>
+                    <div class="function-meta-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <div class="meta-item">
+                            <span class="meta-label">Type:</span>
+                            <span id="detailEventSourceType"></span>
                         </div>
-                    </div>
-
-                    <!-- Arrow: External Source → Event Source -->
-                    <div class="diagram-arrow">
-                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 5 20 L 45 20" />
-                            <polygon points="45,15 55,20 45,25" />
-                        </svg>
-                    </div>
-
-                    <!-- Event Source (Center) -->
-                    <div class="diagram-column diagram-function">
-                        <div class="function-box">
-                            <div class="function-icon">⚡</div>
-                            <div class="function-name" id="diagramEventSourceName"></div>
-                            <div class="function-meta">
-                                <div class="meta-item">
-                                    <span class="meta-label">Type:</span>
-                                    <span id="detailEventSourceType"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Namespace:</span>
-                                    <span id="detailEventSourceNamespace"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Target Broker:</span>
-                                    <span id="detailEventSourceBroker"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Event Types:</span>
-                                    <code id="detailEventSourceEventTypes"></code>
-                                </div>
-                            </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Namespace:</span>
+                            <span id="detailEventSourceNamespace"></span>
                         </div>
-                    </div>
-
-                    <!-- Arrow: Event Source → Broker -->
-                    <div class="diagram-arrow">
-                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 5 20 L 45 20" />
-                            <polygon points="45,15 55,20 45,25" />
-                        </svg>
-                    </div>
-
-                    <!-- Broker (Right) -->
-                    <div class="diagram-column diagram-destinations">
-                        <h4>Target Broker</h4>
-                        <div id="eventSourceTargetBroker" class="destination-items">
-                            <!-- Target broker box will be inserted here -->
+                        <div class="meta-item">
+                            <span class="meta-label">Target Broker:</span>
+                            <span id="detailEventSourceBroker"></span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Event Types:</span>
+                            <code id="detailEventSourceEventTypes"></code>
                         </div>
                     </div>
                 </div>
@@ -1731,54 +1648,22 @@ awsRegion: us-east-1"></textarea>
             <div class="function-overview">
                 <h3>Event Sink Overview</h3>
 
-                <div class="function-diagram">
-                    <!-- Event Sources (Left) -->
-                    <div class="diagram-column diagram-sources">
-                        <h4 id="eventSinkSourceTitle">Event Sources</h4>
-                        <div id="eventSinkSourcesList" class="source-items">
-                            <!-- Event source boxes will be inserted here -->
+                <!-- Interactive SVG diagram -->
+                <div id="eventSinkDetailGraphContainer" class="detail-graph-container">
+                    <!-- SVG will be injected here by renderEventSinkDetailGraph() -->
+                </div>
+
+                <!-- Event Sink metadata below graph -->
+                <div class="function-metadata">
+                    <h4 id="diagramEventSinkName" style="margin-top: 20px;"></h4>
+                    <div class="function-meta-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                        <div class="meta-item">
+                            <span class="meta-label">Type:</span>
+                            <span id="detailEventSinkType"></span>
                         </div>
-                    </div>
-
-                    <!-- Arrow: Sources → Sink -->
-                    <div class="diagram-arrow">
-                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 5 20 L 45 20" />
-                            <polygon points="45,15 55,20 45,25" />
-                        </svg>
-                    </div>
-
-                    <!-- Event Sink (Center) -->
-                    <div class="diagram-column diagram-function">
-                        <div class="function-box">
-                            <div class="function-icon">📤</div>
-                            <div class="function-name" id="diagramEventSinkName"></div>
-                            <div class="function-meta">
-                                <div class="meta-item">
-                                    <span class="meta-label">Type:</span>
-                                    <span id="detailEventSinkType"></span>
-                                </div>
-                                <div class="meta-item">
-                                    <span class="meta-label">Namespace:</span>
-                                    <span id="detailEventSinkNamespace"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Arrow: Sink → External Destination -->
-                    <div class="diagram-arrow">
-                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 5 20 L 45 20" />
-                            <polygon points="45,15 55,20 45,25" />
-                        </svg>
-                    </div>
-
-                    <!-- External Destination (Right) -->
-                    <div class="diagram-column diagram-destinations">
-                        <h4>External Destination</h4>
-                        <div id="eventSinkExternalDestination" class="destination-items">
-                            <!-- Destination box will be inserted here -->
+                        <div class="meta-item">
+                            <span class="meta-label">Namespace:</span>
+                            <span id="detailEventSinkNamespace"></span>
                         </div>
                     </div>
                 </div>

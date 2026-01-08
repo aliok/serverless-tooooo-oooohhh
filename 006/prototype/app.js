@@ -270,11 +270,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    addTriggerBtn.addEventListener('click', function() {
-        if (currentDetailFunction) {
-            showSubscriptionsView(currentDetailFunction);
-        }
-    });
+    if (addTriggerBtn) {
+        addTriggerBtn.addEventListener('click', function() {
+            if (currentDetailFunction) {
+                showSubscriptionsView(currentDetailFunction);
+            }
+        });
+    }
 
     // Broker detail view navigation handlers
     backToBrokersListFromDetailBtn.addEventListener('click', function() {
@@ -1720,6 +1722,346 @@ document.addEventListener('DOMContentLoaded', function() {
     let nodePositions = {};
 
     /**
+     * =====================================================================
+     * Shared SVG Graph Utilities
+     * =====================================================================
+     */
+
+    /**
+     * Create SVG arrowhead marker definitions
+     * @param {string} id - Marker ID
+     * @param {string} color - Arrow color
+     * @returns {string} SVG marker definition
+     */
+    function createArrowheadMarker(id, color) {
+        return `
+            <marker id="${id}" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                <polygon points="0 0, 10 3, 0 6" fill="${color}" />
+            </marker>
+        `;
+    }
+
+    /**
+     * Get color scheme for node type
+     * @param {string} type - Node type
+     * @returns {object} Color configuration
+     */
+    function getNodeColors(type) {
+        const colors = {
+            source: { fill: '#E8F5E9', stroke: '#4CAF50', strokeWidth: 2 },
+            broker: { fill: '#FFF3E0', stroke: '#FF9800', strokeWidth: 3 },
+            function: { fill: '#E3F2FD', stroke: '#2196F3', strokeWidth: 2 },
+            sink: { fill: '#F3E5F5', stroke: '#9C27B0', strokeWidth: 2 },
+            external: { fill: '#F5F5F5', stroke: '#9E9E9E', strokeWidth: 2 }
+        };
+        return colors[type] || colors.external;
+    }
+
+    /**
+     * Get icon for node
+     * @param {object} node - Node data
+     * @returns {string} Icon character
+     */
+    function getNodeIcon(node) {
+        if (node.type === 'source') return '⚡';
+        if (node.type === 'broker') return '📨';
+        if (node.type === 'function') return 'λ';
+        if (node.type === 'sink') {
+            const sinkIcons = {
+                'http': '🌐',
+                'kafka': '📬',
+                'sns': '📡',
+                'pubsub': '☁️',
+                'eventgrid': '⚡',
+                'database': '💾'
+            };
+            return sinkIcons[node.sinkType] || '📤';
+        }
+        if (node.type === 'external') {
+            if (node.externalType === 'github') return '🐙';
+            if (node.externalType === 'kafka') return '📬';
+            if (node.externalType === 'slack') return '💬';
+            if (node.externalType === 'cron') return '⏰';
+            return '🔌';
+        }
+        return '📦';
+    }
+
+    /**
+     * Generate SVG path for edge
+     * @param {object} edge - Edge data
+     * @param {number} arrowPadding - Padding before arrowhead
+     * @param {string} graphId - Unique graph ID for marker references
+     * @returns {string} SVG path element
+     */
+    function generateEdgePath(edge, arrowPadding, graphId) {
+        const path = edge.curved
+            ? `M ${edge.from.x} ${edge.from.y} Q ${edge.from.x + 50} ${edge.from.y - 60}, ${edge.to.x} ${edge.to.y}`
+            : `M ${edge.from.x} ${edge.from.y} L ${edge.to.x} ${edge.to.y}`;
+
+        const strokeColor = edge.color || '#999';
+        const markerSuffix = graphId ? `-${graphId}` : '';
+        const markerEnd = edge.color === '#2196F3' ? `url(#arrowhead-blue${markerSuffix})` : `url(#arrowhead${markerSuffix})`;
+
+        return `<path d="${path}" stroke="${strokeColor}" stroke-width="2" fill="none" marker-end="${markerEnd}" />`;
+    }
+
+    /**
+     * Generate SVG edge label
+     * @param {object} edge - Edge data
+     * @param {number} midX - Label X position
+     * @param {number} midY - Label Y position
+     * @returns {string} SVG text element
+     */
+    function generateEdgeLabel(edge, midX, midY) {
+        if (!edge.label) return '';
+
+        // Split event types by comma and render vertically if needed
+        const eventTypes = edge.label.split(', ');
+        if (eventTypes.length === 1) {
+            return `<text x="${midX}" y="${midY}" class="edge-label" text-anchor="middle">${edge.label}</text>`;
+        } else {
+            let svg = `<text x="${midX}" y="${midY - (eventTypes.length - 1) * 6}" class="edge-label" text-anchor="middle">`;
+            eventTypes.forEach((type, i) => {
+                const dy = i === 0 ? 0 : 12;
+                svg += `<tspan x="${midX}" dy="${dy}">${type}</tspan>`;
+            });
+            svg += `</text>`;
+            return svg;
+        }
+    }
+
+    /**
+     * Generate SVG node (box with icon, name, type)
+     * @param {object} node - Node data
+     * @param {number} nodeWidth - Node width
+     * @param {number} nodeHeight - Node height
+     * @param {string} clickHandler - JavaScript click handler code
+     * @returns {string} SVG group element
+     */
+    function generateNodeSVG(node, nodeWidth, nodeHeight, clickHandler) {
+        const color = getNodeColors(node.type);
+        const icon = getNodeIcon(node);
+        const cursor = clickHandler ? 'pointer' : 'default';
+        const clickableClass = clickHandler ? 'clickable' : '';
+
+        let svg = `<g class="graph-node ${clickableClass}" data-node-id="${node.nodeId}" style="cursor: ${cursor};"`;
+        if (clickHandler) {
+            svg += ` onclick="${clickHandler}"`;
+        }
+        svg += `>`;
+
+        // Node box
+        svg += `
+            <rect class="node-rect" x="${node.x}" y="${node.y}" width="${nodeWidth}" height="${nodeHeight}"
+                  fill="${color.fill}" stroke="${color.stroke}" stroke-width="${color.strokeWidth}"
+                  rx="8" />
+        `;
+
+        // Icon
+        svg += `
+            <text x="${node.x + nodeWidth / 2}" y="${node.y + 35}"
+                  class="node-icon" text-anchor="middle" font-size="24">${icon}</text>
+        `;
+
+        // Node name
+        const name = node.name.length > 20 ? node.name.substring(0, 18) + '...' : node.name;
+        svg += `
+            <text x="${node.x + nodeWidth / 2}" y="${node.y + 60}"
+                  class="node-text" text-anchor="middle" font-size="14" font-weight="500" fill="#333">
+                ${name}
+            </text>
+        `;
+
+        // Node type label
+        svg += `
+            <text x="${node.x + nodeWidth / 2}" y="${node.y + 75}"
+                  class="node-type-text" text-anchor="middle" font-size="11" fill="#666" text-transform="uppercase">
+                ${node.type}
+            </text>
+        `;
+
+        svg += `</g>`;
+        return svg;
+    }
+
+    /**
+     * Consolidate edges between same source and target
+     * @param {Array} edges - Raw edge list
+     * @returns {Array} Consolidated edges with merged labels
+     */
+    function consolidateEdges(edges) {
+        const edgeMap = new Map();
+
+        edges.forEach(edge => {
+            const key = `${edge.fromId}-${edge.toId}`;
+
+            if (edgeMap.has(key)) {
+                // Merge labels
+                const existing = edgeMap.get(key);
+                if (edge.label && !existing.labels.includes(edge.label)) {
+                    existing.labels.push(edge.label);
+                }
+            } else {
+                edgeMap.set(key, {
+                    ...edge,
+                    labels: edge.label ? [edge.label] : []
+                });
+            }
+        });
+
+        // Convert back to array with comma-separated labels
+        return Array.from(edgeMap.values()).map(edge => ({
+            ...edge,
+            label: edge.labels.join(', ')
+        }));
+    }
+
+    /**
+     * Setup drag-and-drop for SVG graph
+     * @param {string} svgId - SVG element ID
+     * @param {function} onDragEnd - Callback after drag completes
+     */
+    function setupGraphDragAndDrop(svgId, onDragEnd) {
+        const svg = document.getElementById(svgId);
+        if (!svg) return;
+
+        let selectedNode = null;
+        let offset = { x: 0, y: 0 };
+        let textOffsets = [];
+        let dragStartPos = { x: 0, y: 0 };
+        let hasDragged = false;
+
+        svg.addEventListener('click', function(e) {
+            const target = e.target.closest('.graph-node');
+            if (target) {
+                // Prevent default click behavior - we'll handle it in mouseup
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
+
+        svg.addEventListener('mousedown', function(e) {
+            const target = e.target.closest('.graph-node');
+            if (!target) return;
+
+            e.preventDefault();
+            selectedNode = target;
+            hasDragged = false;
+
+            // Get SVG coordinates
+            const svgRect = svg.getBoundingClientRect();
+            const svgX = e.clientX - svgRect.left;
+            const svgY = e.clientY - svgRect.top;
+
+            dragStartPos = { x: svgX, y: svgY };
+
+            // Get current node position from the rect element
+            const rect = target.querySelector('.node-rect');
+            const nodeX = parseFloat(rect.getAttribute('x'));
+            const nodeY = parseFloat(rect.getAttribute('y'));
+
+            offset.x = svgX - nodeX;
+            offset.y = svgY - nodeY;
+
+            // Store text element offsets
+            const texts = target.querySelectorAll('text');
+            textOffsets = Array.from(texts).map(text => ({
+                x: parseFloat(text.getAttribute('x')) - nodeX,
+                y: parseFloat(text.getAttribute('y')) - nodeY
+            }));
+
+            selectedNode.style.opacity = '0.7';
+        });
+
+        svg.addEventListener('mousemove', function(e) {
+            if (!selectedNode) return;
+
+            e.preventDefault();
+
+            // Get SVG coordinates
+            const svgRect = svg.getBoundingClientRect();
+            const svgX = e.clientX - svgRect.left;
+            const svgY = e.clientY - svgRect.top;
+
+            // Check if moved more than 5px (disambiguate click vs drag)
+            const dx = svgX - dragStartPos.x;
+            const dy = svgY - dragStartPos.y;
+            if (Math.sqrt(dx * dx + dy * dy) > 5) {
+                hasDragged = true;
+            }
+
+            const newX = svgX - offset.x;
+            const newY = svgY - offset.y;
+
+            // Update position in nodePositions for final render
+            const nodeId = selectedNode.getAttribute('data-node-id');
+            nodePositions[nodeId] = { x: newX, y: newY };
+
+            // Update node position directly in DOM (without re-rendering)
+            const rect = selectedNode.querySelector('.node-rect');
+            if (!rect) return;
+
+            rect.setAttribute('x', newX);
+            rect.setAttribute('y', newY);
+
+            // Update text positions
+            const texts = selectedNode.querySelectorAll('text');
+            texts.forEach((text, i) => {
+                if (textOffsets[i]) {
+                    text.setAttribute('x', newX + textOffsets[i].x);
+                    text.setAttribute('y', newY + textOffsets[i].y);
+                }
+            });
+        });
+
+        svg.addEventListener('mouseup', function(e) {
+            if (!selectedNode) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const nodeId = selectedNode.getAttribute('data-node-id');
+
+            // If this was just a click (not a drag), trigger the onclick handler
+            if (!hasDragged) {
+                const onclickAttr = selectedNode.getAttribute('onclick');
+                if (onclickAttr) {
+                    // Execute the onclick handler
+                    try {
+                        eval(onclickAttr);
+                    } catch (err) {
+                        console.error('Error executing onclick:', err);
+                    }
+                }
+            }
+
+            // Position already stored in nodePositions during mousemove
+            selectedNode.style.opacity = '1';
+            selectedNode = null;
+
+            // Final render to ensure everything is clean (opacity restored, etc.)
+            if (hasDragged && onDragEnd) {
+                onDragEnd();
+            }
+            hasDragged = false;
+        });
+
+        svg.addEventListener('mouseleave', function(e) {
+            if (selectedNode) {
+                selectedNode.style.opacity = '1';
+                selectedNode = null;
+
+                // Final render if we were dragging
+                if (hasDragged && onDragEnd) {
+                    onDragEnd();
+                }
+                hasDragged = false;
+            }
+        });
+    }
+
+    /**
      * Render network graph showing event flow using SVG
      */
     function renderNetworkGraph() {
@@ -1834,10 +2176,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add arrowhead marker definitions
         svg += `
             <defs>
-                <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                <marker id="arrowhead-network" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
                     <polygon points="0 0, 10 3, 0 6" fill="#999" />
                 </marker>
-                <marker id="arrowhead-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                <marker id="arrowhead-blue-network" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
                     <polygon points="0 0, 10 3, 0 6" fill="#2196F3" />
                 </marker>
             </defs>
@@ -1906,7 +2248,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const strokeColor = edge.color || '#999';
             // Use blue arrowhead for blue edges, gray for others
-            const markerEnd = edge.color === '#2196F3' ? 'url(#arrowhead-blue)' : 'url(#arrowhead)';
+            const markerEnd = edge.color === '#2196F3' ? 'url(#arrowhead-blue-network)' : 'url(#arrowhead-network)';
             svg += `<path d="${path}" stroke="${strokeColor}" stroke-width="2" fill="none" marker-end="${markerEnd}" />`;
 
             // Add label with different offsets for outgoing vs incoming
@@ -2015,104 +2357,7 @@ document.addEventListener('DOMContentLoaded', function() {
         graphContainer.innerHTML = svg;
 
         // Add drag and drop functionality
-        setupDragAndDrop();
-    }
-
-    /**
-     * Setup drag and drop for graph nodes
-     */
-    function setupDragAndDrop() {
-        const svg = document.getElementById('networkGraphSvg');
-        if (!svg) return;
-
-        let selectedNode = null;
-        let offset = { x: 0, y: 0 };
-        let textOffsets = [];
-
-        svg.addEventListener('mousedown', function(e) {
-            const target = e.target.closest('.draggable-node');
-            if (!target) return;
-
-            e.preventDefault();
-            selectedNode = target;
-
-            // Get SVG coordinates
-            const svgRect = svg.getBoundingClientRect();
-            const svgX = e.clientX - svgRect.left;
-            const svgY = e.clientY - svgRect.top;
-
-            // Get current node position from the rect element
-            const rect = target.querySelector('.node-rect');
-            const nodeX = parseFloat(rect.getAttribute('x'));
-            const nodeY = parseFloat(rect.getAttribute('y'));
-
-            offset.x = svgX - nodeX;
-            offset.y = svgY - nodeY;
-
-            // Store text element offsets
-            const texts = target.querySelectorAll('text');
-            textOffsets = Array.from(texts).map(text => ({
-                y: parseFloat(text.getAttribute('y')) - nodeY
-            }));
-
-            selectedNode.style.opacity = '0.7';
-        });
-
-        svg.addEventListener('mousemove', function(e) {
-            if (!selectedNode) return;
-
-            e.preventDefault();
-
-            // Get SVG coordinates
-            const svgRect = svg.getBoundingClientRect();
-            const svgX = e.clientX - svgRect.left;
-            const svgY = e.clientY - svgRect.top;
-
-            const newX = svgX - offset.x;
-            const newY = svgY - offset.y;
-
-            // Update all child elements positions
-            const rect = selectedNode.querySelector('.node-rect');
-            const texts = selectedNode.querySelectorAll('text');
-            const nodeWidth = parseFloat(rect.getAttribute('width'));
-
-            rect.setAttribute('x', newX);
-            rect.setAttribute('y', newY);
-
-            texts.forEach((text, i) => {
-                text.setAttribute('x', newX + nodeWidth / 2);
-                text.setAttribute('y', newY + textOffsets[i].y);
-            });
-
-            // Update edges (will be redrawn on mouseup)
-        });
-
-        svg.addEventListener('mouseup', function(e) {
-            if (!selectedNode) return;
-
-            e.preventDefault();
-
-            const rect = selectedNode.querySelector('.node-rect');
-            const nodeId = selectedNode.getAttribute('data-node-id');
-            const newX = parseFloat(rect.getAttribute('x'));
-            const newY = parseFloat(rect.getAttribute('y'));
-
-            // Store new position
-            nodePositions[nodeId] = { x: newX, y: newY };
-
-            selectedNode.style.opacity = '1';
-            selectedNode = null;
-
-            // Redraw graph to update edges
-            renderNetworkGraph();
-        });
-
-        svg.addEventListener('mouseleave', function(e) {
-            if (selectedNode) {
-                selectedNode.style.opacity = '1';
-                selectedNode = null;
-            }
-        });
+        setupGraphDragAndDrop('networkGraphSvg', renderNetworkGraph);
     }
 
     /**
@@ -2572,8 +2817,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         detailNetworking.textContent = networkingDesc;
 
-        // Render event sources in diagram
-        renderEventSources(functionData);
+        // Render interactive graph
+        renderFunctionDetailGraph(functionData);
 
         // Render event subscriptions summary
         if (!functionData.eventSubscriptions || functionData.eventSubscriptions.length === 0) {
@@ -2586,9 +2831,595 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * Render event sources (triggers) in diagram
+     * =====================================================================
+     * Detail View SVG Graph Renderers
+     * =====================================================================
+     */
+
+    /**
+     * Render function detail view diagram as interactive SVG
+     * Layout: [Brokers] → [Function]
+     */
+    function renderFunctionDetailGraph(functionData) {
+        const container = document.getElementById('functionDetailGraphContainer');
+        if (!container) return;
+
+        const config = {
+            nodeWidth: 180,
+            nodeHeight: 100,
+            horizontalGap: 200,
+            verticalGap: 120,
+            padding: 40
+        };
+
+        // Extract broker nodes from subscriptions
+        const brokerMap = new Map();
+        if (functionData.eventSubscriptions) {
+            functionData.eventSubscriptions.forEach(sub => {
+                if (!brokerMap.has(sub.broker)) {
+                    const broker = getBrokers().find(b => b.name === sub.broker);
+                    if (broker) {
+                        brokerMap.set(sub.broker, {
+                            ...broker,
+                            eventTypes: []
+                        });
+                    }
+                }
+                if (brokerMap.has(sub.broker)) {
+                    brokerMap.get(sub.broker).eventTypes.push(sub.eventType);
+                }
+            });
+        }
+
+        const brokers = Array.from(brokerMap.values());
+
+        // Calculate dimensions
+        const brokersHeight = brokers.length * (config.nodeHeight + config.verticalGap);
+        const svgHeight = Math.max(brokersHeight, 400) + 2 * config.padding;
+        const svgWidth = config.padding + config.nodeWidth + config.horizontalGap + config.nodeWidth + config.padding;
+
+        // Position nodes
+        const brokerX = config.padding;
+        const functionX = config.padding + config.nodeWidth + config.horizontalGap;
+        const brokerStartY = (svgHeight - brokersHeight) / 2;
+        const functionY = svgHeight / 2 - config.nodeHeight / 2;
+
+        const nodes = [];
+        const edges = [];
+        const arrowPadding = 15;
+
+        // Calculate function position FIRST (so edges can use it)
+        const functionNodeId = `function-detail-${functionData.id}-center`;
+        const functionPos = nodePositions[functionNodeId] || { x: functionX, y: functionY };
+
+        // Position brokers (left)
+        brokers.forEach((broker, i) => {
+            const defaultY = brokerStartY + i * (config.nodeHeight + config.verticalGap);
+            const nodeId = `function-detail-${functionData.id}-broker-${broker.id}`;
+            const pos = nodePositions[nodeId] || { x: brokerX, y: defaultY };
+
+            nodes.push({
+                ...broker,
+                nodeId: nodeId,
+                x: pos.x,
+                y: pos.y,
+                type: 'broker'
+            });
+
+            // Create edge from broker to function (using functionPos from nodePositions)
+            edges.push({
+                fromId: nodeId,
+                toId: `function-detail-${functionData.id}-center`,
+                from: { x: pos.x + config.nodeWidth, y: pos.y + config.nodeHeight / 2 },
+                to: { x: functionPos.x - arrowPadding, y: functionPos.y + config.nodeHeight / 2 },
+                label: broker.eventTypes.join(', '),
+                direction: 'outgoing'
+            });
+        });
+
+        // Position function (right)
+        nodes.push({
+            ...functionData,
+            nodeId: functionNodeId,
+            x: functionPos.x,
+            y: functionPos.y,
+            type: 'function'
+        });
+
+        // Consolidate edges
+        const consolidatedEdges = consolidateEdges(edges);
+
+        // Generate SVG
+        let svg = `<svg id="functionDetailGraphSvg" width="100%" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
+
+        // Add marker definitions
+        svg += '<defs>';
+        svg += createArrowheadMarker('arrowhead-function-detail', '#999');
+        svg += createArrowheadMarker('arrowhead-blue-function-detail', '#2196F3');
+        svg += '</defs>';
+
+        // Draw edges
+        consolidatedEdges.forEach(edge => {
+            svg += generateEdgePath(edge, arrowPadding, 'function-detail');
+            const midX = (edge.from.x + edge.to.x) / 2;
+            const midY = (edge.from.y + edge.to.y) / 2 - 10;
+            svg += generateEdgeLabel(edge, midX, midY);
+        });
+
+        // Draw nodes
+        nodes.forEach(node => {
+            let clickHandler = '';
+            if (node.type === 'broker') {
+                clickHandler = `showBrokerDetailView(getBroker('${node.id}'))`;
+            }
+            svg += generateNodeSVG(node, config.nodeWidth, config.nodeHeight, clickHandler);
+        });
+
+        svg += '</svg>';
+
+        container.innerHTML = svg;
+
+        // Setup drag-and-drop
+        setupGraphDragAndDrop('functionDetailGraphSvg', () => renderFunctionDetailGraph(functionData));
+    }
+
+    /**
+     * Render event source detail view diagram as interactive SVG
+     * Layout: [External Source] → [Event Source] → [Broker]
+     */
+    function renderEventSourceDetailGraph(eventSourceData) {
+        const container = document.getElementById('eventSourceDetailGraphContainer');
+        if (!container) return;
+
+        const config = {
+            nodeWidth: 180,
+            nodeHeight: 100,
+            horizontalGap: 200,
+            padding: 40
+        };
+
+        // Calculate dimensions for 3-column layout
+        const svgHeight = config.nodeHeight + 2 * config.padding;
+        const svgWidth = config.padding + (config.nodeWidth + config.horizontalGap) * 2 + config.nodeWidth + config.padding;
+
+        // Position nodes in 3 columns
+        const externalX = config.padding;
+        const eventSourceX = config.padding + config.nodeWidth + config.horizontalGap;
+        const brokerX = eventSourceX + config.nodeWidth + config.horizontalGap;
+        const centerY = config.padding;
+
+        const nodes = [];
+        const edges = [];
+        const arrowPadding = 15;
+
+        // External source node (left, synthetic node)
+        const externalSourceType = eventSourceData.type;
+        const externalNodeId = `eventsource-detail-${eventSourceData.id}-external`;
+        const externalPos = nodePositions[externalNodeId] || { x: externalX, y: centerY };
+
+        let externalName = '';
+        if (eventSourceData.type === 'github') {
+            externalName = eventSourceData.config.repository;
+        } else if (eventSourceData.type === 'kafka') {
+            externalName = eventSourceData.config.topics;
+        } else if (eventSourceData.type === 'slack') {
+            externalName = 'Slack Webhook';
+        } else if (eventSourceData.type === 'cron') {
+            externalName = eventSourceData.config.schedule;
+        } else {
+            externalName = eventSourceData.type;
+        }
+
+        nodes.push({
+            name: externalName,
+            nodeId: externalNodeId,
+            x: externalPos.x,
+            y: externalPos.y,
+            type: 'external',
+            externalType: externalSourceType
+        });
+
+        // Event source node (center)
+        const eventSourceNodeId = `eventsource-detail-${eventSourceData.id}-center`;
+        const eventSourcePos = nodePositions[eventSourceNodeId] || { x: eventSourceX, y: centerY };
+        nodes.push({
+            ...eventSourceData,
+            nodeId: eventSourceNodeId,
+            x: eventSourcePos.x,
+            y: eventSourcePos.y,
+            type: 'source'
+        });
+
+        // Broker node (right)
+        const broker = getBrokers().find(b => b.name === eventSourceData.sinkConfig.broker);
+        if (broker) {
+            const brokerNodeId = `eventsource-detail-${eventSourceData.id}-broker-${broker.id}`;
+            const brokerPos = nodePositions[brokerNodeId] || { x: brokerX, y: centerY };
+            nodes.push({
+                ...broker,
+                nodeId: brokerNodeId,
+                x: brokerPos.x,
+                y: brokerPos.y,
+                type: 'broker'
+            });
+
+            // Edge: Event Source → Broker
+            edges.push({
+                fromId: eventSourceNodeId,
+                toId: brokerNodeId,
+                from: { x: eventSourcePos.x + config.nodeWidth, y: eventSourcePos.y + config.nodeHeight / 2 },
+                to: { x: brokerPos.x - arrowPadding, y: brokerPos.y + config.nodeHeight / 2 },
+                label: eventSourceData.eventTypes ? eventSourceData.eventTypes.join(', ') : '',
+                direction: 'outgoing'
+            });
+        }
+
+        // Edge: External → Event Source (no label)
+        edges.push({
+            fromId: externalNodeId,
+            toId: eventSourceNodeId,
+            from: { x: externalPos.x + config.nodeWidth, y: externalPos.y + config.nodeHeight / 2 },
+            to: { x: eventSourcePos.x - arrowPadding, y: eventSourcePos.y + config.nodeHeight / 2 },
+            label: '',
+            direction: 'outgoing'
+        });
+
+        // Generate SVG
+        let svg = `<svg id="eventSourceDetailGraphSvg" width="100%" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
+
+        svg += '<defs>';
+        svg += createArrowheadMarker('arrowhead-eventsource-detail', '#999');
+        svg += createArrowheadMarker('arrowhead-blue-eventsource-detail', '#2196F3');
+        svg += '</defs>';
+
+        // Draw edges
+        edges.forEach(edge => {
+            svg += generateEdgePath(edge, arrowPadding, 'eventsource-detail');
+            if (edge.label) {
+                const midX = (edge.from.x + edge.to.x) / 2;
+                const midY = (edge.from.y + edge.to.y) / 2 - 10;
+                svg += generateEdgeLabel(edge, midX, midY);
+            }
+        });
+
+        // Draw nodes
+        nodes.forEach(node => {
+            let clickHandler = '';
+            if (node.type === 'broker') {
+                clickHandler = `showBrokerDetailView(getBroker('${node.id}'))`;
+            }
+            svg += generateNodeSVG(node, config.nodeWidth, config.nodeHeight, clickHandler);
+        });
+
+        svg += '</svg>';
+        container.innerHTML = svg;
+
+        // Setup drag-and-drop
+        setupGraphDragAndDrop('eventSourceDetailGraphSvg', () => renderEventSourceDetailGraph(eventSourceData));
+    }
+
+    /**
+     * Render event sink detail view diagram as interactive SVG
+     * Layout: [Brokers] → [Event Sink] → [External Destination]
+     */
+    function renderEventSinkDetailGraph(eventSinkData) {
+        const container = document.getElementById('eventSinkDetailGraphContainer');
+        if (!container) return;
+
+        const config = {
+            nodeWidth: 180,
+            nodeHeight: 100,
+            horizontalGap: 200,
+            verticalGap: 120,
+            padding: 40
+        };
+
+        // Extract broker nodes from subscriptions
+        const brokerMap = new Map();
+        if (eventSinkData.eventSubscriptions) {
+            eventSinkData.eventSubscriptions.forEach(sub => {
+                if (!brokerMap.has(sub.broker)) {
+                    const broker = getBrokers().find(b => b.name === sub.broker);
+                    if (broker) {
+                        brokerMap.set(sub.broker, {
+                            ...broker,
+                            eventTypes: []
+                        });
+                    }
+                }
+                if (brokerMap.has(sub.broker)) {
+                    brokerMap.get(sub.broker).eventTypes.push(sub.eventType);
+                }
+            });
+        }
+
+        const brokers = Array.from(brokerMap.values());
+
+        // Calculate dimensions
+        const brokersHeight = brokers.length * (config.nodeHeight + config.verticalGap);
+        const svgHeight = Math.max(brokersHeight, 400) + 2 * config.padding;
+        const svgWidth = config.padding + (config.nodeWidth + config.horizontalGap) * 2 + config.nodeWidth + config.padding;
+
+        // Position nodes
+        const brokerX = config.padding;
+        const sinkX = config.padding + config.nodeWidth + config.horizontalGap;
+        const externalX = sinkX + config.nodeWidth + config.horizontalGap;
+        const brokerStartY = (svgHeight - brokersHeight) / 2;
+        const sinkY = svgHeight / 2 - config.nodeHeight / 2;
+
+        const nodes = [];
+        const edges = [];
+        const arrowPadding = 15;
+
+        // Calculate sink position FIRST (so edges can use it)
+        const sinkNodeId = `eventsink-detail-${eventSinkData.id}-center`;
+        const sinkPos = nodePositions[sinkNodeId] || { x: sinkX, y: sinkY };
+
+        // Position brokers (left)
+        brokers.forEach((broker, i) => {
+            const defaultY = brokerStartY + i * (config.nodeHeight + config.verticalGap);
+            const nodeId = `eventsink-detail-${eventSinkData.id}-broker-${broker.id}`;
+            const pos = nodePositions[nodeId] || { x: brokerX, y: defaultY };
+
+            nodes.push({
+                ...broker,
+                nodeId: nodeId,
+                x: pos.x,
+                y: pos.y,
+                type: 'broker'
+            });
+
+            // Create edge from broker to sink (using sinkPos from nodePositions)
+            edges.push({
+                fromId: nodeId,
+                toId: `eventsink-detail-${eventSinkData.id}-center`,
+                from: { x: pos.x + config.nodeWidth, y: pos.y + config.nodeHeight / 2 },
+                to: { x: sinkPos.x - arrowPadding, y: sinkPos.y + config.nodeHeight / 2 },
+                label: broker.eventTypes.join(', '),
+                direction: 'outgoing'
+            });
+        });
+
+        // Position event sink (center)
+        nodes.push({
+            ...eventSinkData,
+            nodeId: sinkNodeId,
+            x: sinkPos.x,
+            y: sinkPos.y,
+            type: 'sink',
+            sinkType: eventSinkData.type
+        });
+
+        // External destination node (right, synthetic)
+        const externalNodeId = `eventsink-detail-${eventSinkData.id}-external`;
+        const externalPos = nodePositions[externalNodeId] || { x: externalX, y: sinkPos.y };
+
+        let externalName = '';
+        if (eventSinkData.type === 'http') {
+            externalName = new URL(eventSinkData.config.url).hostname;
+        } else if (eventSinkData.type === 'kafka') {
+            externalName = eventSinkData.config.topic;
+        } else {
+            externalName = eventSinkData.type.toUpperCase();
+        }
+
+        nodes.push({
+            name: externalName,
+            nodeId: externalNodeId,
+            x: externalPos.x,
+            y: externalPos.y,
+            type: 'external'
+        });
+
+        // Edge: Sink → External
+        edges.push({
+            fromId: sinkNodeId,
+            toId: externalNodeId,
+            from: { x: sinkPos.x + config.nodeWidth, y: sinkPos.y + config.nodeHeight / 2 },
+            to: { x: externalPos.x - arrowPadding, y: externalPos.y + config.nodeHeight / 2 },
+            label: '',
+            direction: 'outgoing'
+        });
+
+        // Consolidate edges
+        const consolidatedEdges = consolidateEdges(edges);
+
+        // Generate SVG
+        let svg = `<svg id="eventSinkDetailGraphSvg" width="100%" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
+
+        svg += '<defs>';
+        svg += createArrowheadMarker('arrowhead-eventsink-detail', '#999');
+        svg += createArrowheadMarker('arrowhead-blue-eventsink-detail', '#2196F3');
+        svg += '</defs>';
+
+        // Draw edges
+        consolidatedEdges.forEach(edge => {
+            svg += generateEdgePath(edge, arrowPadding, 'eventsink-detail');
+            if (edge.label) {
+                const midX = (edge.from.x + edge.to.x) / 2;
+                const midY = (edge.from.y + edge.to.y) / 2 - 10;
+                svg += generateEdgeLabel(edge, midX, midY);
+            }
+        });
+
+        // Draw nodes
+        nodes.forEach(node => {
+            let clickHandler = '';
+            if (node.type === 'broker') {
+                clickHandler = `showBrokerDetailView(getBroker('${node.id}'))`;
+            }
+            svg += generateNodeSVG(node, config.nodeWidth, config.nodeHeight, clickHandler);
+        });
+
+        svg += '</svg>';
+        container.innerHTML = svg;
+
+        // Setup drag-and-drop
+        setupGraphDragAndDrop('eventSinkDetailGraphSvg', () => renderEventSinkDetailGraph(eventSinkData));
+    }
+
+    /**
+     * Render broker detail view diagram as interactive SVG
+     * Layout: [Event Sources] → [Broker] → [Subscribers (Functions + Sinks)]
+     */
+    function renderBrokerDetailGraph(brokerData) {
+        const container = document.getElementById('brokerDetailGraphContainer');
+        if (!container) return;
+
+        const config = {
+            nodeWidth: 180,
+            nodeHeight: 100,
+            horizontalGap: 200,
+            verticalGap: 120,
+            padding: 40
+        };
+
+        // Get event sources sending to this broker
+        const eventSources = getEventSources().filter(es => es.sinkConfig?.broker === brokerData.name);
+
+        // Get subscribers (functions and sinks)
+        const subscribedFunctions = getFunctions().filter(f =>
+            f.eventSubscriptions?.some(sub => sub.broker === brokerData.name)
+        );
+        const subscribedSinks = getEventSinks().filter(s =>
+            s.eventSubscriptions?.some(sub => sub.broker === brokerData.name)
+        );
+        const subscribers = [...subscribedFunctions, ...subscribedSinks];
+
+        // Calculate dimensions
+        const sourcesHeight = eventSources.length * (config.nodeHeight + config.verticalGap);
+        const subscribersHeight = subscribers.length * (config.nodeHeight + config.verticalGap);
+        const svgHeight = Math.max(sourcesHeight, subscribersHeight, 400) + 2 * config.padding;
+        const svgWidth = config.padding + (config.nodeWidth + config.horizontalGap) * 2 + config.nodeWidth + config.padding;
+
+        // Position nodes
+        const sourceX = config.padding;
+        const brokerX = config.padding + config.nodeWidth + config.horizontalGap;
+        const subscriberX = brokerX + config.nodeWidth + config.horizontalGap;
+        const sourceStartY = (svgHeight - sourcesHeight) / 2;
+        const brokerY = svgHeight / 2 - config.nodeHeight / 2;
+        const subscriberStartY = (svgHeight - subscribersHeight) / 2;
+
+        const nodes = [];
+        const edges = [];
+        const arrowPadding = 15;
+
+        // Calculate broker position FIRST (so edges can use it)
+        const brokerNodeId = `broker-detail-${brokerData.id}-center`;
+        const brokerPos = nodePositions[brokerNodeId] || { x: brokerX, y: brokerY };
+
+        // Position event sources (left)
+        eventSources.forEach((source, i) => {
+            const defaultY = sourceStartY + i * (config.nodeHeight + config.verticalGap);
+            const nodeId = `broker-detail-${brokerData.id}-source-${source.id}`;
+            const pos = nodePositions[nodeId] || { x: sourceX, y: defaultY };
+
+            nodes.push({
+                ...source,
+                nodeId: nodeId,
+                x: pos.x,
+                y: pos.y,
+                type: 'source'
+            });
+
+            // Edge: Source → Broker (using brokerPos from nodePositions)
+            edges.push({
+                fromId: nodeId,
+                toId: `broker-detail-${brokerData.id}-center`,
+                from: { x: pos.x + config.nodeWidth, y: pos.y + config.nodeHeight / 2 },
+                to: { x: brokerPos.x - arrowPadding, y: brokerPos.y + config.nodeHeight / 2 },
+                label: source.eventTypes ? source.eventTypes.join(', ') : '',
+                direction: 'outgoing'
+            });
+        });
+
+        // Position broker (center)
+        nodes.push({
+            ...brokerData,
+            nodeId: brokerNodeId,
+            x: brokerPos.x,
+            y: brokerPos.y,
+            type: 'broker'
+        });
+
+        // Position subscribers (right)
+        subscribers.forEach((subscriber, i) => {
+            const defaultY = subscriberStartY + i * (config.nodeHeight + config.verticalGap);
+            const subscriberType = subscriber.containerPort ? 'function' : 'sink';
+            const nodeId = `broker-detail-${brokerData.id}-subscriber-${subscriber.id}`;
+            const pos = nodePositions[nodeId] || { x: subscriberX, y: defaultY };
+
+            nodes.push({
+                ...subscriber,
+                nodeId: nodeId,
+                x: pos.x,
+                y: pos.y,
+                type: subscriberType,
+                sinkType: subscriber.type
+            });
+
+            // Get event types for this subscriber
+            const eventTypes = subscriber.eventSubscriptions
+                ?.filter(sub => sub.broker === brokerData.name)
+                .map(sub => sub.eventType) || [];
+
+            // Edge: Broker → Subscriber
+            edges.push({
+                fromId: brokerNodeId,
+                toId: nodeId,
+                from: { x: brokerPos.x + config.nodeWidth, y: brokerPos.y + config.nodeHeight / 2 },
+                to: { x: pos.x - arrowPadding, y: pos.y + config.nodeHeight / 2 },
+                label: eventTypes.join(', '),
+                direction: 'outgoing'
+            });
+        });
+
+        // Consolidate edges
+        const consolidatedEdges = consolidateEdges(edges);
+
+        // Generate SVG
+        let svg = `<svg id="brokerDetailGraphSvg" width="100%" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg">`;
+
+        svg += '<defs>';
+        svg += createArrowheadMarker('arrowhead-broker-detail', '#999');
+        svg += createArrowheadMarker('arrowhead-blue-broker-detail', '#2196F3');
+        svg += '</defs>';
+
+        // Draw edges
+        consolidatedEdges.forEach(edge => {
+            svg += generateEdgePath(edge, arrowPadding, 'broker-detail');
+            if (edge.label) {
+                const midX = (edge.from.x + edge.to.x) / 2;
+                const midY = (edge.from.y + edge.to.y) / 2 - 10;
+                svg += generateEdgeLabel(edge, midX, midY);
+            }
+        });
+
+        // Draw nodes
+        nodes.forEach(node => {
+            let clickHandler = '';
+            if (node.type === 'function') {
+                clickHandler = `showDetailView(getFunction('${node.id}'))`;
+            } else if (node.type === 'sink') {
+                clickHandler = `showEventSinkDetailView(getEventSink('${node.id}'))`;
+            } else if (node.type === 'source') {
+                clickHandler = `showEventSourceDetailView(getEventSource('${node.id}'))`;
+            }
+            svg += generateNodeSVG(node, config.nodeWidth, config.nodeHeight, clickHandler);
+        });
+
+        svg += '</svg>';
+        container.innerHTML = svg;
+
+        // Setup drag-and-drop
+        setupGraphDragAndDrop('brokerDetailGraphSvg', () => renderBrokerDetailGraph(brokerData));
+    }
+
+    /**
+     * Render event sources (triggers) in diagram (deprecated - use renderFunctionDetailGraph)
      */
     function renderEventSources(functionData) {
+        if (!eventSourcesList) return;
         eventSourcesList.innerHTML = '';
 
         if (!functionData.eventSubscriptions || functionData.eventSubscriptions.length === 0) {
@@ -2781,6 +3612,9 @@ document.addEventListener('DOMContentLoaded', function() {
         detailBrokerRetry.textContent = brokerData.deliveryConfig.retry;
         detailBrokerBackoffPolicy.textContent = brokerData.deliveryConfig.backoffPolicy;
 
+        // Render interactive graph
+        renderBrokerDetailGraph(brokerData);
+
         // Get event types from connected event sources
         const eventSources = getEventSources().filter(es => es.broker === brokerData.name);
         const allEventTypes = eventSources.flatMap(es => es.eventTypes);
@@ -2792,28 +3626,12 @@ document.addEventListener('DOMContentLoaded', function() {
             detailBrokerEventTypes.textContent = 'None';
         }
 
-        // Render event sources list
-        brokerEventSourcesList.innerHTML = '';
-        if (eventSources.length === 0) {
-            brokerEventSourcesList.innerHTML = '<p class="empty-list">No event sources connected to this broker.</p>';
-        } else {
-            eventSources.forEach(source => {
-                const sourceBox = document.createElement('div');
-                sourceBox.className = 'source-box';
-                const typeDisplayName = source.type.charAt(0).toUpperCase() + source.type.slice(1);
-                sourceBox.innerHTML = `
-                    <div class="source-icon">⚡</div>
-                    <div class="source-info">
-                        <div class="source-name">${source.name}</div>
-                        <div class="source-details">${typeDisplayName} Source</div>
-                    </div>
-                `;
-                brokerEventSourcesList.appendChild(sourceBox);
-            });
-        }
+        // Render event sources list (deprecated - now shown in graph)
+        // brokerEventSourcesList removed from HTML
 
-        // Render subscribers list (functions and event sinks)
-        brokerFunctionsList.innerHTML = '';
+        // Render subscribers list (functions and event sinks) (deprecated - now shown in graph)
+        if (brokerFunctionsList) {
+            brokerFunctionsList.innerHTML = '';
 
         // Get functions subscribed to this broker
         const functions = getFunctions().filter(f =>
@@ -2860,6 +3678,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 brokerFunctionsList.appendChild(sinkBox);
             });
         }
+        }
     }
 
     /**
@@ -2895,6 +3714,9 @@ document.addEventListener('DOMContentLoaded', function() {
         detailEventSourceType.textContent = typeDisplayName;
         detailEventSourceNamespace.textContent = eventSourceData.namespace;
 
+        // Render interactive graph
+        renderEventSourceDetailGraph(eventSourceData);
+
         // Determine target details
         const sinkMethod = eventSourceData.sinkMethod || 'broker';
         const sinkConfig = eventSourceData.sinkConfig || {};
@@ -2915,7 +3737,8 @@ document.addEventListener('DOMContentLoaded', function() {
         detailEventSourceBroker.textContent = targetName;
         detailEventSourceEventTypes.textContent = eventSourceData.eventTypes.join(', ');
 
-        // Render external source
+        // Render external source (deprecated - now shown in graph)
+        if (!eventSourceExternalSource) return;
         eventSourceExternalSource.innerHTML = '';
         const externalBox = document.createElement('div');
         externalBox.className = 'source-box';
@@ -2940,7 +3763,8 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         eventSourceExternalSource.appendChild(externalBox);
 
-        // Render target (broker, sink, or function)
+        // Render target (broker, sink, or function) (deprecated - now shown in graph)
+        if (!eventSourceTargetBroker) return;
         eventSourceTargetBroker.innerHTML = '';
         const targetBox = document.createElement('div');
         targetBox.className = 'destination-box';
@@ -3357,6 +4181,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('detailEventSinkType').textContent = sinkData.type;
         document.getElementById('detailEventSinkNamespace').textContent = sinkData.namespace;
 
+        // Render interactive graph
+        renderEventSinkDetailGraph(sinkData);
+
         // Render event subscriptions summary
         const eventSinkSubscriptionsSummaryText = document.getElementById('eventSinkSubscriptionsSummaryText');
         if (!sinkData.eventSubscriptions || sinkData.eventSubscriptions.length === 0) {
@@ -3367,9 +4194,10 @@ document.addEventListener('DOMContentLoaded', function() {
             eventSinkSubscriptionsSummaryText.textContent = `${count} subscription${count > 1 ? 's' : ''}: ${types}`;
         }
 
-        // Render sources (brokers from subscriptions)
+        // Render sources (brokers from subscriptions) (deprecated - now shown in graph)
         const eventSinkSourcesList = document.getElementById('eventSinkSourcesList');
         const eventSinkSourceTitle = document.getElementById('eventSinkSourceTitle');
+        if (!eventSinkSourcesList || !eventSinkSourceTitle) return;
         eventSinkSourcesList.innerHTML = '';
         eventSinkSourceTitle.textContent = 'Event Sources';
 
@@ -3405,8 +4233,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Render external destination
+        // Render external destination (deprecated - now shown in graph)
         const eventSinkExternalDestination = document.getElementById('eventSinkExternalDestination');
+        if (!eventSinkExternalDestination) return;
         eventSinkExternalDestination.innerHTML = '';
         const destBox = document.createElement('div');
         destBox.className = 'destination-box';
