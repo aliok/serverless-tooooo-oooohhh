@@ -1983,9 +1983,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const sinksX = columns.sinks.x;
         const svgWidth = sinksX + nodeWidth + padding;
 
-        console.log('SVG Dimensions:', { width: svgWidth, height: svgHeight });
-        console.log('Sinks column X:', sinksX, 'Sinks end:', sinksX + nodeWidth);
-
         // Position brokers (centerpiece) - centered vertically
         brokers.forEach((broker, i) => {
             const defaultX = columns.brokers.x;
