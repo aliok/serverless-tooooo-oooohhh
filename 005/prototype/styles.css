@@ -1207,6 +1207,8 @@ footer a:hover {
     border-radius: 8px;
     padding: 2rem;
     min-height: 700px;
+    width: 90%;
+    margin: 0 auto;
     position: relative;
     overflow-x: auto;
     overflow-y: auto;

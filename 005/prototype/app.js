@@ -2068,6 +2068,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Draw edges first (so they appear behind nodes)
         const edges = [];
+        const arrowPadding = 15; // Space to leave before node edge for arrowhead visibility
 
         // Source → Broker edges (left-to-right, incoming to broker)
         columns.sources.nodes.forEach(source => {
@@ -2076,7 +2077,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (targetBroker) {
                     edges.push({
                         from: { x: source.x + nodeWidth, y: source.y + nodeHeight / 2 },
-                        to: { x: targetBroker.x, y: targetBroker.y + nodeHeight / 2 },
+                        to: { x: targetBroker.x - arrowPadding, y: targetBroker.y + nodeHeight / 2 },
                         label: source.eventTypes ? source.eventTypes.join(', ') : '',
                         direction: 'outgoing' // left-to-right
                     });
@@ -2092,7 +2093,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (sourceBroker) {
                         edges.push({
                             from: { x: sourceBroker.x + nodeWidth, y: sourceBroker.y + nodeHeight / 2 },
-                            to: { x: func.x, y: func.y + nodeHeight / 2 },
+                            to: { x: func.x - arrowPadding, y: func.y + nodeHeight / 2 },
                             label: sub.eventType,
                             direction: 'outgoing' // left-to-right
                         });
@@ -2112,11 +2113,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         : 'events';
                     edges.push({
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
-                        to: { x: targetBroker.x, y: targetBroker.y + nodeHeight / 2 },
+                        to: { x: targetBroker.x + nodeWidth + arrowPadding, y: targetBroker.y + nodeHeight / 2 },
                         label: eventTypesLabel,
                         color: '#2196F3',
-                        direction: 'incoming', // right-to-left, back to broker
-                        reverse: true // needed for proper arrow direction
+                        direction: 'incoming' // right-to-left, back to broker
                     });
                 }
             } else if (func.sinkMethod === 'sink' && func.sinkConfig) {
@@ -2127,7 +2127,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         : 'events';
                     edges.push({
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
-                        to: { x: targetSink.x, y: targetSink.y + nodeHeight / 2 },
+                        to: { x: targetSink.x - arrowPadding, y: targetSink.y + nodeHeight / 2 },
                         label: eventTypesLabel,
                         color: '#2196F3',
                         direction: 'outgoing' // left-to-right
@@ -2141,7 +2141,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         : 'events';
                     edges.push({
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
-                        to: { x: targetFunc.x, y: targetFunc.y + nodeHeight / 2 },
+                        to: { x: targetFunc.x - arrowPadding, y: targetFunc.y + nodeHeight / 2 },
                         label: eventTypesLabel,
                         curved: true,
                         color: '#2196F3',
@@ -2169,7 +2169,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Incoming (right-to-left): label below the line (positive offset)
                 const verticalOffset = edge.direction === 'incoming' ? 15 : -10;
                 const midY = (edge.from.y + edge.to.y) / 2 + verticalOffset;
-                svg += `<text x="${midX}" y="${midY}" class="edge-label" text-anchor="middle">${edge.label}</text>`;
+
+                // Split event types by comma and render vertically
+                const eventTypes = edge.label.split(', ');
+                if (eventTypes.length === 1) {
+                    svg += `<text x="${midX}" y="${midY}" class="edge-label" text-anchor="middle">${edge.label}</text>`;
+                } else {
+                    // Multiple event types - render vertically
+                    svg += `<text x="${midX}" y="${midY - (eventTypes.length - 1) * 6}" class="edge-label" text-anchor="middle">`;
+                    eventTypes.forEach((type, i) => {
+                        const dy = i === 0 ? 0 : 12;
+                        svg += `<tspan x="${midX}" dy="${dy}">${type}</tspan>`;
+                    });
+                    svg += `</text>`;
+                }
             }
         });
 
