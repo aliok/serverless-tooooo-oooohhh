@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Function Composition UI - Phase 1: Scaling & Runtime</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Serverless Function Platform</h1>
+        <p class="subtitle">Phase 1-5: Demonstrating UI as Composition Layer for Serverless Functions and Event-Driven Architecture</p>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="main-nav">
+        <button class="nav-tab active" data-view="overview">Overview</button>
+        <button class="nav-tab" data-view="functions">Functions</button>
+        <button class="nav-tab" data-view="brokers">Brokers</button>
+        <button class="nav-tab" data-view="eventSources">Event Sources</button>
+        <button class="nav-tab" data-view="eventSinks">Event Sinks</button>
+    </nav>
+
+    <!-- Overview/Network Graph View -->
+    <div id="overviewView" class="container">
+        <section class="overview-panel">
+            <div class="overview-header">
+                <h2>Event Flow Overview</h2>
+                <p class="subtitle">Visual representation of event sources, brokers, functions, and sinks</p>
+            </div>
+            <div id="networkGraph" class="network-graph-container">
+                <!-- Network graph will be rendered here -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Function List View -->
+    <div id="listView" class="container">
+        <section class="list-panel">
+            <div class="list-header">
+                <h2 id="functionsTitle">Functions (<span id="functionCount">0</span>)</h2>
+                <div class="list-header-actions">
+                    <button id="createNewBtn" class="btn-primary">Create function</button>
+                </div>
+            </div>
+
+            <div class="list-controls">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search by name or namespace">
+            </div>
+
+            <div class="table-container">
+                <table class="functions-table">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-column">
+                                <input type="checkbox" id="selectAll">
+                            </th>
+                            <th class="sortable" data-sort="name">
+                                Function name
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="namespace">
+                                Namespace
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="scaling">
+                                Scaling
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="networking">
+                                Networking
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="image">
+                                Image
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="actions-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="functionsTableBody">
+                        <!-- Function rows will be inserted here -->
+                    </tbody>
+                </table>
+                <div id="emptyTableState" class="empty-table-state" style="display: none;">
+                    <p>No functions found. Click "Create function" to get started.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Function Form View -->
+    <div id="formView" class="container" style="display: none;">
+        <section class="form-panel">
+            <div class="form-header">
+                <h2 id="formTitle">Create Function</h2>
+                <button type="button" id="backToListBtn" class="btn-secondary">← Back to List</button>
+            </div>
+            <p class="panel-description">Define your function with simple, high-level configuration</p>
+
+            <form id="functionForm">
+                <fieldset>
+                    <legend>Function Details</legend>
+
+                    <div class="form-group">
+                        <label for="functionName">Function Name</label>
+                        <input type="text" id="functionName" name="functionName"
+                               placeholder="my-function" value="my-function" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="namespace">Namespace</label>
+                        <input type="text" id="namespace" name="namespace"
+                               placeholder="default" value="default" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="containerPort">Container Port</label>
+                        <input type="number" id="containerPort" name="containerPort"
+                               placeholder="8080" value="8080" min="1" max="65535" required>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Build Configuration</legend>
+
+                    <div class="scaling-method-label">
+                        <label>Build Method</label>
+                        <small class="helper-text">Choose how to build your function container image</small>
+                    </div>
+
+                    <!-- No Build panel (default - user provides image) -->
+                    <div id="noBuildPanel" class="metric-panel active">
+                        <label class="panel-header">
+                            <input type="radio" name="buildMethod" value="none" checked>
+                            <span class="panel-icon">▼</span>
+                            <span class="panel-title">No Build (Use Existing Image)</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="containerImage">Container Image</label>
+                                <input type="text" id="containerImage" name="containerImage"
+                                       placeholder="registry.example.com/functions/my-function:latest"
+                                       value="registry.example.com/functions/my-function:latest">
+                                <small class="helper-text">Pre-built container image to deploy</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shipwright Build panel -->
+                    <div id="shipwrightBuildPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="buildMethod" value="shipwright">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Shipwright Build</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="shipwrightGitURL">Git URL</label>
+                                <input type="text" id="shipwrightGitURL" name="shipwrightGitURL"
+                                       placeholder="https://github.com/example/my-function" value="https://github.com/example/my-function">
+                                <small class="helper-text">Git repository containing your function source code</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="shipwrightGitRevision">Git Revision</label>
+                                <input type="text" id="shipwrightGitRevision" name="shipwrightGitRevision"
+                                       placeholder="main" value="main">
+                                <small class="helper-text">Branch, tag, or commit SHA to build from</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="shipwrightStrategy">Build Strategy</label>
+                                <select id="shipwrightStrategy" name="shipwrightStrategy">
+                                    <option value="nodejs">Node.js</option>
+                                    <option value="python">Python</option>
+                                    <option value="go">Go</option>
+                                    <option value="java">Java</option>
+                                    <option value="ruby">Ruby</option>
+                                    <option value="php">PHP</option>
+                                    <option value="dotnet">dotNET</option>
+                                </select>
+                                <small class="helper-text">BuildStrategy to use for building the image</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="shipwrightOutputImage">Output Image</label>
+                                <input type="text" id="shipwrightOutputImage" name="shipwrightOutputImage"
+                                       placeholder="registry.example.com/functions/my-function:latest" value="registry.example.com/functions/my-function:latest">
+                                <small class="helper-text">Container registry location where the built image will be pushed</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OpenShift S2I BuildConfig panel -->
+                    <div id="s2iBuildPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="buildMethod" value="s2i">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">OpenShift S2I (Source-to-Image)</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="s2iGitURL">Git URL</label>
+                                <input type="text" id="s2iGitURL" name="s2iGitURL"
+                                       placeholder="https://github.com/example/my-function" value="https://github.com/example/my-function">
+                                <small class="helper-text">Git repository containing your function source code</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="s2iGitRevision">Git Revision</label>
+                                <input type="text" id="s2iGitRevision" name="s2iGitRevision"
+                                       placeholder="main" value="main">
+                                <small class="helper-text">Branch, tag, or commit SHA to build from</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="s2iBuilderImage">Builder Image</label>
+                                <select id="s2iBuilderImage" name="s2iBuilderImage">
+                                    <option value="nodejs:16-ubi8">Node.js 16</option>
+                                    <option value="nodejs:18-ubi8">Node.js 18</option>
+                                    <option value="python:3.9-ubi8">Python 3.9</option>
+                                    <option value="python:3.11-ubi8">Python 3.11</option>
+                                    <option value="golang:1.20-ubi8">Go 1.20</option>
+                                    <option value="java:11">Java 11</option>
+                                    <option value="java:17">Java 17</option>
+                                    <option value="ruby:3.0-ubi8">Ruby 3.0</option>
+                                </select>
+                                <small class="helper-text">S2I builder image for your runtime</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="s2iOutputImageStream">Output ImageStream Tag</label>
+                                <input type="text" id="s2iOutputImageStream" name="s2iOutputImageStream"
+                                       placeholder="my-function:latest" value="">
+                                <small class="helper-text">ImageStreamTag where the built image will be pushed (defaults to function-name:latest)</small>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Scaling Configuration</legend>
+
+                    <!-- Shared replica settings -->
+                    <div class="shared-settings">
+                        <div class="form-group">
+                            <label for="minReplicaCount">Min Replica Count</label>
+                            <input type="number" id="minReplicaCount" name="minReplicaCount"
+                                   placeholder="0" value="0" min="0">
+                            <small class="helper-text">Minimum number of replicas (0 = scale to zero)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxReplicaCount">Max Replica Count</label>
+                            <input type="number" id="maxReplicaCount" name="maxReplicaCount"
+                                   placeholder="10" value="10" min="1">
+                            <small class="helper-text">Maximum number of replicas</small>
+                        </div>
+                    </div>
+
+                    <div class="scaling-method-label">
+                        <label>Scaling Method</label>
+                        <small class="helper-text">Choose how to trigger scaling decisions</small>
+                    </div>
+
+                    <!-- Concurrency panel -->
+                    <div id="concurrencyPanel" class="metric-panel active">
+                        <label class="panel-header">
+                            <input type="radio" name="scalingMetric" value="concurrency" checked>
+                            <span class="panel-icon">▼</span>
+                            <span class="panel-title">HTTP Concurrency</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="concurrencyTargetValue">Target Concurrent Requests</label>
+                                <input type="number" id="concurrencyTargetValue" name="concurrencyTargetValue"
+                                       placeholder="100" value="100" min="1">
+                                <small class="helper-text">Target number of concurrent requests per instance</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Request Rate panel -->
+                    <div id="requestRatePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="scalingMetric" value="requestRate">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">HTTP Request Rate</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="requestRateTargetValue">Target Request Rate</label>
+                                <input type="number" id="requestRateTargetValue" name="requestRateTargetValue"
+                                       placeholder="100" value="100" min="1">
+                                <small class="helper-text">Target requests per second</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="requestRateWindow">Aggregation Window</label>
+                                <input type="text" id="requestRateWindow" name="requestRateWindow"
+                                       placeholder="1m" value="1m">
+                                <small class="helper-text">Time window for aggregating metrics (e.g., "1m", "30s")</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="requestRateGranularity">Metric Granularity</label>
+                                <input type="text" id="requestRateGranularity" name="requestRateGranularity"
+                                       placeholder="1s" value="1s">
+                                <small class="helper-text">Granularity for metric calculation (e.g., "1s", "500ms")</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ScaledObject panel -->
+                    <div id="scaledObjectPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="scalingMetric" value="scaledObject">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">KEDA Triggers</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="triggerType">Trigger Type</label>
+                                <select id="triggerType" name="triggerType">
+                                    <option value="cpu">CPU</option>
+                                    <option value="memory">Memory</option>
+                                    <option value="prometheus">Prometheus</option>
+                                    <option value="kafka">Kafka</option>
+                                    <option value="rabbitmq">RabbitMQ</option>
+                                    <option value="redis">Redis</option>
+                                    <option value="cron">Cron</option>
+                                    <option value="custom">Custom (define your own)</option>
+                                </select>
+                                <small class="helper-text">Choose a template or define a custom trigger</small>
+                            </div>
+
+                            <!-- CPU trigger fields -->
+                            <div id="cpuTriggerFields" class="trigger-fields">
+                                <div class="form-group">
+                                    <label for="cpuUtilization">CPU Utilization (%)</label>
+                                    <input type="number" id="cpuUtilization" name="cpuUtilization"
+                                           placeholder="80" value="80" min="1" max="100">
+                                    <small class="helper-text">Target CPU utilization percentage</small>
+                                </div>
+                            </div>
+
+                            <!-- Memory trigger fields -->
+                            <div id="memoryTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="memoryUtilization">Memory Utilization (%)</label>
+                                    <input type="number" id="memoryUtilization" name="memoryUtilization"
+                                           placeholder="80" value="80" min="1" max="100">
+                                    <small class="helper-text">Target memory utilization percentage</small>
+                                </div>
+                            </div>
+
+                            <!-- Prometheus trigger fields -->
+                            <div id="prometheusTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="prometheusServerAddress">Prometheus Server Address</label>
+                                    <input type="text" id="prometheusServerAddress" name="prometheusServerAddress"
+                                           placeholder="http://prometheus:9090" value="http://prometheus:9090">
+                                    <small class="helper-text">Prometheus server URL</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="prometheusQuery">Prometheus Query</label>
+                                    <input type="text" id="prometheusQuery" name="prometheusQuery"
+                                           placeholder="http_requests_total" value="http_requests_total">
+                                    <small class="helper-text">PromQL query for the metric</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="prometheusThreshold">Threshold</label>
+                                    <input type="number" id="prometheusThreshold" name="prometheusThreshold"
+                                           placeholder="100" value="100" min="1">
+                                    <small class="helper-text">Scale when metric exceeds this value</small>
+                                </div>
+                            </div>
+
+                            <!-- Cron trigger fields -->
+                            <div id="cronTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="cronTimezone">Timezone</label>
+                                    <input type="text" id="cronTimezone" name="cronTimezone"
+                                           placeholder="UTC" value="UTC">
+                                    <small class="helper-text">Timezone for cron schedule (e.g., "UTC", "America/New_York")</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cronStart">Start Schedule</label>
+                                    <input type="text" id="cronStart" name="cronStart"
+                                           placeholder="0 8 * * *" value="0 8 * * *">
+                                    <small class="helper-text">Cron expression for scaling up (e.g., "0 8 * * *" = 8 AM daily)</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cronEnd">End Schedule</label>
+                                    <input type="text" id="cronEnd" name="cronEnd"
+                                           placeholder="0 18 * * *" value="0 18 * * *">
+                                    <small class="helper-text">Cron expression for scaling down (e.g., "0 18 * * *" = 6 PM daily)</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="cronDesiredReplicas">Desired Replicas (during active period)</label>
+                                    <input type="number" id="cronDesiredReplicas" name="cronDesiredReplicas"
+                                           placeholder="5" value="5" min="1">
+                                    <small class="helper-text">Number of replicas during active period</small>
+                                </div>
+                            </div>
+
+                            <!-- Kafka trigger fields -->
+                            <div id="kafkaTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="kafkaBootstrapServers">Bootstrap Servers</label>
+                                    <input type="text" id="kafkaBootstrapServers" name="kafkaBootstrapServers"
+                                           placeholder="kafka:9092" value="kafka:9092">
+                                    <small class="helper-text">Kafka bootstrap servers (comma-separated)</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="kafkaTopic">Topic</label>
+                                    <input type="text" id="kafkaTopic" name="kafkaTopic"
+                                           placeholder="my-topic" value="my-topic">
+                                    <small class="helper-text">Kafka topic name</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="kafkaConsumerGroup">Consumer Group</label>
+                                    <input type="text" id="kafkaConsumerGroup" name="kafkaConsumerGroup"
+                                           placeholder="my-consumer-group" value="my-consumer-group">
+                                    <small class="helper-text">Kafka consumer group ID</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="kafkaLagThreshold">Lag Threshold</label>
+                                    <input type="number" id="kafkaLagThreshold" name="kafkaLagThreshold"
+                                           placeholder="10" value="10" min="1">
+                                    <small class="helper-text">Scale when consumer lag exceeds this value</small>
+                                </div>
+                            </div>
+
+                            <!-- RabbitMQ trigger fields -->
+                            <div id="rabbitmqTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="rabbitmqHost">Host URI</label>
+                                    <input type="text" id="rabbitmqHost" name="rabbitmqHost"
+                                           placeholder="amqp://guest:guest@rabbitmq:5672/" value="amqp://guest:guest@rabbitmq:5672/">
+                                    <small class="helper-text">RabbitMQ connection URI</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="rabbitmqQueueName">Queue Name</label>
+                                    <input type="text" id="rabbitmqQueueName" name="rabbitmqQueueName"
+                                           placeholder="my-queue" value="my-queue">
+                                    <small class="helper-text">RabbitMQ queue name</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="rabbitmqQueueLength">Queue Length Threshold</label>
+                                    <input type="number" id="rabbitmqQueueLength" name="rabbitmqQueueLength"
+                                           placeholder="20" value="20" min="1">
+                                    <small class="helper-text">Scale when queue length exceeds this value</small>
+                                </div>
+                            </div>
+
+                            <!-- Redis trigger fields -->
+                            <div id="redisTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="redisAddress">Redis Address</label>
+                                    <input type="text" id="redisAddress" name="redisAddress"
+                                           placeholder="redis:6379" value="redis:6379">
+                                    <small class="helper-text">Redis server address</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="redisListName">List Name</label>
+                                    <input type="text" id="redisListName" name="redisListName"
+                                           placeholder="my-list" value="my-list">
+                                    <small class="helper-text">Redis list name</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="redisListLength">List Length Threshold</label>
+                                    <input type="number" id="redisListLength" name="redisListLength"
+                                           placeholder="5" value="5" min="1">
+                                    <small class="helper-text">Scale when list length exceeds this value</small>
+                                </div>
+                            </div>
+
+                            <!-- Custom trigger fields -->
+                            <div id="customTriggerFields" class="trigger-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="customTriggerType">Custom Trigger Type</label>
+                                    <input type="text" id="customTriggerType" name="customTriggerType"
+                                           placeholder="aws-sqs-queue" value="">
+                                    <small class="helper-text">KEDA scaler type (e.g., "aws-sqs-queue", "azure-queue", "gcp-pubsub")</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customTriggerMetadata">Trigger Metadata (YAML)</label>
+                                    <textarea id="customTriggerMetadata" name="customTriggerMetadata" rows="8" placeholder="queueURL: https://sqs.us-east-1.amazonaws.com/123456/my-queue
+queueLength: &quot;10&quot;
+awsRegion: us-east-1"></textarea>
+                                    <small class="helper-text">
+                                        Write the metadata fields in YAML format (key: value pairs).
+                                        All values are strings. See <a href="https://keda.sh/docs/2.18/scalers/" target="_blank">KEDA scalers</a> for required fields.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Networking Configuration</legend>
+
+                    <div class="scaling-method-label">
+                        <label>Networking Method</label>
+                        <small class="helper-text">Choose how to expose your function externally</small>
+                    </div>
+
+                    <!-- No External Access panel -->
+                    <div id="noAccessPanel" class="metric-panel active">
+                        <label class="panel-header">
+                            <input type="radio" name="networkingMethod" value="none" checked>
+                            <span class="panel-icon">▼</span>
+                            <span class="panel-title">No External Access</span>
+                        </label>
+                        <div class="panel-body">
+                            <p class="helper-text">Function is only accessible within the cluster via the Service.</p>
+                        </div>
+                    </div>
+
+                    <!-- Gateway API panel -->
+                    <div id="gatewayAPIPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="networkingMethod" value="gateway">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Gateway API (HTTPRoute)</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="gatewayName">Gateway Name</label>
+                                <input type="text" id="gatewayName" name="gatewayName"
+                                       placeholder="default-gateway" value="default-gateway">
+                                <small class="helper-text">Name of the Gateway to attach to</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="gatewayHostname">Hostname (optional)</label>
+                                <input type="text" id="gatewayHostname" name="gatewayHostname"
+                                       placeholder="my-function.example.com" value="">
+                                <small class="helper-text">Optional: custom hostname for the route (leave empty for wildcard)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="gatewayPath">Path</label>
+                                <input type="text" id="gatewayPath" name="gatewayPath"
+                                       placeholder="/" value="/">
+                                <small class="helper-text">URL path prefix (e.g., '/', '/api/v1')</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ingress panel -->
+                    <div id="ingressPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="networkingMethod" value="ingress">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Ingress</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="ingressClass">Ingress Class (optional)</label>
+                                <input type="text" id="ingressClass" name="ingressClass"
+                                       placeholder="nginx" value="">
+                                <small class="helper-text">Optional: specify ingress controller class</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ingressHostname">Hostname</label>
+                                <input type="text" id="ingressHostname" name="ingressHostname"
+                                       placeholder="my-function.example.com" value="my-function.example.com">
+                                <small class="helper-text">Hostname for the ingress rule</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ingressPath">Path</label>
+                                <input type="text" id="ingressPath" name="ingressPath"
+                                       placeholder="/" value="/">
+                                <small class="helper-text">URL path (e.g., '/', '/api')</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="ingressTLSEnabled" name="ingressTLSEnabled">
+                                    Enable TLS
+                                </label>
+                            </div>
+
+                            <div id="ingressTLSFields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="ingressTLSSecretName">TLS Secret Name</label>
+                                    <input type="text" id="ingressTLSSecretName" name="ingressTLSSecretName"
+                                           placeholder="my-function-tls" value="my-function-tls">
+                                    <small class="helper-text">Name of the TLS secret containing cert and key</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OpenShift Route panel -->
+                    <div id="routePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="networkingMethod" value="route">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">OpenShift Route</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="routeHostname">Hostname (optional)</label>
+                                <input type="text" id="routeHostname" name="routeHostname"
+                                       placeholder="" value="">
+                                <small class="helper-text">Optional: custom hostname (leave empty for auto-generated)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="routePath">Path</label>
+                                <input type="text" id="routePath" name="routePath"
+                                       placeholder="/" value="/">
+                                <small class="helper-text">URL path prefix</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="routeTLSTermination">TLS Termination</label>
+                                <select id="routeTLSTermination" name="routeTLSTermination">
+                                    <option value="none">None</option>
+                                    <option value="edge" selected>Edge</option>
+                                    <option value="passthrough">Passthrough</option>
+                                    <option value="reencrypt">Re-encrypt</option>
+                                </select>
+                                <small class="helper-text">TLS termination type</small>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="form-actions">
+                    <button type="button" id="createFunctionDirectBtn" class="btn-primary">Create Function</button>
+                </div>
+            </form>
+
+            <!-- Resources Preview -->
+            <div class="resources-preview" style="margin-top: 2rem;">
+                <h2>Composed Resources</h2>
+                <p class="panel-description">Live preview of Kubernetes resources that will be created</p>
+
+                <!-- User View Section -->
+                <div id="userView" class="user-view" style="display: none;">
+                    <h3>What User Thinks</h3>
+                    <div class="user-message">
+                        <p id="userMessage"></p>
+                    </div>
+                </div>
+
+                <!-- Platform View Section -->
+                <div id="platformView" class="platform-view" style="display: none;">
+                    <h3>What UI Creates</h3>
+                    <p id="platformDescription" class="platform-description">
+                        The UI composed <strong id="resourceCount">3</strong> Kubernetes resources from your simple form input.
+                        You never had to understand Deployment, Service, or KEDA scaling APIs.
+                    </p>
+
+                    <div id="resourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Function Detail View (Read-Only) -->
+    <div id="detailView" class="container" style="display: none;">
+        <section class="detail-panel">
+            <div class="detail-header">
+                <div>
+                    <button type="button" id="backToListFromDetailBtn" class="btn-secondary">← Back to List</button>
+                    <h2 id="detailFunctionName"></h2>
+                </div>
+                <div class="detail-actions">
+                    <button type="button" id="editFunctionBtn" class="btn-secondary">Edit Function</button>
+                    <button type="button" id="manageSubscriptionsBtn" class="btn-primary">Manage Event Subscriptions</button>
+                </div>
+            </div>
+
+            <div id="functionOverview" class="function-overview">
+                <h3>Function Overview</h3>
+
+                <!-- AWS Lambda-style diagram -->
+                <div class="function-diagram">
+                    <!-- Event Sources (Triggers) -->
+                    <div class="diagram-column diagram-sources">
+                        <div id="eventSourcesList" class="source-items">
+                            <!-- Event source boxes will be inserted here -->
+                        </div>
+                        <button type="button" id="addTriggerBtn" class="diagram-add-btn">+ Add trigger</button>
+                    </div>
+
+                    <!-- Arrow: Sources → Function -->
+                    <div class="diagram-arrow">
+                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 5 20 L 45 20" />
+                            <polygon points="45,15 55,20 45,25" />
+                        </svg>
+                    </div>
+
+                    <!-- Function (Center) -->
+                    <div class="diagram-column diagram-function">
+                        <div class="function-box">
+                            <div class="function-icon">λ</div>
+                            <div class="function-name" id="diagramFunctionName"></div>
+                            <div class="function-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">Namespace:</span>
+                                    <span id="detailNamespace"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Image:</span>
+                                    <code id="detailImage"></code>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Scaling:</span>
+                                    <span id="detailScaling"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Networking:</span>
+                                    <span id="detailNetworking"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Arrow: Function → Destinations -->
+                    <div class="diagram-arrow">
+                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 5 20 L 45 20" />
+                            <polygon points="45,15 55,20 45,25" />
+                        </svg>
+                    </div>
+
+                    <!-- Event Sinks (Right) -->
+                    <div class="diagram-column diagram-destinations">
+                        <div id="destinationsList" class="destination-items">
+                            <!-- Event sink boxes will be inserted here -->
+                        </div>
+                        <button type="button" id="addDestinationBtn" class="diagram-add-btn">+ Configure sink</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Subscriptions Summary -->
+            <div class="event-subscriptions-summary">
+                <h3>Event Subscriptions</h3>
+                <div class="subscriptions-summary">
+                    <p id="subscriptionsSummaryText"></p>
+                </div>
+            </div>
+
+            <div class="detail-resources-section">
+                <h3>Composed Resources</h3>
+
+                <!-- Platform View Section -->
+                <div id="detailPlatformView" class="platform-view">
+                    <p id="detailPlatformDescription" class="platform-description">
+                        The UI composed <strong id="detailResourceCount">0</strong> Kubernetes resources from your function configuration.
+                    </p>
+
+                    <div id="detailResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Subscriptions Management View -->
+    <div id="subscriptionsView" class="container" style="display: none;">
+        <section class="detail-panel">
+            <div class="detail-header">
+                <div>
+                    <button type="button" id="backToDetailFromSubscriptionsBtn" class="btn-secondary">← Back to Function</button>
+                    <h2>Manage Event Subscriptions</h2>
+                    <p class="subtitle" id="subscriptionsViewFunctionName"></p>
+                </div>
+            </div>
+
+            <div id="eventSubscriptionsSection" class="event-subscriptions-section">
+                <h3>Current Subscriptions</h3>
+
+                <div id="subscriptionsList" class="subscriptions-list">
+                    <div id="emptySubscriptions" class="empty-subscriptions">
+                        <p>No event subscriptions configured. Add one below.</p>
+                    </div>
+                </div>
+
+                <div class="add-subscription-section">
+                    <h3>Add Event Subscription</h3>
+                    <form id="subscriptionForm" class="subscription-form-inline">
+                        <div class="form-group">
+                            <label for="subscriptionBroker">Broker Name</label>
+                            <select id="subscriptionBroker" name="subscriptionBroker" required>
+                                <option value="">Select a broker...</option>
+                                <!-- Will be populated dynamically from brokers list -->
+                            </select>
+                            <small class="helper-text">Knative Broker to subscribe to</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="subscriptionEventType">Event Type</label>
+                            <select id="subscriptionEventType" name="subscriptionEventType" required disabled>
+                                <option value="">Select a broker first...</option>
+                            </select>
+                            <small class="helper-text">CloudEvent types available from the selected broker's event sources</small>
+                        </div>
+
+                        <div id="customEventTypeField" class="form-group" style="display: none;">
+                            <label for="customEventType">Custom Event Type</label>
+                            <input type="text" id="customEventType" name="customEventType"
+                                   placeholder="com.myapp.myevent">
+                            <small class="helper-text">Enter your custom CloudEvent type</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" id="saveSubscriptionBtn" class="btn-primary">Add Subscription</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Sink Management View -->
+    <div id="destinationsView" class="container" style="display: none;">
+        <section class="detail-panel">
+            <div class="detail-header">
+                <div>
+                    <button type="button" id="backToDetailFromDestinationsBtn" class="btn-secondary">← Back to Function</button>
+                    <h2>Manage Event Sink</h2>
+                    <p class="subtitle" id="destinationsViewFunctionName"></p>
+                </div>
+            </div>
+
+            <div id="destinationSection" class="event-subscriptions-section">
+                <h3>Current Event Sink Configuration</h3>
+                <p class="helper-text">The Function controller creates a SinkBinding to inject K_SINK into your function's environment. Your function can actively send CloudEvents to K_SINK (not a reply - direct sending).</p>
+
+                <div id="destinationDisplay" class="subscriptions-list">
+                    <div id="emptyDestination" class="empty-subscriptions">
+                        <p>No destination configured. Add one below.</p>
+                    </div>
+                </div>
+
+                <div class="add-subscription-section">
+                    <h3>Configure Event Sink</h3>
+                    <form id="destinationForm" class="subscription-form-inline">
+                        <div class="form-group">
+                            <label for="destinationMethod">Sink Type</label>
+                            <select id="destinationMethod" name="destinationMethod" required>
+                                <option value="broker">Broker</option>
+                                <option value="sink">Event Sink (HTTP/Kafka/etc.)</option>
+                                <option value="function">Function (chaining)</option>
+                            </select>
+                            <small class="helper-text">SinkBinding injects K_SINK into function - function actively sends events (not replies)</small>
+                        </div>
+
+                        <!-- Broker Destination Fields -->
+                        <div id="brokerDestinationFields">
+                            <div class="form-group">
+                                <label for="destinationBroker">Broker Name</label>
+                                <select id="destinationBroker" name="destinationBroker">
+                                    <option value="">Select a broker...</option>
+                                    <!-- Will be populated dynamically from brokers list -->
+                                </select>
+                                <small class="helper-text">Knative Broker where output CloudEvents will be sent</small>
+                            </div>
+                        </div>
+
+                        <!-- Sink Destination Fields -->
+                        <div id="sinkDestinationFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="destinationSink">Event Sink Name</label>
+                                <select id="destinationSink" name="destinationSink">
+                                    <option value="">Select a sink...</option>
+                                    <!-- Will be populated dynamically with referenced sinks -->
+                                </select>
+                                <small class="helper-text">Event Sink where output CloudEvents will be sent</small>
+                            </div>
+                        </div>
+
+                        <!-- Function Destination Fields -->
+                        <div id="functionDestinationFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="destinationFunction">Function Name</label>
+                                <select id="destinationFunction" name="destinationFunction">
+                                    <option value="">Select a function...</option>
+                                    <!-- Will be populated dynamically with other functions -->
+                                </select>
+                                <small class="helper-text">Function where output CloudEvents will be sent</small>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" id="saveDestinationBtn" class="btn-primary">Configure Sink</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Broker Detail View -->
+    <div id="brokerDetailView" class="container" style="display: none;">
+        <section class="detail-panel">
+            <div class="detail-header">
+                <div>
+                    <button type="button" id="backToBrokersListFromDetailBtn" class="btn-secondary">← Back to List</button>
+                    <h2 id="detailBrokerName"></h2>
+                </div>
+                <div class="detail-actions">
+                    <button type="button" id="editBrokerFromDetailBtn" class="btn-secondary">Edit Broker</button>
+                </div>
+            </div>
+
+            <div class="function-overview">
+                <h3>Broker Overview</h3>
+
+                <div class="function-diagram">
+                    <!-- Event Sources (Left) -->
+                    <div class="diagram-column diagram-sources">
+                        <h4>Event Sources</h4>
+                        <div id="brokerEventSourcesList" class="source-items">
+                            <!-- Event source boxes will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Arrow: Event Sources → Broker -->
+                    <div class="diagram-arrow">
+                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 5 20 L 45 20" />
+                            <polygon points="45,15 55,20 45,25" />
+                        </svg>
+                    </div>
+
+                    <!-- Broker (Center) -->
+                    <div class="diagram-column diagram-function">
+                        <div class="function-box">
+                            <div class="function-icon">📨</div>
+                            <div class="function-name" id="diagramBrokerName"></div>
+                            <div class="function-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">Namespace:</span>
+                                    <span id="detailBrokerNamespace"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Retry:</span>
+                                    <span id="detailBrokerRetry"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Backoff Policy:</span>
+                                    <span id="detailBrokerBackoffPolicy"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Event Types:</span>
+                                    <span id="detailBrokerEventTypes"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Arrow: Broker → Functions -->
+                    <div class="diagram-arrow">
+                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 5 20 L 45 20" />
+                            <polygon points="45,15 55,20 45,25" />
+                        </svg>
+                    </div>
+
+                    <!-- Subscribers (Right) -->
+                    <div class="diagram-column diagram-destinations">
+                        <h4>Subscribers</h4>
+                        <div id="brokerFunctionsList" class="destination-items">
+                            <!-- Subscriber boxes will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-resources-section">
+                <h3>Composed Resources</h3>
+
+                <div id="brokerDetailPlatformView" class="platform-view">
+                    <p id="brokerDetailPlatformDescription" class="platform-description">
+                        The UI composed <strong id="brokerDetailResourceCount">1</strong> Kubernetes resource from your broker configuration.
+                    </p>
+
+                    <div id="brokerDetailResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Source Detail View -->
+    <div id="eventSourceDetailView" class="container" style="display: none;">
+        <section class="detail-panel">
+            <div class="detail-header">
+                <div>
+                    <button type="button" id="backToEventSourcesListFromDetailBtn" class="btn-secondary">← Back to List</button>
+                    <h2 id="detailEventSourceName"></h2>
+                </div>
+                <div class="detail-actions">
+                    <button type="button" id="editEventSourceFromDetailBtn" class="btn-secondary">Edit Event Source</button>
+                </div>
+            </div>
+
+            <div class="function-overview">
+                <h3>Event Source Overview</h3>
+
+                <div class="function-diagram">
+                    <!-- Source (Left) -->
+                    <div class="diagram-column diagram-sources">
+                        <h4>External Source</h4>
+                        <div id="eventSourceExternalSource" class="source-items">
+                            <!-- External source box will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Arrow: External Source → Event Source -->
+                    <div class="diagram-arrow">
+                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 5 20 L 45 20" />
+                            <polygon points="45,15 55,20 45,25" />
+                        </svg>
+                    </div>
+
+                    <!-- Event Source (Center) -->
+                    <div class="diagram-column diagram-function">
+                        <div class="function-box">
+                            <div class="function-icon">⚡</div>
+                            <div class="function-name" id="diagramEventSourceName"></div>
+                            <div class="function-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">Type:</span>
+                                    <span id="detailEventSourceType"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Namespace:</span>
+                                    <span id="detailEventSourceNamespace"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Target Broker:</span>
+                                    <span id="detailEventSourceBroker"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Event Types:</span>
+                                    <code id="detailEventSourceEventTypes"></code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Arrow: Event Source → Broker -->
+                    <div class="diagram-arrow">
+                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 5 20 L 45 20" />
+                            <polygon points="45,15 55,20 45,25" />
+                        </svg>
+                    </div>
+
+                    <!-- Broker (Right) -->
+                    <div class="diagram-column diagram-destinations">
+                        <h4>Target Broker</h4>
+                        <div id="eventSourceTargetBroker" class="destination-items">
+                            <!-- Target broker box will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-resources-section">
+                <h3>Composed Resources</h3>
+
+                <div id="eventSourceDetailPlatformView" class="platform-view">
+                    <p id="eventSourceDetailPlatformDescription" class="platform-description">
+                        The UI composed <strong id="eventSourceDetailResourceCount">1</strong> Kubernetes resource from your event source configuration.
+                    </p>
+
+                    <div id="eventSourceDetailResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Brokers List View -->
+    <div id="brokersListView" class="container" style="display: none;">
+        <section class="list-panel">
+            <div class="list-header">
+                <h2 id="brokersTitle">Brokers (<span id="brokerCount">0</span>)</h2>
+                <div class="list-header-actions">
+                    <button id="createNewBrokerBtn" class="btn-primary">Create broker</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="functions-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="name">
+                                Broker name
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="namespace">
+                                Namespace
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th>Event Sources</th>
+                            <th>Functions</th>
+                            <th class="actions-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="brokersTableBody">
+                        <!-- Broker rows will be inserted here -->
+                    </tbody>
+                </table>
+                <div id="emptyBrokersState" class="empty-table-state" style="display: none;">
+                    <p>No brokers found. Click "Create broker" to get started.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Sources List View -->
+    <div id="eventSourcesListView" class="container" style="display: none;">
+        <section class="list-panel">
+            <div class="list-header">
+                <h2 id="eventSourcesTitle">Event Sources (<span id="eventSourceCount">0</span>)</h2>
+                <div class="list-header-actions">
+                    <button id="createNewEventSourceBtn" class="btn-primary">Create event source</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="functions-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="name">
+                                Event source name
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="type">
+                                Type
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="broker">
+                                Broker
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th>Event Types</th>
+                            <th class="actions-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventSourcesTableBody">
+                        <!-- Event source rows will be inserted here -->
+                    </tbody>
+                </table>
+                <div id="emptyEventSourcesState" class="empty-table-state" style="display: none;">
+                    <p>No event sources found. Click "Create event source" to get started.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Broker Form View -->
+    <div id="brokerFormView" class="container" style="display: none;">
+        <section class="form-panel">
+            <div class="form-header">
+                <h2 id="brokerFormTitle">Create Broker</h2>
+                <button type="button" id="backToBrokersListBtn" class="btn-secondary">← Back to List</button>
+            </div>
+            <p class="panel-description">Configure a Knative Eventing Broker for routing CloudEvents</p>
+
+            <form id="brokerForm">
+                <fieldset>
+                    <legend>Broker Details</legend>
+
+                    <div class="form-group">
+                        <label for="brokerName">Broker Name</label>
+                        <input type="text" id="brokerName" name="brokerName"
+                               placeholder="default" value="default" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="brokerNamespace">Namespace</label>
+                        <input type="text" id="brokerNamespace" name="brokerNamespace"
+                               placeholder="default" value="default" required>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Delivery Configuration</legend>
+
+                    <div class="form-group">
+                        <label for="brokerRetry">Retry Attempts</label>
+                        <input type="number" id="brokerRetry" name="brokerRetry"
+                               placeholder="3" value="3" min="0" max="10">
+                        <small class="helper-text">Number of times to retry failed deliveries</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="brokerBackoffPolicy">Backoff Policy</label>
+                        <select id="brokerBackoffPolicy" name="brokerBackoffPolicy">
+                            <option value="exponential">Exponential</option>
+                            <option value="linear">Linear</option>
+                        </select>
+                        <small class="helper-text">Strategy for increasing delay between retries</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="brokerBackoffDelay">Backoff Delay</label>
+                        <input type="text" id="brokerBackoffDelay" name="brokerBackoffDelay"
+                               placeholder="1s" value="1s">
+                        <small class="helper-text">Initial delay between retries (e.g., "1s", "500ms")</small>
+                    </div>
+                </fieldset>
+
+                <div class="form-actions">
+                    <button type="button" id="saveBrokerBtn" class="btn-primary">Create Broker</button>
+                </div>
+            </form>
+
+            <!-- Resources Preview -->
+            <div class="resources-preview" style="margin-top: 2rem;">
+                <h2>Composed Resources</h2>
+                <p class="panel-description">Live preview of Kubernetes resources that will be created</p>
+
+                <!-- Platform View Section -->
+                <div id="brokerPlatformView" class="platform-view" style="display: none;">
+                    <h3>What UI Creates</h3>
+                    <p id="brokerPlatformDescription" class="platform-description"></p>
+
+                    <div id="brokerResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Source Form View -->
+    <div id="eventSourceFormView" class="container" style="display: none;">
+        <section class="form-panel">
+            <div class="form-header">
+                <h2 id="eventSourceFormTitle">Create Event Source</h2>
+                <button type="button" id="backToEventSourcesListBtn" class="btn-secondary">← Back to List</button>
+            </div>
+            <p class="panel-description">Configure an Event Source to produce CloudEvents to a Broker</p>
+
+            <form id="eventSourceForm">
+                <fieldset>
+                    <legend>Event Source Details</legend>
+
+                    <div class="form-group">
+                        <label for="eventSourceName">Event Source Name</label>
+                        <input type="text" id="eventSourceName" name="eventSourceName"
+                               placeholder="my-event-source" value="my-event-source" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventSourceNamespace">Namespace</label>
+                        <input type="text" id="eventSourceNamespace" name="eventSourceNamespace"
+                               placeholder="default" value="default" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventSourceSinkMethod">Target Type</label>
+                        <select id="eventSourceSinkMethod" name="eventSourceSinkMethod" required>
+                            <option value="broker">Broker</option>
+                            <option value="sink">Event Sink</option>
+                            <option value="function">Function</option>
+                        </select>
+                        <small class="helper-text">Where events from this source will be sent</small>
+                    </div>
+
+                    <!-- Broker Target Fields -->
+                    <div id="eventSourceBrokerFields">
+                        <div class="form-group">
+                            <label for="eventSourceBroker">Broker</label>
+                            <select id="eventSourceBroker" name="eventSourceBroker">
+                                <option value="">Select a broker...</option>
+                                <!-- Will be populated dynamically from brokers list -->
+                            </select>
+                            <small class="helper-text">The Broker where events will be sent</small>
+                        </div>
+                    </div>
+
+                    <!-- Event Sink Target Fields -->
+                    <div id="eventSourceSinkFields" style="display: none;">
+                        <div class="form-group">
+                            <label for="eventSourceSink">Event Sink</label>
+                            <select id="eventSourceSink" name="eventSourceSink">
+                                <option value="">Select a sink...</option>
+                                <!-- Will be populated dynamically with referenced sinks -->
+                            </select>
+                            <small class="helper-text">The Event Sink where events will be sent</small>
+                        </div>
+                    </div>
+
+                    <!-- Function Target Fields -->
+                    <div id="eventSourceFunctionFields" style="display: none;">
+                        <div class="form-group">
+                            <label for="eventSourceFunction">Function</label>
+                            <select id="eventSourceFunction" name="eventSourceFunction">
+                                <option value="">Select a function...</option>
+                                <!-- Will be populated dynamically from functions list -->
+                            </select>
+                            <small class="helper-text">The Function where events will be sent</small>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Event Source Type</legend>
+
+                    <div class="scaling-method-label">
+                        <label>Source Type</label>
+                        <small class="helper-text">Choose the type of event source</small>
+                    </div>
+
+                    <!-- GitHub Source Panel -->
+                    <div id="githubSourcePanel" class="metric-panel active">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSourceType" value="github" checked>
+                            <span class="panel-icon">▼</span>
+                            <span class="panel-title">GitHub Source</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="githubRepository">Repository</label>
+                                <input type="text" id="githubRepository" name="githubRepository"
+                                       placeholder="username/repo" value="username/repo">
+                                <small class="helper-text">GitHub repository (owner/repo)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="githubAccessTokenSecret">Access Token Secret</label>
+                                <input type="text" id="githubAccessTokenSecret" name="githubAccessTokenSecret"
+                                       placeholder="github-secret" value="github-secret">
+                                <small class="helper-text">Kubernetes Secret containing GitHub access token</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>CloudEvent Type</label>
+                                <code class="event-type-display">dev.knative.sources.github.event</code>
+                                <small class="helper-text">This source produces GitHub events as CloudEvents</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kafka Source Panel -->
+                    <div id="kafkaSourcePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSourceType" value="kafka">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Kafka Source</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="kafkaBootstrapServers">Bootstrap Servers</label>
+                                <input type="text" id="kafkaBootstrapServers" name="kafkaBootstrapServers"
+                                       placeholder="kafka:9092" value="kafka:9092">
+                                <small class="helper-text">Kafka bootstrap servers (comma-separated)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kafkaTopics">Topics (comma-separated)</label>
+                                <input type="text" id="kafkaTopics" name="kafkaTopics"
+                                       placeholder="my-topic" value="my-topic">
+                                <small class="helper-text">Kafka topics to consume from</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kafkaConsumerGroup">Consumer Group</label>
+                                <input type="text" id="kafkaConsumerGroup" name="kafkaConsumerGroup"
+                                       placeholder="my-consumer-group" value="my-consumer-group">
+                                <small class="helper-text">Kafka consumer group ID</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>CloudEvent Type</label>
+                                <code class="event-type-display">dev.knative.kafka.event</code>
+                                <small class="helper-text">This source produces Kafka messages as CloudEvents</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slack Source Panel -->
+                    <div id="slackSourcePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSourceType" value="slack">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Slack Source</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="slackWebhookURL">Webhook URL Secret</label>
+                                <input type="text" id="slackWebhookURL" name="slackWebhookURL"
+                                       placeholder="slack-webhook-secret" value="slack-webhook-secret">
+                                <small class="helper-text">Kubernetes Secret containing Slack webhook URL</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>CloudEvent Type</label>
+                                <code class="event-type-display">dev.knative.sources.slack.event</code>
+                                <small class="helper-text">This source produces Slack events as CloudEvents</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cron Source Panel -->
+                    <div id="cronSourcePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSourceType" value="cron">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Cron Source</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="cronSchedule">Schedule</label>
+                                <input type="text" id="cronSchedule" name="cronSchedule"
+                                       placeholder="*/5 * * * *" value="*/5 * * * *">
+                                <small class="helper-text">Cron expression (e.g., "*/5 * * * *" = every 5 minutes)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cronData">Data Payload</label>
+                                <textarea id="cronData" name="cronData" rows="4" placeholder='{"message": "Hello from cron!"}'></textarea>
+                                <small class="helper-text">JSON data to send with each cron event</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>CloudEvent Type</label>
+                                <code class="event-type-display">dev.knative.sources.ping</code>
+                                <small class="helper-text">This source produces periodic ping events as CloudEvents</small>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="form-actions">
+                    <button type="button" id="saveEventSourceBtn" class="btn-primary">Create Event Source</button>
+                </div>
+            </form>
+
+            <!-- Resources Preview -->
+            <div class="resources-preview" style="margin-top: 2rem;">
+                <h2>Composed Resources</h2>
+                <p class="panel-description">Live preview of Kubernetes resources that will be created</p>
+
+                <!-- Platform View Section -->
+                <div id="eventSourcePlatformView" class="platform-view" style="display: none;">
+                    <h3>What UI Creates</h3>
+                    <p id="eventSourcePlatformDescription" class="platform-description"></p>
+
+                    <div id="eventSourceResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Sink Form View -->
+    <div id="eventSinkFormView" class="container" style="display: none;">
+        <section class="form-panel">
+            <div class="form-header">
+                <h2 id="eventSinkFormTitle">Create Event Sink</h2>
+                <button type="button" id="backToEventSinksListBtn" class="btn-secondary">← Back to List</button>
+            </div>
+            <p class="panel-description">Configure an Event Sink to send CloudEvents to external systems</p>
+
+            <form id="eventSinkForm">
+                <fieldset>
+                    <legend>Event Sink Details</legend>
+
+                    <div class="form-group">
+                        <label for="eventSinkName">Event Sink Name</label>
+                        <input type="text" id="eventSinkName" name="eventSinkName"
+                               placeholder="my-event-sink" value="my-event-sink" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventSinkNamespace">Namespace</label>
+                        <input type="text" id="eventSinkNamespace" name="eventSinkNamespace"
+                               placeholder="default" value="default" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventSinkMode">Mode</label>
+                        <select id="eventSinkMode" name="eventSinkMode" required>
+                            <option value="referenced">Referenced (used by Functions)</option>
+                            <option value="standalone">Standalone (subscribes to Broker)</option>
+                        </select>
+                        <small class="helper-text">Referenced mode: sink is used by functions as destination. Standalone mode: sink subscribes directly to a broker.</small>
+                    </div>
+                </fieldset>
+
+                <!-- Standalone Mode Fields -->
+                <fieldset id="standaloneModeFields" style="display: none;">
+                    <legend>Standalone Mode Configuration</legend>
+
+                    <div class="form-group">
+                        <label for="eventSinkBroker">Source Broker</label>
+                        <select id="eventSinkBroker" name="eventSinkBroker">
+                            <option value="">Select a broker...</option>
+                            <!-- Will be populated dynamically from brokers list -->
+                        </select>
+                        <small class="helper-text">The Broker to subscribe to</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventSinkEventTypes">Event Types (comma-separated)</label>
+                        <input type="text" id="eventSinkEventTypes" name="eventSinkEventTypes"
+                               placeholder="com.example.order.created,com.example.order.updated" value="">
+                        <small class="helper-text">Filter events by type (e.g., "com.example.order.created")</small>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Sink Type</legend>
+
+                    <div class="scaling-method-label">
+                        <label>Destination Type</label>
+                        <small class="helper-text">Choose the type of external destination</small>
+                    </div>
+
+                    <!-- HTTP/Webhook Sink Panel -->
+                    <div id="httpSinkPanel" class="metric-panel active">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="http" checked>
+                            <span class="panel-icon">▼</span>
+                            <span class="panel-title">HTTP / Webhook</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="httpSinkURL">URL</label>
+                                <input type="text" id="httpSinkURL" name="httpSinkURL"
+                                       placeholder="https://example.com/webhook" value="https://example.com/webhook">
+                                <small class="helper-text">HTTP endpoint URL to send CloudEvents to</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kafka Sink Panel -->
+                    <div id="kafkaSinkPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="kafka">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Kafka</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="kafkaSinkTopic">Topic</label>
+                                <input type="text" id="kafkaSinkTopic" name="kafkaSinkTopic"
+                                       placeholder="my-topic" value="my-topic">
+                                <small class="helper-text">Kafka topic name</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="kafkaSinkBootstrapServers">Bootstrap Servers</label>
+                                <input type="text" id="kafkaSinkBootstrapServers" name="kafkaSinkBootstrapServers"
+                                       placeholder="kafka:9092" value="kafka:9092">
+                                <small class="helper-text">Kafka bootstrap servers (comma-separated)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AWS SNS Sink Panel -->
+                    <div id="snsSinkPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="sns">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">AWS SNS</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="snsTopicArn">Topic ARN</label>
+                                <input type="text" id="snsTopicArn" name="snsTopicArn"
+                                       placeholder="arn:aws:sns:us-east-1:123456789012:my-topic" value="">
+                                <small class="helper-text">AWS SNS Topic ARN</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="snsCredentialsSecret">Credentials Secret</label>
+                                <input type="text" id="snsCredentialsSecret" name="snsCredentialsSecret"
+                                       placeholder="aws-credentials" value="aws-credentials">
+                                <small class="helper-text">Kubernetes Secret containing AWS credentials</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GCP Pub/Sub Sink Panel -->
+                    <div id="pubsubSinkPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="pubsub">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">GCP Pub/Sub</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="pubsubTopic">Topic</label>
+                                <input type="text" id="pubsubTopic" name="pubsubTopic"
+                                       placeholder="projects/my-project/topics/my-topic" value="">
+                                <small class="helper-text">GCP Pub/Sub Topic path</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="pubsubCredentialsSecret">Credentials Secret</label>
+                                <input type="text" id="pubsubCredentialsSecret" name="pubsubCredentialsSecret"
+                                       placeholder="gcp-credentials" value="gcp-credentials">
+                                <small class="helper-text">Kubernetes Secret containing GCP service account credentials</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Azure Event Grid Sink Panel -->
+                    <div id="eventgridSinkPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="eventgrid">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Azure Event Grid</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="eventgridEndpoint">Endpoint</label>
+                                <input type="text" id="eventgridEndpoint" name="eventgridEndpoint"
+                                       placeholder="https://my-topic.westus2-1.eventgrid.azure.net/api/events" value="">
+                                <small class="helper-text">Azure Event Grid topic endpoint URL</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="eventgridKeySecret">Access Key Secret</label>
+                                <input type="text" id="eventgridKeySecret" name="eventgridKeySecret"
+                                       placeholder="eventgrid-key" value="eventgrid-key">
+                                <small class="helper-text">Kubernetes Secret containing Event Grid access key</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Database Sink Panel -->
+                    <div id="databaseSinkPanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSinkType" value="database">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">Database</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="databaseType">Database Type</label>
+                                <select id="databaseType" name="databaseType">
+                                    <option value="postgresql">PostgreSQL</option>
+                                    <option value="mongodb">MongoDB</option>
+                                </select>
+                                <small class="helper-text">Type of database</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="databaseConnectionSecret">Connection Secret</label>
+                                <input type="text" id="databaseConnectionSecret" name="databaseConnectionSecret"
+                                       placeholder="db-connection" value="db-connection">
+                                <small class="helper-text">Kubernetes Secret containing database connection string</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="databaseTable">Table/Collection</label>
+                                <input type="text" id="databaseTable" name="databaseTable"
+                                       placeholder="events" value="events">
+                                <small class="helper-text">Database table or collection name for storing events</small>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="form-actions">
+                    <button type="button" id="saveEventSinkBtn" class="btn-primary">Create Event Sink</button>
+                </div>
+            </form>
+
+            <!-- Resources Preview -->
+            <div class="resources-preview" style="margin-top: 2rem;">
+                <h2>Composed Resources</h2>
+                <p class="panel-description">Live preview of Kubernetes resources that will be created</p>
+
+                <!-- Platform View Section -->
+                <div id="eventSinkPlatformView" class="platform-view" style="display: none;">
+                    <h3>What UI Creates</h3>
+                    <p id="eventSinkPlatformDescription" class="platform-description"></p>
+
+                    <div id="eventSinkResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Sinks List View -->
+    <div id="eventSinksListView" class="container" style="display: none;">
+        <section class="list-panel">
+            <div class="list-header">
+                <h2 id="eventSinksTitle">Event Sinks (<span id="eventSinkCount">0</span>)</h2>
+                <div class="list-header-actions">
+                    <button id="createNewEventSinkBtn" class="btn-primary">Create event sink</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="functions-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="name">
+                                Event sink name
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="type">
+                                Type
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th class="sortable" data-sort="mode">
+                                Mode
+                                <span class="sort-icon">▼</span>
+                            </th>
+                            <th>Destination</th>
+                            <th class="actions-column">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventSinksTableBody">
+                        <!-- Event sink rows will be inserted here -->
+                    </tbody>
+                </table>
+                <div id="emptyEventSinksState" class="empty-table-state" style="display: none;">
+                    <p>No event sinks found. Click "Create event sink" to get started.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Event Sink Detail View -->
+    <div id="eventSinkDetailView" class="container" style="display: none;">
+        <section class="detail-panel">
+            <div class="detail-header">
+                <div>
+                    <button type="button" id="backToEventSinksListFromDetailBtn" class="btn-secondary">← Back to List</button>
+                    <h2 id="detailEventSinkName"></h2>
+                </div>
+                <div class="detail-actions">
+                    <button type="button" id="editEventSinkFromDetailBtn" class="btn-secondary">Edit Event Sink</button>
+                </div>
+            </div>
+
+            <div class="function-overview">
+                <h3>Event Sink Overview</h3>
+
+                <div class="function-diagram">
+                    <!-- Event Sources (Left) -->
+                    <div class="diagram-column diagram-sources">
+                        <h4 id="eventSinkSourceTitle">Event Source</h4>
+                        <div id="eventSinkSourcesList" class="source-items">
+                            <!-- Source boxes will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Arrow: Sources → Sink -->
+                    <div class="diagram-arrow">
+                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 5 20 L 45 20" />
+                            <polygon points="45,15 55,20 45,25" />
+                        </svg>
+                    </div>
+
+                    <!-- Event Sink (Center) -->
+                    <div class="diagram-column diagram-function">
+                        <div class="function-box">
+                            <div class="function-icon">📤</div>
+                            <div class="function-name" id="diagramEventSinkName"></div>
+                            <div class="function-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">Type:</span>
+                                    <span id="detailEventSinkType"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Mode:</span>
+                                    <span id="detailEventSinkMode"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Namespace:</span>
+                                    <span id="detailEventSinkNamespace"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Arrow: Sink → External Destination -->
+                    <div class="diagram-arrow">
+                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M 5 20 L 45 20" />
+                            <polygon points="45,15 55,20 45,25" />
+                        </svg>
+                    </div>
+
+                    <!-- External Destination (Right) -->
+                    <div class="diagram-column diagram-destinations">
+                        <h4>External Destination</h4>
+                        <div id="eventSinkExternalDestination" class="destination-items">
+                            <!-- Destination box will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-resources-section">
+                <h3>Composed Resources</h3>
+
+                <div id="eventSinkDetailPlatformView" class="platform-view">
+                    <p id="eventSinkDetailPlatformDescription" class="platform-description">
+                        The UI composed <strong id="eventSinkDetailResourceCount">1</strong> Kubernetes resource from your event sink configuration.
+                    </p>
+
+                    <div id="eventSinkDetailResourceCards" class="resource-cards">
+                        <!-- Resource cards will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>
+            This prototype demonstrates the concept from
+            <a href="../spec/README.md" target="_blank">002/spec/README.md</a>
+        </p>
+    </footer>
+
+    <script src="templates.js"></script>
+    <script src="state.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
