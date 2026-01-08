@@ -27,18 +27,12 @@ let functions = [
             hostname: 'example-function.example.com',
             path: '/'
         },
-        sinkMethod: 'broker',
-        sinkConfig: {
-            method: 'broker',
-            broker: 'default'
-        },
         eventSubscriptions: [
             {
                 broker: 'default',
                 eventType: 'dev.knative.sources.github.event'
             }
         ],
-        replyEventTypes: ['com.example.function.processed', 'com.example.function.validation.failed'],
         createdAt: new Date().toISOString()
     },
     {
@@ -61,19 +55,12 @@ let functions = [
         networkingConfig: {
             method: 'none'
         },
-        sinkMethod: 'sink',
-        sinkConfig: {
-            method: 'sink',
-            sinkName: 'http-webhook',
-            sinkType: 'http'
-        },
         eventSubscriptions: [
             {
                 broker: 'default',
                 eventType: 'dev.knative.sources.github.event'
             }
         ],
-        replyEventTypes: ['com.processor.data.transformed'],
         createdAt: new Date().toISOString()
     }
 ];

@@ -124,14 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const customEventTypeField = document.getElementById('customEventTypeField');
     const saveSubscriptionBtn = document.getElementById('saveSubscriptionBtn');
 
-    // Destinations view elements
-    const backToDetailFromDestinationsBtn = document.getElementById('backToDetailFromDestinationsBtn');
-    const destinationsViewFunctionName = document.getElementById('destinationsViewFunctionName');
-    const destinationDisplay = document.getElementById('destinationDisplay');
-    const emptyDestination = document.getElementById('emptyDestination');
-    const destinationForm = document.getElementById('destinationForm');
-    const saveDestinationBtn = document.getElementById('saveDestinationBtn');
-    const addDestinationBtn = document.getElementById('addDestinationBtn');
+    // Destinations removed - functions only receive events from brokers
 
     // Broker detail view elements
     const backToBrokersListFromDetailBtn = document.getElementById('backToBrokersListFromDetailBtn');
@@ -280,18 +273,6 @@ document.addEventListener('DOMContentLoaded', function() {
     addTriggerBtn.addEventListener('click', function() {
         if (currentDetailFunction) {
             showSubscriptionsView(currentDetailFunction);
-        }
-    });
-
-    addDestinationBtn.addEventListener('click', function() {
-        if (currentDetailFunction) {
-            showDestinationsView(currentDetailFunction);
-        }
-    });
-
-    backToDetailFromDestinationsBtn.addEventListener('click', function() {
-        if (currentDetailFunction) {
-            showDetailView(currentDetailFunction);
         }
     });
 
@@ -588,129 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
         customEventTypeField.style.display = 'none';
     });
 
-    // Handle destination method change
-    const destinationMethod = document.getElementById('destinationMethod');
-    const brokerDestinationFields = document.getElementById('brokerDestinationFields');
-    const sinkDestinationFields = document.getElementById('sinkDestinationFields');
-
-    if (destinationMethod) {
-        destinationMethod.addEventListener('change', function() {
-            const functionDestinationFields = document.getElementById('functionDestinationFields');
-            if (this.value === 'broker') {
-                brokerDestinationFields.style.display = 'block';
-                sinkDestinationFields.style.display = 'none';
-                functionDestinationFields.style.display = 'none';
-            } else if (this.value === 'sink') {
-                brokerDestinationFields.style.display = 'none';
-                sinkDestinationFields.style.display = 'block';
-                functionDestinationFields.style.display = 'none';
-                populateDestinationSinkDropdown();
-            } else if (this.value === 'function') {
-                brokerDestinationFields.style.display = 'none';
-                sinkDestinationFields.style.display = 'none';
-                functionDestinationFields.style.display = 'block';
-                populateDestinationFunctionDropdown();
-            }
-        });
-    }
-
-    // Handle destination form submission
-    destinationForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const method = destinationMethod ? destinationMethod.value : 'broker';
-
-        if (method === 'broker') {
-            const broker = document.getElementById('destinationBroker').value.trim();
-
-            if (!broker) {
-                alert('Please select a broker');
-                return;
-            }
-
-            // Set broker destination
-            currentDetailFunction.sinkMethod = 'broker';
-            currentDetailFunction.sinkConfig = {
-                method: 'broker',
-                broker: broker
-            };
-        } else if (method === 'sink') {
-            const sinkSelect = document.getElementById('destinationSink');
-            const sinkName = sinkSelect.value.trim();
-
-            if (!sinkName) {
-                alert('Please select an event sink');
-                return;
-            }
-
-            // Get sink type from dropdown option
-            const sinkType = sinkSelect.options[sinkSelect.selectedIndex].dataset.sinkType;
-
-            // Set sink destination
-            currentDetailFunction.sinkMethod = 'sink';
-            currentDetailFunction.sinkConfig = {
-                method: 'sink',
-                sinkName: sinkName,
-                sinkType: sinkType
-            };
-        } else if (method === 'function') {
-            const functionName = document.getElementById('destinationFunction').value.trim();
-
-            if (!functionName) {
-                alert('Please select a function');
-                return;
-            }
-
-            // Set function destination
-            currentDetailFunction.sinkMethod = 'function';
-            currentDetailFunction.sinkConfig = {
-                method: 'function',
-                functionName: functionName
-            };
-        }
-
-        // Save to state
-        saveFunction(currentDetailFunction);
-
-        // Refresh destination view
-        renderDestination(currentDetailFunction);
-
-        // Reset form
-        destinationForm.reset();
-    });
-
-    /**
-     * Populate destination sink dropdown with referenced sinks
-     */
-    function populateDestinationSinkDropdown() {
-        const dropdown = document.getElementById('destinationSink');
-        const sinks = getEventSinks().filter(s => s.mode === 'referenced');
-
-        dropdown.innerHTML = '<option value="">Select a sink...</option>';
-        sinks.forEach(sink => {
-            const option = document.createElement('option');
-            option.value = sink.name;
-            option.dataset.sinkType = sink.type;
-            option.textContent = `${sink.name} (${sink.type})`;
-            dropdown.appendChild(option);
-        });
-    }
-
-    /**
-     * Populate destination function dropdown with other functions
-     */
-    function populateDestinationFunctionDropdown() {
-        const dropdown = document.getElementById('destinationFunction');
-        const functions = getFunctions().filter(f => f.name !== currentDetailFunction.name);
-
-        dropdown.innerHTML = '<option value="">Select a function...</option>';
-        functions.forEach(func => {
-            const option = document.createElement('option');
-            option.value = func.name;
-            option.textContent = `${func.name} (${func.namespace})`;
-            dropdown.appendChild(option);
-        });
-    }
+    // Destination management removed - functions only receive events from brokers
 
     /**
      * Collect form data into an object
@@ -853,15 +712,10 @@ document.addEventListener('DOMContentLoaded', function() {
             networkingConfig: networkingConfig
         };
 
-        // If editing, preserve the ID and sink configuration
+        // If editing, preserve the ID
         const currentEditing = getCurrentEditingFunction();
         if (currentEditing && currentEditing.id) {
             formData.id = currentEditing.id;
-            // Preserve sink configuration if it exists
-            if (currentEditing.sinkMethod) {
-                formData.sinkMethod = currentEditing.sinkMethod;
-                formData.sinkConfig = currentEditing.sinkConfig;
-            }
         }
 
         return formData;
@@ -1437,38 +1291,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    /**
-     * Populate event source sink dropdown with referenced event sinks
-     */
-    function populateEventSourceSinkDropdown() {
-        const dropdown = document.getElementById('eventSourceSink');
-        const sinks = getEventSinks().filter(s => s.mode === 'referenced');
-
-        dropdown.innerHTML = '<option value="">Select a sink...</option>';
-        sinks.forEach(sink => {
-            const option = document.createElement('option');
-            option.value = sink.name;
-            option.dataset.sinkType = sink.type;
-            option.textContent = `${sink.name} (${sink.type})`;
-            dropdown.appendChild(option);
-        });
-    }
-
-    /**
-     * Populate event source function dropdown with existing functions
-     */
-    function populateEventSourceFunctionDropdown() {
-        const dropdown = document.getElementById('eventSourceFunction');
-        const functions = getFunctions();
-
-        dropdown.innerHTML = '<option value="">Select a function...</option>';
-        functions.forEach(func => {
-            const option = document.createElement('option');
-            option.value = func.name;
-            option.textContent = `${func.name} (${func.namespace})`;
-            dropdown.appendChild(option);
-        });
-    }
+    // Event source sink/function dropdowns removed - event sources can only send to brokers
 
     /**
      * Collect event source form data into an object
@@ -1505,19 +1328,13 @@ document.addEventListener('DOMContentLoaded', function() {
             eventTypes = ['dev.knative.sources.ping'];
         }
 
-        // Collect sink configuration
-        const sinkMethod = document.getElementById('eventSourceSinkMethod').value;
-        let sinkConfig = { method: sinkMethod };
-
-        if (sinkMethod === 'broker') {
-            sinkConfig.broker = document.getElementById('eventSourceBroker').value;
-        } else if (sinkMethod === 'sink') {
-            const sinkSelect = document.getElementById('eventSourceSink');
-            sinkConfig.sinkName = sinkSelect.value;
-            sinkConfig.sinkType = sinkSelect.options[sinkSelect.selectedIndex]?.dataset.sinkType || '';
-        } else if (sinkMethod === 'function') {
-            sinkConfig.functionName = document.getElementById('eventSourceFunction').value;
-        }
+        // Event sources can only send to brokers
+        const broker = document.getElementById('eventSourceBroker').value;
+        const sinkMethod = 'broker';
+        const sinkConfig = {
+            method: 'broker',
+            broker: broker
+        };
 
         const formData = {
             name: document.getElementById('eventSourceName').value.trim(),
@@ -1525,6 +1342,7 @@ document.addEventListener('DOMContentLoaded', function() {
             type: eventSourceType,
             sinkMethod: sinkMethod,
             sinkConfig: sinkConfig,
+            broker: broker, // For backward compatibility
             config: config,
             eventTypes: eventTypes
         };
@@ -1545,16 +1363,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('eventSourceName').value = 'my-event-source';
         document.getElementById('eventSourceNamespace').value = 'default';
 
-        // Reset sink method to broker (default)
-        document.getElementById('eventSourceSinkMethod').value = 'broker';
+        // Event sources can only send to brokers
         document.getElementById('eventSourceBroker').value = '';
-        document.getElementById('eventSourceSink').value = '';
-        document.getElementById('eventSourceFunction').value = '';
-
-        // Show broker fields, hide others
-        document.getElementById('eventSourceBrokerFields').style.display = 'block';
-        document.getElementById('eventSourceSinkFields').style.display = 'none';
-        document.getElementById('eventSourceFunctionFields').style.display = 'none';
 
         // Reset to GitHub as default
         const githubRadio = document.querySelector('input[name="eventSourceType"][value="github"]');
@@ -1589,28 +1399,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('eventSourceName').value = eventSourceData.name;
         document.getElementById('eventSourceNamespace').value = eventSourceData.namespace;
 
-        // Load sink configuration
-        const sinkMethod = eventSourceData.sinkMethod || 'broker';
-        document.getElementById('eventSourceSinkMethod').value = sinkMethod;
-
-        if (sinkMethod === 'broker') {
-            document.getElementById('eventSourceBroker').value = eventSourceData.sinkConfig?.broker || eventSourceData.broker || '';
-            document.getElementById('eventSourceBrokerFields').style.display = 'block';
-            document.getElementById('eventSourceSinkFields').style.display = 'none';
-            document.getElementById('eventSourceFunctionFields').style.display = 'none';
-        } else if (sinkMethod === 'sink') {
-            populateEventSourceSinkDropdown();
-            document.getElementById('eventSourceSink').value = eventSourceData.sinkConfig?.sinkName || '';
-            document.getElementById('eventSourceBrokerFields').style.display = 'none';
-            document.getElementById('eventSourceSinkFields').style.display = 'block';
-            document.getElementById('eventSourceFunctionFields').style.display = 'none';
-        } else if (sinkMethod === 'function') {
-            populateEventSourceFunctionDropdown();
-            document.getElementById('eventSourceFunction').value = eventSourceData.sinkConfig?.functionName || '';
-            document.getElementById('eventSourceBrokerFields').style.display = 'none';
-            document.getElementById('eventSourceSinkFields').style.display = 'none';
-            document.getElementById('eventSourceFunctionFields').style.display = 'block';
-        }
+        // Event sources can only send to brokers
+        document.getElementById('eventSourceBroker').value = eventSourceData.sinkConfig?.broker || eventSourceData.broker || '';
 
         // Set type radio
         const typeRadio = document.querySelector(`input[name="eventSourceType"][value="${eventSourceData.type}"]`);
@@ -1642,14 +1432,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = collectEventSourceFormData();
 
         // Basic validation (don't show validation errors during auto-update)
-        let targetValid = false;
-        if (formData.sinkMethod === 'broker' && formData.sinkConfig.broker) {
-            targetValid = true;
-        } else if (formData.sinkMethod === 'sink' && formData.sinkConfig.sinkName) {
-            targetValid = true;
-        } else if (formData.sinkMethod === 'function' && formData.sinkConfig.functionName) {
-            targetValid = true;
-        }
+        // Event sources can only send to brokers
+        const targetValid = formData.sinkConfig.broker;
 
         if (!formData.name || !formData.namespace || !targetValid) {
             eventSourcePlatformView.style.display = 'none';
@@ -1662,15 +1446,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Generate resource (will use type-specific YAML generators)
         const resourceType = `${formData.type}Source`;
 
-        // Determine target description
-        let targetDescription = '';
-        if (formData.sinkMethod === 'broker') {
-            targetDescription = `<strong>${formData.sinkConfig.broker}</strong> Broker`;
-        } else if (formData.sinkMethod === 'sink') {
-            targetDescription = `<strong>${formData.sinkConfig.sinkName}</strong> Event Sink`;
-        } else if (formData.sinkMethod === 'function') {
-            targetDescription = `<strong>${formData.sinkConfig.functionName}</strong> Function`;
-        }
+        // Event sources can only send to brokers
+        const targetDescription = `<strong>${formData.sinkConfig.broker}</strong> Broker`;
 
         const resource = {
             type: resourceType,
@@ -2099,54 +1876,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Function → Sink edges (direct event sending via SinkBinding)
-        columns.functions.nodes.forEach(func => {
-            if (func.sinkMethod === 'broker' && func.sinkConfig) {
-                const targetBroker = columns.brokers.nodes.find(b => b.name === func.sinkConfig.broker);
-                if (targetBroker) {
-                    // Use event types from Function status (discovered by Function controller)
-                    const eventTypesLabel = func.replyEventTypes && func.replyEventTypes.length > 0
-                        ? func.replyEventTypes.join(', ')
-                        : 'events';
-                    edges.push({
-                        from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
-                        to: { x: targetBroker.x + nodeWidth + arrowPadding, y: targetBroker.y + nodeHeight / 2 },
-                        label: eventTypesLabel,
-                        color: '#2196F3',
-                        direction: 'incoming' // right-to-left, back to broker
-                    });
-                }
-            } else if (func.sinkMethod === 'sink' && func.sinkConfig) {
-                const targetSink = columns.sinks.nodes.find(s => s.name === func.sinkConfig.sinkName);
-                if (targetSink) {
-                    const eventTypesLabel = func.replyEventTypes && func.replyEventTypes.length > 0
-                        ? func.replyEventTypes.join(', ')
-                        : 'events';
-                    edges.push({
-                        from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
-                        to: { x: targetSink.x - arrowPadding, y: targetSink.y + nodeHeight / 2 },
-                        label: eventTypesLabel,
-                        color: '#2196F3',
-                        direction: 'outgoing' // left-to-right
-                    });
-                }
-            } else if (func.sinkMethod === 'function' && func.sinkConfig) {
-                const targetFunc = columns.functions.nodes.find(f => f.name === func.sinkConfig.functionName);
-                if (targetFunc) {
-                    const eventTypesLabel = func.replyEventTypes && func.replyEventTypes.length > 0
-                        ? func.replyEventTypes.join(', ')
-                        : 'events';
-                    edges.push({
-                        from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
-                        to: { x: targetFunc.x - arrowPadding, y: targetFunc.y + nodeHeight / 2 },
-                        label: eventTypesLabel,
-                        curved: true,
-                        color: '#2196F3',
-                        direction: 'outgoing' // curved, special case
-                    });
-                }
-            }
-        });
+        // Functions only receive events from brokers (no outgoing edges)
 
         // Draw edges
         edges.forEach(edge => {
@@ -2687,18 +2417,7 @@ document.addEventListener('DOMContentLoaded', function() {
     /**
      * Show destinations management view
      */
-    function showDestinationsView(functionData) {
-        hideAllViews();
-        destinationsView.style.display = 'block';
-
-        currentDetailFunction = functionData;
-        destinationsViewFunctionName.textContent = `Function: ${functionData.name}`;
-
-        // Populate broker dropdown in destination form
-        populateDestinationBrokerDropdown();
-
-        renderDestination(functionData);
-    }
+    // showDestinationsView() removed - functions only receive events from brokers
 
     /**
      * Populate subscription broker dropdown with existing brokers
@@ -2770,24 +2489,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    /**
-     * Populate destination broker dropdown with existing brokers
-     */
-    function populateDestinationBrokerDropdown() {
-        const dropdown = document.getElementById('destinationBroker');
-        const brokers = getBrokers();
-
-        // Clear existing options except first
-        dropdown.innerHTML = '<option value="">Select a broker...</option>';
-
-        // Add broker options
-        brokers.forEach(broker => {
-            const option = document.createElement('option');
-            option.value = broker.name;
-            option.textContent = `${broker.name} (${broker.namespace})`;
-            dropdown.appendChild(option);
-        });
-    }
+    // populateDestinationBrokerDropdown() removed - functions only receive events from brokers
 
     /**
      * Show broker detail view
@@ -2853,9 +2555,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Render event sources in diagram
         renderEventSources(functionData);
 
-        // Render sink destinations in diagram
-        renderSinkDestinations(functionData);
-
         // Render event subscriptions summary
         if (!functionData.eventSubscriptions || functionData.eventSubscriptions.length === 0) {
             subscriptionsSummaryText.textContent = 'No event subscriptions configured.';
@@ -2893,58 +2592,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    /**
-     * Render event sink configuration in diagram
-     */
-    function renderSinkDestinations(functionData) {
-        destinationsList.innerHTML = '';
-
-        if (!functionData.sinkMethod || functionData.sinkMethod === 'none') {
-            return;
-        }
-
-        if (functionData.sinkMethod === 'broker' && functionData.sinkConfig && functionData.sinkConfig.broker) {
-            const destinationBox = document.createElement('div');
-            destinationBox.className = 'destination-box';
-
-            destinationBox.innerHTML = `
-                <div class="destination-icon">📨</div>
-                <div class="destination-info">
-                    <div class="destination-name">${functionData.sinkConfig.broker}</div>
-                    <div class="destination-details">Broker (via SinkBinding)</div>
-                </div>
-            `;
-
-            destinationsList.appendChild(destinationBox);
-        } else if (functionData.sinkMethod === 'sink' && functionData.sinkConfig && functionData.sinkConfig.sinkName) {
-            const destinationBox = document.createElement('div');
-            destinationBox.className = 'destination-box';
-            const sinkIcon = getSinkIcon(functionData.sinkConfig.sinkType);
-
-            destinationBox.innerHTML = `
-                <div class="destination-icon">${sinkIcon}</div>
-                <div class="destination-info">
-                    <div class="destination-name">${functionData.sinkConfig.sinkName}</div>
-                    <div class="destination-details">Event Sink (via SinkBinding)</div>
-                </div>
-            `;
-
-            destinationsList.appendChild(destinationBox);
-        } else if (functionData.sinkMethod === 'function' && functionData.sinkConfig && functionData.sinkConfig.functionName) {
-            const destinationBox = document.createElement('div');
-            destinationBox.className = 'destination-box';
-
-            destinationBox.innerHTML = `
-                <div class="destination-icon">λ</div>
-                <div class="destination-info">
-                    <div class="destination-name">${functionData.sinkConfig.functionName}</div>
-                    <div class="destination-details">Function (via SinkBinding)</div>
-                </div>
-            `;
-
-            destinationsList.appendChild(destinationBox);
-        }
-    }
+    // renderSinkDestinations() removed - functions only receive events from brokers
 
     /**
      * Render resources for detail view
@@ -3100,76 +2748,7 @@ document.addEventListener('DOMContentLoaded', function() {
     /**
      * Render destination
      */
-    function renderDestination(functionData) {
-        destinationDisplay.innerHTML = '';
-
-        if (!functionData.sinkMethod || functionData.sinkMethod === 'none') {
-            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No event sink configured. SinkBinding can inject K_SINK for your function to actively send CloudEvents (direct sending, not replies).</p></div>';
-            return;
-        }
-
-        if (functionData.sinkMethod === 'broker' && functionData.sinkConfig && functionData.sinkConfig.broker) {
-            const destCard = document.createElement('div');
-            destCard.className = 'subscription-card';
-            destCard.innerHTML = `
-                <div class="subscription-info">
-                    <div class="subscription-broker">Broker: <strong>${functionData.sinkConfig.broker}</strong></div>
-                    <div class="subscription-type">SinkBinding injects K_SINK - function actively sends events to broker</div>
-                </div>
-                <button class="btn-danger btn-small remove-destination-btn">Remove</button>
-            `;
-            destinationDisplay.appendChild(destCard);
-
-            // Add remove handler
-            document.querySelector('.remove-destination-btn').addEventListener('click', function() {
-                removeDestination();
-            });
-        } else if (functionData.sinkMethod === 'sink' && functionData.sinkConfig && functionData.sinkConfig.sinkName) {
-            const destCard = document.createElement('div');
-            destCard.className = 'subscription-card';
-            destCard.innerHTML = `
-                <div class="subscription-info">
-                    <div class="subscription-broker">Event Sink: <strong>${functionData.sinkConfig.sinkName}</strong></div>
-                    <div class="subscription-type">SinkBinding injects K_SINK - function sends events directly to ${functionData.sinkConfig.sinkType} (bypasses broker)</div>
-                </div>
-                <button class="btn-danger btn-small remove-destination-btn">Remove</button>
-            `;
-            destinationDisplay.appendChild(destCard);
-
-            // Add remove handler
-            document.querySelector('.remove-destination-btn').addEventListener('click', function() {
-                removeDestination();
-            });
-        } else if (functionData.sinkMethod === 'function' && functionData.sinkConfig && functionData.sinkConfig.functionName) {
-            const destCard = document.createElement('div');
-            destCard.className = 'subscription-card';
-            destCard.innerHTML = `
-                <div class="subscription-info">
-                    <div class="subscription-broker">Function: <strong>${functionData.sinkConfig.functionName}</strong></div>
-                    <div class="subscription-type">SinkBinding enables direct function-to-function chaining (bypasses broker)</div>
-                </div>
-                <button class="btn-danger btn-small remove-destination-btn">Remove</button>
-            `;
-            destinationDisplay.appendChild(destCard);
-
-            // Add remove handler
-            document.querySelector('.remove-destination-btn').addEventListener('click', function() {
-                removeDestination();
-            });
-        }
-    }
-
-    /**
-     * Remove destination
-     */
-    function removeDestination() {
-        if (confirm('Are you sure you want to remove this destination?')) {
-            currentDetailFunction.sinkMethod = 'none';
-            currentDetailFunction.sinkConfig = { method: 'none' };
-            saveFunction(currentDetailFunction);
-            renderDestination(currentDetailFunction);
-        }
-    }
+    // renderDestination() and removeDestination() removed - functions only receive events from brokers
 
     /**
      * Render broker detail view content

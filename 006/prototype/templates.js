@@ -36,24 +36,6 @@ function generateFunctionYAML(config) {
         subscriptionsYAML = `    subscriptions: []`;
     }
 
-    // Add sink configuration
-    let sinkYAML = '';
-    if (config.sinkMethod === 'broker' && config.sinkConfig && config.sinkConfig.broker) {
-        sinkYAML = `\n    sink:\n      ref:\n        apiVersion: eventing.knative.dev/v1\n        kind: Broker\n        name: ${config.sinkConfig.broker}`;
-    } else if (config.sinkMethod === 'sink' && config.sinkConfig && config.sinkConfig.sinkName) {
-        const sinkKind = getSinkKind(config.sinkConfig.sinkType);
-        sinkYAML = `\n    sink:\n      ref:\n        apiVersion: sinks.knative.dev/v1alpha1\n        kind: ${sinkKind}\n        name: ${config.sinkConfig.sinkName}`;
-    } else if (config.sinkMethod === 'function' && config.sinkConfig && config.sinkConfig.functionName) {
-        sinkYAML = `\n    sink:\n      ref:\n        apiVersion: v1\n        kind: Service\n        name: ${config.sinkConfig.functionName}`;
-    }
-
-    // Add status with reply event types (populated by Function controller)
-    let statusYAML = '';
-    if (config.replyEventTypes && config.replyEventTypes.length > 0) {
-        const replyTypesYAML = config.replyEventTypes.map(type => `    - ${type}`).join('\n');
-        statusYAML = `\nstatus:\n  # Discovered by Function controller watching actual CloudEvents produced by the function\n  replyEventTypes:\n${replyTypesYAML}`;
-    }
-
     return `apiVersion: serverless.openshift.io/v1alpha1
 kind: Function
 metadata:
@@ -61,7 +43,7 @@ metadata:
   namespace: ${config.namespace}
 spec:
   eventing:
-${subscriptionsYAML}${sinkYAML}${statusYAML}`;
+${subscriptionsYAML}`;
 }
 
 /**

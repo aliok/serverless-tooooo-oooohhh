@@ -742,21 +742,7 @@ awsRegion: us-east-1"></textarea>
                         </div>
                     </div>
 
-                    <!-- Arrow: Function → Destinations -->
-                    <div class="diagram-arrow">
-                        <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M 5 20 L 45 20" />
-                            <polygon points="45,15 55,20 45,25" />
-                        </svg>
-                    </div>
-
-                    <!-- Event Sinks (Right) -->
-                    <div class="diagram-column diagram-destinations">
-                        <div id="destinationsList" class="destination-items">
-                            <!-- Event sink boxes will be inserted here -->
-                        </div>
-                        <button type="button" id="addDestinationBtn" class="diagram-add-btn">+ Configure sink</button>
-                    </div>
+                    <!-- Functions only receive events from brokers (no outgoing destinations) -->
                 </div>
             </div>
 
@@ -1288,12 +1274,10 @@ awsRegion: us-east-1"></textarea>
 
                     <div class="form-group">
                         <label for="eventSourceSinkMethod">Target Type</label>
-                        <select id="eventSourceSinkMethod" name="eventSourceSinkMethod" required>
+                        <select id="eventSourceSinkMethod" name="eventSourceSinkMethod" required disabled>
                             <option value="broker">Broker</option>
-                            <option value="sink">Event Sink</option>
-                            <option value="function">Function</option>
                         </select>
-                        <small class="helper-text">Where events from this source will be sent</small>
+                        <small class="helper-text">Event sources can only send events to brokers</small>
                     </div>
 
                     <!-- Broker Target Fields -->
