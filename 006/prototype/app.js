@@ -564,6 +564,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Refresh subscriptions view
         renderEventSubscriptions(currentDetailFunction);
 
+        // Refresh network graph to show new connections
+        renderNetworkGraph();
+
         // Reset form
         subscriptionForm.reset();
         customEventTypeField.style.display = 'none';
@@ -2759,6 +2762,7 @@ document.addEventListener('DOMContentLoaded', function() {
             currentDetailFunction.eventSubscriptions.splice(index, 1);
             saveFunction(currentDetailFunction);
             renderEventSubscriptions(currentDetailFunction);
+            renderNetworkGraph();
         }
     }
 
@@ -3629,6 +3633,7 @@ document.addEventListener('DOMContentLoaded', function() {
             currentSink.eventSubscriptions.splice(index, 1);
             saveEventSink(currentSink);
             renderEventSinkSubscriptions(currentSink);
+            renderNetworkGraph();
         }
     }
 
@@ -3775,6 +3780,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Refresh subscriptions view
             renderEventSinkSubscriptions(currentSink);
+
+            // Refresh network graph to show new connections
+            renderNetworkGraph();
 
             // Reset form
             eventSinkSubscriptionForm.reset();
