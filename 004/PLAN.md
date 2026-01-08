@@ -515,3 +515,8 @@ function renderEventSinkDetailView(sinkData) {
 - ✅ Detail view shows correct diagram for each mode
 - ✅ YAML preview shows correct resources (Sink + Trigger for standalone, Sink only for referenced)
 - ✅ All sink types generate valid YAML
+
+TODO:
+- Function's sink can be a broker / event sink / another function. It is also ok to have no sink at all.
+- Event sources can have a target of a broker / event sink / function. The target is required.
+- Function reply event type - how to handle?

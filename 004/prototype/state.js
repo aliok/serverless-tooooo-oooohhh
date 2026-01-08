@@ -64,7 +64,11 @@ let eventSources = [
         name: 'github-webhook',
         namespace: 'default',
         type: 'github',
-        broker: 'default',
+        sinkMethod: 'broker',
+        sinkConfig: {
+            method: 'broker',
+            broker: 'default'
+        },
         config: {
             repository: 'username/repo',
             accessTokenSecret: 'github-secret'
