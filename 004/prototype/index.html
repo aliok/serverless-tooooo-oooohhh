@@ -855,8 +855,9 @@ awsRegion: us-east-1"></textarea>
                             <select id="destinationMethod" name="destinationMethod" required>
                                 <option value="broker">Broker</option>
                                 <option value="sink">Event Sink</option>
+                                <option value="function">Function</option>
                             </select>
-                            <small class="helper-text">Send events to a Broker or directly to an Event Sink</small>
+                            <small class="helper-text">Send events to a Broker, Event Sink, or another Function</small>
                         </div>
 
                         <!-- Broker Destination Fields -->
@@ -880,6 +881,18 @@ awsRegion: us-east-1"></textarea>
                                     <!-- Will be populated dynamically with referenced sinks -->
                                 </select>
                                 <small class="helper-text">Event Sink where output CloudEvents will be sent</small>
+                            </div>
+                        </div>
+
+                        <!-- Function Destination Fields -->
+                        <div id="functionDestinationFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="destinationFunction">Function Name</label>
+                                <select id="destinationFunction" name="destinationFunction">
+                                    <option value="">Select a function...</option>
+                                    <!-- Will be populated dynamically with other functions -->
+                                </select>
+                                <small class="helper-text">Function where output CloudEvents will be sent</small>
                             </div>
                         </div>
 
@@ -1259,12 +1272,49 @@ awsRegion: us-east-1"></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="eventSourceBroker">Target Broker</label>
-                        <select id="eventSourceBroker" name="eventSourceBroker" required>
-                            <option value="">Select a broker...</option>
-                            <!-- Will be populated dynamically from brokers list -->
+                        <label for="eventSourceSinkMethod">Target Type</label>
+                        <select id="eventSourceSinkMethod" name="eventSourceSinkMethod" required>
+                            <option value="broker">Broker</option>
+                            <option value="sink">Event Sink</option>
+                            <option value="function">Function</option>
                         </select>
-                        <small class="helper-text">The Broker where events will be sent</small>
+                        <small class="helper-text">Where events from this source will be sent</small>
+                    </div>
+
+                    <!-- Broker Target Fields -->
+                    <div id="eventSourceBrokerFields">
+                        <div class="form-group">
+                            <label for="eventSourceBroker">Broker</label>
+                            <select id="eventSourceBroker" name="eventSourceBroker">
+                                <option value="">Select a broker...</option>
+                                <!-- Will be populated dynamically from brokers list -->
+                            </select>
+                            <small class="helper-text">The Broker where events will be sent</small>
+                        </div>
+                    </div>
+
+                    <!-- Event Sink Target Fields -->
+                    <div id="eventSourceSinkFields" style="display: none;">
+                        <div class="form-group">
+                            <label for="eventSourceSink">Event Sink</label>
+                            <select id="eventSourceSink" name="eventSourceSink">
+                                <option value="">Select a sink...</option>
+                                <!-- Will be populated dynamically with referenced sinks -->
+                            </select>
+                            <small class="helper-text">The Event Sink where events will be sent</small>
+                        </div>
+                    </div>
+
+                    <!-- Function Target Fields -->
+                    <div id="eventSourceFunctionFields" style="display: none;">
+                        <div class="form-group">
+                            <label for="eventSourceFunction">Function</label>
+                            <select id="eventSourceFunction" name="eventSourceFunction">
+                                <option value="">Select a function...</option>
+                                <!-- Will be populated dynamically from functions list -->
+                            </select>
+                            <small class="helper-text">The Function where events will be sent</small>
+                        </div>
                     </div>
                 </fieldset>
 

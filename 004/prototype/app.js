@@ -592,13 +592,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (destinationMethod) {
         destinationMethod.addEventListener('change', function() {
+            const functionDestinationFields = document.getElementById('functionDestinationFields');
             if (this.value === 'broker') {
                 brokerDestinationFields.style.display = 'block';
                 sinkDestinationFields.style.display = 'none';
+                functionDestinationFields.style.display = 'none';
             } else if (this.value === 'sink') {
                 brokerDestinationFields.style.display = 'none';
                 sinkDestinationFields.style.display = 'block';
+                functionDestinationFields.style.display = 'none';
                 populateDestinationSinkDropdown();
+            } else if (this.value === 'function') {
+                brokerDestinationFields.style.display = 'none';
+                sinkDestinationFields.style.display = 'none';
+                functionDestinationFields.style.display = 'block';
+                populateDestinationFunctionDropdown();
             }
         });
     }
@@ -642,6 +650,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 sinkName: sinkName,
                 sinkType: sinkType
             };
+        } else if (method === 'function') {
+            const functionName = document.getElementById('destinationFunction').value.trim();
+
+            if (!functionName) {
+                alert('Please select a function');
+                return;
+            }
+
+            // Set function destination
+            currentDetailFunction.sinkMethod = 'function';
+            currentDetailFunction.sinkConfig = {
+                method: 'function',
+                functionName: functionName
+            };
         }
 
         // Save to state
@@ -667,6 +689,22 @@ document.addEventListener('DOMContentLoaded', function() {
             option.value = sink.name;
             option.dataset.sinkType = sink.type;
             option.textContent = `${sink.name} (${sink.type})`;
+            dropdown.appendChild(option);
+        });
+    }
+
+    /**
+     * Populate destination function dropdown with other functions
+     */
+    function populateDestinationFunctionDropdown() {
+        const dropdown = document.getElementById('destinationFunction');
+        const functions = getFunctions().filter(f => f.name !== currentDetailFunction.name);
+
+        dropdown.innerHTML = '<option value="">Select a function...</option>';
+        functions.forEach(func => {
+            const option = document.createElement('option');
+            option.value = func.name;
+            option.textContent = `${func.name} (${func.namespace})`;
             dropdown.appendChild(option);
         });
     }
@@ -2451,6 +2489,19 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
 
             destinationsList.appendChild(destinationBox);
+        } else if (functionData.sinkMethod === 'function' && functionData.sinkConfig && functionData.sinkConfig.functionName) {
+            const destinationBox = document.createElement('div');
+            destinationBox.className = 'destination-box';
+
+            destinationBox.innerHTML = `
+                <div class="destination-icon">λ</div>
+                <div class="destination-info">
+                    <div class="destination-name">${functionData.sinkConfig.functionName}</div>
+                    <div class="destination-details">Function (Sink)</div>
+                </div>
+            `;
+
+            destinationsList.appendChild(destinationBox);
         }
     }
 
@@ -2612,7 +2663,7 @@ document.addEventListener('DOMContentLoaded', function() {
         destinationDisplay.innerHTML = '';
 
         if (!functionData.sinkMethod || functionData.sinkMethod === 'none') {
-            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No destination configured. Set one below to send output CloudEvents to a Broker or Event Sink.</p></div>';
+            destinationDisplay.innerHTML = '<div id="emptyDestination" class="empty-subscriptions"><p>No destination configured. Set one below to send output CloudEvents to a Broker, Event Sink, or another Function.</p></div>';
             return;
         }
 
@@ -2638,6 +2689,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="subscription-info">
                     <div class="subscription-broker">Event Sink: <strong>${functionData.sinkConfig.sinkName}</strong></div>
                     <div class="subscription-type">Type: ${functionData.sinkConfig.sinkType}</div>
+                </div>
+                <button class="btn-danger btn-small remove-destination-btn">Remove</button>
+            `;
+            destinationDisplay.appendChild(destCard);
+
+            // Add remove handler
+            document.querySelector('.remove-destination-btn').addEventListener('click', function() {
+                removeDestination();
+            });
+        } else if (functionData.sinkMethod === 'function' && functionData.sinkConfig && functionData.sinkConfig.functionName) {
+            const destCard = document.createElement('div');
+            destCard.className = 'subscription-card';
+            destCard.innerHTML = `
+                <div class="subscription-info">
+                    <div class="subscription-broker">Function: <strong>${functionData.sinkConfig.functionName}</strong></div>
                 </div>
                 <button class="btn-danger btn-small remove-destination-btn">Remove</button>
             `;
