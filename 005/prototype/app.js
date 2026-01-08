@@ -2105,7 +2105,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         from: { x: func.x + nodeWidth, y: func.y + nodeHeight / 2 },
                         to: { x: targetBroker.x, y: targetBroker.y + nodeHeight / 2 },
                         label: 'produces',
-                        dashed: true
+                        color: '#2196F3'
                     });
                 }
             } else if (func.sinkMethod === 'sink' && func.sinkConfig) {
@@ -2138,9 +2138,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 ? `M ${edge.from.x} ${edge.from.y} Q ${edge.from.x + 50} ${edge.from.y - 60}, ${edge.to.x} ${edge.to.y}`
                 : `M ${edge.from.x} ${edge.from.y} L ${edge.to.x} ${edge.to.y}`;
 
-            const dashArray = edge.dashed ? 'stroke-dasharray="5,5"' : '';
             const strokeColor = edge.color || '#999';
-            svg += `<path d="${path}" class="edge-path" ${dashArray} stroke="${strokeColor}" />`;
+            svg += `<path d="${path}" class="edge-path" stroke="${strokeColor}" />`;
 
             // Add label
             if (edge.label) {
