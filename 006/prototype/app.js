@@ -3038,7 +3038,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         // Calculate dimensions for 3-column layout
-        const svgHeight = config.nodeHeight + 2 * config.padding;
+        const svgHeight = Math.max(400, config.nodeHeight) + 2 * config.padding;
         const svgWidth = config.padding + (config.nodeWidth + config.horizontalGap) * 2 + config.nodeWidth + config.padding;
 
         // Position nodes in 3 columns
