@@ -118,7 +118,68 @@ ${replyTypesYAML}`;
         }
     }
 
+    // Generate status.conditions section
+    const conditions = [];
+
+    // Overall Ready condition - would be True when all sub-conditions are True
+    conditions.push(`    - type: Ready
+      status: "True"
+      lastTransitionTime: "2024-01-09T12:00:00Z"
+      reason: AllComponentsReady
+      message: All function components are ready`);
+
+    // Build condition (if build is configured)
+    if (config.buildMethod === 'shipwright' || config.buildMethod === 's2i') {
+        conditions.push(`    - type: BuildSucceeded
+      status: "True"
+      lastTransitionTime: "2024-01-09T11:58:00Z"
+      reason: BuildCompleted
+      message: Container image built successfully`);
+    }
+
+    // Deployment condition (always present)
+    conditions.push(`    - type: DeploymentReady
+      status: "True"
+      lastTransitionTime: "2024-01-09T11:59:00Z"
+      reason: MinimumReplicasAvailable
+      message: Deployment has minimum availability`);
+
+    // Scaling condition (always present)
+    const scalingKind = config.scalingMetric === 'scaledObject' ? 'ScaledObject' : 'HTTPScaledObject';
+    conditions.push(`    - type: ScalingReady
+      status: "True"
+      lastTransitionTime: "2024-01-09T11:59:30Z"
+      reason: ${scalingKind}Active
+      message: ${scalingKind} is active and monitoring metrics`);
+
+    // Networking condition (if configured)
+    if (config.networkingMethod && config.networkingMethod !== 'none') {
+        const networkingKind = {
+            'gateway': 'HTTPRoute',
+            'ingress': 'Ingress',
+            'route': 'Route'
+        }[config.networkingMethod] || 'NetworkingResource';
+
+        conditions.push(`    - type: NetworkingReady
+      status: "True"
+      lastTransitionTime: "2024-01-09T12:00:00Z"
+      reason: ${networkingKind}Admitted
+      message: ${networkingKind} is admitted and routing traffic`);
+    }
+
+    // Eventing condition (if subscriptions exist)
+    if (eventSubscriptions.length > 0) {
+        conditions.push(`    - type: EventingReady
+      status: "True"
+      lastTransitionTime: "2024-01-09T12:00:00Z"
+      reason: TriggersReady
+      message: All ${eventSubscriptions.length} Trigger(s) are ready and filtering events`);
+    }
+
+    const conditionsYAML = `  conditions:\n${conditions.join('\n')}`;
+
     const statusYAML = `\nstatus:
+${conditionsYAML}
 ${resourcesYAML}${eventingStatusYAML ? '\n' + eventingStatusYAML : ''}`;
 
     return `apiVersion: serverless.openshift.io/v1alpha1
