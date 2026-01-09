@@ -30,7 +30,8 @@ let functions = [
         eventSubscriptions: [
             {
                 broker: 'default',
-                eventType: 'dev.knative.sources.github.event'
+                eventType: 'dev.knative.sources.github.event',
+                replyEventType: 'dev.knative.function.processed'
             }
         ],
         createdAt: new Date().toISOString()
@@ -58,7 +59,8 @@ let functions = [
         eventSubscriptions: [
             {
                 broker: 'default',
-                eventType: 'dev.knative.sources.github.event'
+                eventType: 'dev.knative.sources.github.event',
+                replyEventType: 'dev.knative.processor.completed'
             }
         ],
         createdAt: new Date().toISOString()
