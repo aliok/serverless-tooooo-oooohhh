@@ -9,6 +9,9 @@
  * @param {string} config.name - Function name
  * @param {string} config.namespace - Namespace
  * @param {Array} config.eventSubscriptions - Array of event subscriptions
+ * @param {string} config.buildMethod - Build method (none, shipwright, s2i)
+ * @param {string} config.scalingMetric - Scaling metric (concurrency, requestRate, scaledObject)
+ * @param {string} config.networkingMethod - Networking method (none, gateway, ingress, route)
  * @returns {string} YAML string
  */
 function generateFunctionYAML(config) {
@@ -36,8 +39,72 @@ function generateFunctionYAML(config) {
         subscriptionsYAML = `    subscriptions: []`;
     }
 
-    // Generate status section with reply event types
-    let statusYAML = '';
+    // Build status.resources section tracking all owned resources
+    const resources = [];
+
+    // Build resource (if configured)
+    if (config.buildMethod === 'shipwright') {
+        resources.push(`    - apiVersion: shipwright.io/v1beta1
+      kind: Build
+      name: ${config.name}-build`);
+    } else if (config.buildMethod === 's2i') {
+        resources.push(`    - apiVersion: build.openshift.io/v1
+      kind: BuildConfig
+      name: ${config.name}-build`);
+    }
+
+    // Runtime resources (always created)
+    resources.push(`    - apiVersion: apps/v1
+      kind: Deployment
+      name: ${config.name}`);
+    resources.push(`    - apiVersion: v1
+      kind: Service
+      name: ${config.name}`);
+
+    // Scaling resource
+    if (config.scalingMetric === 'concurrency' || config.scalingMetric === 'requestRate') {
+        resources.push(`    - apiVersion: http.keda.sh/v1alpha1
+      kind: HTTPScaledObject
+      name: ${config.name}-http`);
+    } else if (config.scalingMetric === 'scaledObject') {
+        resources.push(`    - apiVersion: keda.sh/v1alpha1
+      kind: ScaledObject
+      name: ${config.name}-scaledobject`);
+    }
+
+    // Networking resource (if configured)
+    if (config.networkingMethod === 'gateway') {
+        resources.push(`    - apiVersion: gateway.networking.k8s.io/v1
+      kind: HTTPRoute
+      name: ${config.name}`);
+    } else if (config.networkingMethod === 'ingress') {
+        resources.push(`    - apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      name: ${config.name}`);
+    } else if (config.networkingMethod === 'route') {
+        resources.push(`    - apiVersion: route.openshift.io/v1
+      kind: Route
+      name: ${config.name}`);
+    }
+
+    // Eventing resources (Triggers for each subscription)
+    if (eventSubscriptions.length > 0) {
+        eventSubscriptions.forEach((sub, index) => {
+            const triggerName = eventSubscriptions.length > 1
+                ? `${config.name}-trigger-${index + 1}`
+                : `${config.name}-trigger`;
+            resources.push(`    - apiVersion: eventing.knative.dev/v1
+      kind: Trigger
+      name: ${triggerName}`);
+        });
+    }
+
+    const resourcesYAML = resources.length > 0
+        ? `  resources:\n${resources.join('\n')}`
+        : `  resources: []`;
+
+    // Generate status section with reply event types and resources
+    let eventingStatusYAML = '';
     if (eventSubscriptions.length > 0) {
         const replyEventTypes = eventSubscriptions
             .filter(sub => sub.replyEventType)
@@ -45,12 +112,14 @@ function generateFunctionYAML(config) {
 
         if (replyEventTypes.length > 0) {
             const replyTypesYAML = replyEventTypes.map(type => `      - ${type}`).join('\n');
-            statusYAML = `\nstatus:
-  eventing:
+            eventingStatusYAML = `  eventing:
     replyEventTypes:
 ${replyTypesYAML}`;
         }
     }
+
+    const statusYAML = `\nstatus:
+${resourcesYAML}${eventingStatusYAML ? '\n' + eventingStatusYAML : ''}`;
 
     return `apiVersion: serverless.openshift.io/v1alpha1
 kind: Function
@@ -1004,7 +1073,7 @@ const RESOURCE_METADATA = {
     function: {
         kind: 'Function',
         apiVersion: 'serverless.openshift.io/v1alpha1',
-        description: 'The semantic anchor for the function. Declares event subscriptions - the Function controller will create Knative Triggers to route CloudEvents. This is the only resource users directly interact with in the conceptual model. All other resources are owned by this Function CR.'
+        description: 'The semantic anchor for the function. Declares event subscriptions - the Function controller will create Knative Triggers to route CloudEvents. Tracks all owned resources (Deployment, Service, HTTPScaledObject, Triggers, etc.) in status.resources for easy discovery. This is the only resource users directly interact with in the conceptual model.'
     },
     deployment: {
         kind: 'Deployment',
