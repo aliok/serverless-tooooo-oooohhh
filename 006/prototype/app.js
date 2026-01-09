@@ -3431,6 +3431,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 label: eventTypes.join(', '),
                 direction: 'outgoing'
             });
+
+            // Add reply edge if subscriber is a function with reply event type
+            if (subscriberType === 'function') {
+                const replyEventTypes = subscriber.eventSubscriptions
+                    ?.filter(sub => sub.broker === brokerData.name && sub.replyEventType)
+                    .map(sub => sub.replyEventType) || [];
+
+                if (replyEventTypes.length > 0) {
+                    const verticalOffset = 20;
+                    edges.push({
+                        fromId: nodeId,
+                        toId: brokerNodeId,
+                        from: { x: pos.x, y: pos.y + config.nodeHeight / 2 + verticalOffset },
+                        to: { x: brokerPos.x + config.nodeWidth + arrowPadding, y: brokerPos.y + config.nodeHeight / 2 + verticalOffset },
+                        label: replyEventTypes.join(', '),
+                        direction: 'incoming',
+                        color: '#4CAF50'
+                    });
+                }
+            }
         });
 
         // Consolidate edges
@@ -3442,6 +3462,7 @@ document.addEventListener('DOMContentLoaded', function() {
         svg += '<defs>';
         svg += createArrowheadMarker('arrowhead-broker-detail', '#999');
         svg += createArrowheadMarker('arrowhead-blue-broker-detail', '#2196F3');
+        svg += createArrowheadMarker('arrowhead-green-broker-detail', '#4CAF50');
         svg += '</defs>';
 
         // Draw edges
