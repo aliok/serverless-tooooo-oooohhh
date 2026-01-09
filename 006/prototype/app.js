@@ -1801,7 +1801,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const strokeColor = edge.color || '#999';
         const markerSuffix = graphId ? `-${graphId}` : '';
-        const markerEnd = edge.color === '#2196F3' ? `url(#arrowhead-blue${markerSuffix})` : `url(#arrowhead${markerSuffix})`;
+
+        // Select appropriate arrowhead based on color
+        let markerEnd;
+        if (edge.color === '#2196F3') {
+            markerEnd = `url(#arrowhead-blue${markerSuffix})`;
+        } else if (edge.color === '#4CAF50') {
+            markerEnd = `url(#arrowhead-green${markerSuffix})`;
+        } else {
+            markerEnd = `url(#arrowhead${markerSuffix})`;
+        }
 
         return `<path d="${path}" stroke="${strokeColor}" stroke-width="2" fill="none" marker-end="${markerEnd}" />`;
     }
@@ -2182,6 +2191,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <marker id="arrowhead-blue-network" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
                     <polygon points="0 0, 10 3, 0 6" fill="#2196F3" />
                 </marker>
+                <marker id="arrowhead-green-network" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                    <polygon points="0 0, 10 3, 0 6" fill="#4CAF50" />
+                </marker>
             </defs>
         `;
 
@@ -2238,7 +2250,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Functions and sinks only receive events from brokers (no outgoing edges)
+        // Function → Broker reply edges (right-to-left, reply CloudEvents)
+        // Offset vertically to avoid collision with incoming edges
+        const verticalOffset = 20;
+        columns.functions.nodes.forEach(func => {
+            if (func.eventSubscriptions) {
+                func.eventSubscriptions.forEach(sub => {
+                    if (sub.replyEventType) {
+                        const targetBroker = columns.brokers.nodes.find(b => b.name === sub.broker);
+                        if (targetBroker) {
+                            edges.push({
+                                from: { x: func.x, y: func.y + nodeHeight / 2 + verticalOffset },
+                                to: { x: targetBroker.x + nodeWidth + arrowPadding, y: targetBroker.y + nodeHeight / 2 + verticalOffset },
+                                label: sub.replyEventType,
+                                direction: 'incoming', // right-to-left
+                                color: '#4CAF50' // Green for replies
+                            });
+                        }
+                    }
+                });
+            }
+        });
 
         // Draw edges
         edges.forEach(edge => {
@@ -2247,8 +2279,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 : `M ${edge.from.x} ${edge.from.y} L ${edge.to.x} ${edge.to.y}`;
 
             const strokeColor = edge.color || '#999';
-            // Use blue arrowhead for blue edges, gray for others
-            const markerEnd = edge.color === '#2196F3' ? 'url(#arrowhead-blue-network)' : 'url(#arrowhead-network)';
+            // Select appropriate arrowhead based on color
+            let markerEnd;
+            if (edge.color === '#2196F3') {
+                markerEnd = 'url(#arrowhead-blue-network)';
+            } else if (edge.color === '#4CAF50') {
+                markerEnd = 'url(#arrowhead-green-network)';
+            } else {
+                markerEnd = 'url(#arrowhead-network)';
+            }
             svg += `<path d="${path}" stroke="${strokeColor}" stroke-width="2" fill="none" marker-end="${markerEnd}" />`;
 
             // Add label with different offsets for outgoing vs incoming
@@ -2861,12 +2900,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (broker) {
                         brokerMap.set(sub.broker, {
                             ...broker,
-                            eventTypes: []
+                            eventTypes: [],
+                            replyEventTypes: []
                         });
                     }
                 }
                 if (brokerMap.has(sub.broker)) {
                     brokerMap.get(sub.broker).eventTypes.push(sub.eventType);
+                    if (sub.replyEventType) {
+                        brokerMap.get(sub.broker).replyEventTypes.push(sub.replyEventType);
+                    }
                 }
             });
         }
@@ -2913,8 +2956,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 from: { x: pos.x + config.nodeWidth, y: pos.y + config.nodeHeight / 2 },
                 to: { x: functionPos.x - arrowPadding, y: functionPos.y + config.nodeHeight / 2 },
                 label: broker.eventTypes.join(', '),
-                direction: 'outgoing'
+                direction: 'incoming'
             });
+
+            // Create reply edge from function to broker (if function sends replies)
+            // Offset vertically to avoid collision with incoming edge
+            if (broker.replyEventTypes && broker.replyEventTypes.length > 0) {
+                const verticalOffset = 20;
+                edges.push({
+                    fromId: `function-detail-${functionData.id}-center`,
+                    toId: nodeId,
+                    from: { x: functionPos.x, y: functionPos.y + config.nodeHeight / 2 + verticalOffset },
+                    to: { x: pos.x + config.nodeWidth + arrowPadding, y: pos.y + config.nodeHeight / 2 + verticalOffset },
+                    label: broker.replyEventTypes.join(', '),
+                    direction: 'outgoing',
+                    color: '#4CAF50'  // Green color for reply edges
+                });
+            }
         });
 
         // Position function (right)
@@ -2936,6 +2994,7 @@ document.addEventListener('DOMContentLoaded', function() {
         svg += '<defs>';
         svg += createArrowheadMarker('arrowhead-function-detail', '#999');
         svg += createArrowheadMarker('arrowhead-blue-function-detail', '#2196F3');
+        svg += createArrowheadMarker('arrowhead-green-function-detail', '#4CAF50');
         svg += '</defs>';
 
         // Draw edges
