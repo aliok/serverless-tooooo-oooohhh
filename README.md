@@ -125,24 +125,66 @@ This repository contains paper prototypes and working implementations exploring 
 
 ---
 
+### [006](006) - Interactive Detail View Graphs with Reply CloudEvents
+**Philosophy**: Same as 005, with fully interactive detail views and bi-directional event flow visualization
+
+**How it works**:
+- Same as approach 005 (UI composition, event sinks, event type discovery)
+- **Addition**: All detail views use interactive SVG graphs with drag-and-drop
+- **Addition**: Reply CloudEvents visualized as green arrows (Function → Broker)
+- **Addition**: Click-through navigation between graph nodes
+- **Addition**: Edge consolidation in all views
+
+**Interactive graphs**:
+- Function detail: Brokers ↔ Function with reply flows
+- Broker detail: Event Sources → Broker → Functions/Sinks with replies
+- Event Source detail: External → Event Source → Broker
+- Event Sink detail: Brokers → Event Sink → External
+- Drag nodes to reposition, edges auto-update
+- Positions persist across navigation
+
+**Reply CloudEvent visualization**:
+- Gray arrows: Incoming events (Broker → Function)
+- Green arrows: Reply events (Function → Broker)
+- Shows complete bi-directional event flow
+- Reply event types displayed on edges
+
+**Key characteristics**:
+- ✅ Everything from approach 005
+- ✅ Plus: Interactive SVG graphs for all detail views
+- ✅ Plus: Drag-and-drop node positioning with persistence
+- ✅ Plus: Reply CloudEvent visualization (bi-directional flow)
+- ✅ Plus: Click-through navigation on graph nodes
+- ✅ Plus: Edge consolidation in all views
+- ✅ Enhanced observability - complete event topology visible
+
+**Status**: Working prototype with comprehensive interactive visualization
+
+---
+
 ## Comparison Matrix
 
-| Aspect                      | 001 (God CRD)          | 002 (UI Composition)              | 003 (Broker-Free)                 | 004 (002 + Sinks)                       | 005 (004 + Discovery)                            |
-|-----------------------------|------------------------|-----------------------------------|-----------------------------------|-----------------------------------------|--------------------------------------------------|
-| **Function CRD Size**       | Large, comprehensive   | Minimal, eventing-only            | Minimal, eventing-only            | Minimal, eventing + sinks               | Minimal, eventing + sinks + status               |
-| **Controller Scope**        | All subsystems         | Eventing only                     | Eventing only                     | Eventing only                           | Eventing + event type discovery                  |
-| **Resource Creation**       | Controller creates all | UI creates most                   | UI creates most                   | UI creates most                         | UI creates most                                  |
-| **User Complexity**         | Single API             | Multiple resources (hidden by UI) | Multiple resources (hidden by UI) | Multiple resources (hidden by UI)       | Multiple resources (hidden by UI)                |
-| **Flexibility**             | Limited                | High                              | Medium                            | High                                    | High                                             |
-| **Broker Visibility**       | Configurable           | Visible                           | Hidden                            | Visible                                 | Visible                                          |
-| **Event Sinks**             | Configurable           | Not in spec                       | Not in spec                       | ✅ Supported (destination configuration) | ✅ Supported                                      |
-| **Function Chaining**       | Configurable           | Not in spec                       | Not in spec                       | ✅ Supported                             | ✅ Supported                                      |
-| **Event Type Discovery**    | Not supported          | Not supported                     | Not supported                     | Not supported                           | ✅ Automatic (by Function controller)             |
-| **Network Graph**           | Not implemented        | Not implemented                   | Not implemented                   | Not implemented                         | ✅ Interactive with real event types              |
-| **Observability**           | Basic                  | Basic                             | Basic                             | Basic                                   | ✅ Enhanced (shows actual produced event types)   |
-| **Advanced Use Cases**      | Hard to support        | Well supported                    | Limited                           | Well supported                          | Well supported                                   |
-| **UI Dependency**           | Optional               | Critical                          | Critical                          | Critical                                | Critical                                         |
-| **Implementation Status**   | Spec only              | Prototype                         | Prototype                         | Prototype                               | ✅ Prototype with network visualization           |
+| Aspect                      | 001 (God CRD)          | 002 (UI Composition)              | 003 (Broker-Free)                 | 004 (002 + Sinks)                       | 005 (004 + Discovery)                            | 006 (005 + Interactive)                                    |
+|-----------------------------|------------------------|-----------------------------------|-----------------------------------|-----------------------------------------|--------------------------------------------------|------------------------------------------------------------|
+| **Function CRD Size**       | Large, comprehensive   | Minimal, eventing-only            | Minimal, eventing-only            | Minimal, eventing + sinks               | Minimal, eventing + sinks + status               | Minimal, eventing + sinks + status + replies               |
+| **Controller Scope**        | All subsystems         | Eventing only                     | Eventing only                     | Eventing only                           | Eventing + event type discovery                  | Eventing + event type discovery                            |
+| **Resource Creation**       | Controller creates all | UI creates most                   | UI creates most                   | UI creates most                         | UI creates most                                  | UI creates most                                            |
+| **User Complexity**         | Single API             | Multiple resources (hidden by UI) | Multiple resources (hidden by UI) | Multiple resources (hidden by UI)       | Multiple resources (hidden by UI)                | Multiple resources (hidden by UI)                          |
+| **Flexibility**             | Limited                | High                              | Medium                            | High                                    | High                                             | High                                                       |
+| **Broker Visibility**       | Configurable           | Visible                           | Hidden                            | Visible                                 | Visible                                          | Visible                                                    |
+| **Event Sinks**             | Configurable           | Not in spec                       | Not in spec                       | ✅ Supported (destination configuration) | ✅ Supported                                      | ✅ Supported                                                |
+| **Function Chaining**       | Configurable           | Not in spec                       | Not in spec                       | ✅ Supported                             | ✅ Supported                                      | ✅ Supported                                                |
+| **Event Type Discovery**    | Not supported          | Not supported                     | Not supported                     | Not supported                           | ✅ Automatic (by Function controller)             | ✅ Automatic (by Function controller)                       |
+| **Reply CloudEvents**       | Not supported          | Not supported                     | Not supported                     | Not supported                           | Not visualized                                   | ✅ Visualized (green arrows, bi-directional)                |
+| **Network Graph**           | Not implemented        | Not implemented                   | Not implemented                   | Not implemented                         | ✅ Interactive with real event types              | ✅ Interactive with reply flows                             |
+| **Detail View Graphs**      | Not implemented        | Not implemented                   | Not implemented                   | Static HTML/CSS                         | Static HTML/CSS                                  | ✅ Interactive SVG with drag-and-drop                       |
+| **Graph Navigation**        | Not implemented        | Not implemented                   | Not implemented                   | Links only                              | Links only                                       | ✅ Click-through on nodes                                   |
+| **Edge Consolidation**      | Not implemented        | Not implemented                   | Not implemented                   | Not implemented                         | Overview only                                    | ✅ All views                                                |
+| **Position Persistence**    | Not implemented        | Not implemented                   | Not implemented                   | Not implemented                         | Overview only                                    | ✅ All graphs (per-view storage)                            |
+| **Observability**           | Basic                  | Basic                             | Basic                             | Basic                                   | ✅ Enhanced (shows actual produced event types)   | ✅✅ Comprehensive (topology + bi-directional flow)          |
+| **Advanced Use Cases**      | Hard to support        | Well supported                    | Limited                           | Well supported                          | Well supported                                   | Well supported                                             |
+| **UI Dependency**           | Optional               | Critical                          | Critical                          | Critical                                | Critical                                         | Critical                                                   |
+| **Implementation Status**   | Spec only              | Prototype                         | Prototype                         | Prototype                               | ✅ Prototype with network visualization           | ✅✅ Prototype with comprehensive interactive visualization  |
 
 
 
