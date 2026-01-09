@@ -266,6 +266,45 @@ nodePositions['function-detail-example-function-broker-default-broker'] = { x: 5
 3. Mouse up: Save position and re-render graph to update edges
 4. Click detection: Require > 5px movement to enter drag mode
 
+### UI Backend Pattern (Production Implementation)
+
+**IMPORTANT**: This prototype generates YAML client-side for demonstration purposes. In a real production implementation (e.g., OpenShift Console):
+
+#### Architecture Flow
+
+```
+User fills form → UI client (browser) → UI backend (Console backend) → Kubernetes API
+                                              ↓
+                                    Creates ALL resources directly
+```
+
+#### What the UI Backend Creates
+
+The **OpenShift Console backend** (or similar UI backend) receives the form data and creates ALL resources via Kubernetes API:
+
+1. **Function CR** - the semantic anchor for grouping
+2. **Deployment** - runtime workload
+3. **Service** - network endpoint
+4. **HTTPScaledObject** or **ScaledObject** - KEDA scaling config
+5. **Trigger(s)** - one per event subscription
+6. **Build/BuildConfig** - if build is configured
+7. **HTTPRoute/Ingress/Route** - if external networking is configured
+
+The UI backend would:
+- Set `ownerReferences` on all created resources pointing back to the Function CR
+- Populate `status.resources` with references to all created resources
+- Populate `status.conditions` with initial state
+- Create all resources in a single transaction (or rollback on failure)
+
+#### Prototype Simplification
+
+This prototype generates all resource YAMLs client-side (in the browser) to demonstrate:
+1. What resources the UI backend would create
+2. How the Function CR groups multiple platform resources
+3. The relationship between user-facing form and platform implementation
+
+In production, the UI client would send form data to the backend, and the backend would create all resources via Kubernetes API.
+
 ## Comparison with 005
 
 | Aspect                          | 005                                  | 006                                                        |
