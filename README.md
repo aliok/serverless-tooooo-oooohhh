@@ -2,76 +2,25 @@
 
 This repository contains paper prototypes and working implementations exploring different architectural approaches for Serverless 2.0.
 
-## Approaches
+## Approaches - Key Architectural Differences
 
-### [001](001) - Comprehensive Function CRD
-**Philosophy**: Single, comprehensive CRD containing all function configuration
+| Aspect | 001 - God CRD | 002 - UI Composition | 003 - Broker-Free |
+|--------|---------------|---------------------|-------------------|
+| **Resource Creation** | Function controller creates all resources | UI creates multiple resources | UI creates multiple resources |
+| **Resource Relationship** | Controller manages via ownerReferences | Resources labeled `serverless.openshift.io/function` + ownerRefs to Function CR | Resources labeled `serverless.openshift.io/function` + ownerRefs to Function CR |
+| **Function Sink** | Configurable (Broker, Function, Service) | Only Broker | Only Broker (implicit) |
+| **Event Source Sink** | Configurable | Only Broker | Only Broker (implicit) |
+| **Function Replies** | Not specified | Not specified | Not specified |
+| **Broker Visibility** | Visible and configurable | Visible and configurable | Hidden from users (auto-created) |
+| **Event Routing** | Flexible | Flexible | All through brokers |
+| **User Complexity** | Single API | Multiple resources (visible) | Multiple resources (brokers hidden) |
+| **Controller Scope** | All subsystems | Eventing only | Eventing only |
 
-**How it works**:
-- Function CRD includes all fields: code, runtime, dependencies, scaling, networking, eventing
-- Function controller creates all other resources (Deployment, HTTPScaledObject, Trigger, etc.)
-- Users interact with only one API
+**001 - God CRD**: Single comprehensive Function CRD. Controller creates and manages all resources (Deployment, Service, HTTPScaledObject, Trigger, etc.). Users only interact with Function CR.
 
-**Key characteristics**:
-- ✅ Excellent user experience - single API to learn
-- ❌ Monolithic CRD - becomes large like Knative Serving
-- ❌ Limited flexibility - hard to expose all underlying options
-- ❌ Controller complexity - must implement all subsystem logic
+**002 - UI Composition**: Minimal Function CRD (eventing only). UI creates multiple labeled resources. Function controller only manages Triggers. Resources relate via `serverless.openshift.io/function` label and ownerReferences.
 
-**Status**: Specification only
-
----
-
-### [002](002) - UI as Composition Layer
-**Philosophy**: Minimal Function CRD + UI creates multiple Kubernetes resources
-
-**How it works**:
-- Function CRD contains only event semantics (subscriptions, sinks)
-- UI acts as composition layer, creating multiple resources:
-  - Build (Shipwright Build or OpenShift S2I)
-  - Runtime (Deployment, Service)
-  - Scaling (HTTPScaledObject or ScaledObject)
-  - Networking (HTTPRoute, Ingress, or Route)
-- Function controller only manages eventing resources (Triggers)
-- All resources labeled with `serverless.openshift.io/function`
-
-**Key characteristics**:
-- ✅ Minimal, stable Function API - only eventing semantics
-- ✅ Kubernetes-native composition - use existing controllers
-- ✅ Flexible - users can directly modify underlying resources
-- ✅ Loose coupling - subsystems evolve independently
-- ❌ No transactional guarantees - eventual consistency
-- ❌ UI becomes critical infrastructure
-- ❌ Temporary inconsistencies visible to users
-
-**Status**: Detailed specification + working prototype (see 004)
-
----
-
-### [003](003) - Broker-Free Eventing
-**Philosophy**: Hide eventing infrastructure complexity from users
-
-**How it works**:
-- Builds on approach 002
-- Brokers completely hidden from users
-- Platform auto-creates "default" broker in each namespace
-- Users only see: Event Sources → Functions
-- Event types become the connection points
-
-**User experience**:
-- Create Event Sources (GitHub, Kafka, Slack, Cron, etc.)
-- Create Functions and subscribe to event types
-- Never see Brokers, Triggers, or routing topology
-
-**Key characteristics**:
-- ✅ Simplified eventing - no broker concept for users
-- ✅ Direct visual connections - Event Source → Function
-- ✅ Reduced cognitive load - fewer abstractions
-- ❌ Less control - can't configure broker settings
-- ❌ Single broker topology - may not suit all use cases
-- ❌ Advanced users may want broker visibility
-
-**Status**: Working prototype
+**003 - Broker-Free**: Builds on 002, but hides Brokers completely. Platform auto-creates default broker. Users see Event Sources → Functions (brokers invisible in UI).
 
 ---
 
