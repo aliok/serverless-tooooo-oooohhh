@@ -617,7 +617,7 @@ function generateEventSourceSinkYAML(config) {
  * @param {Object} config - Configuration object
  * @param {string} config.name - Event source name
  * @param {string} config.namespace - Namespace
- * @param {string} config.type - Event source type (github, kafka, slack, cron)
+ * @param {string} config.type - Event source type (github, kafka, slack, cron, mqtt)
  * @param {string} config.sinkMethod - Target method (broker, sink, function)
  * @param {Object} config.sinkConfig - Target configuration
  * @param {Object} config.config - Type-specific configuration
@@ -633,6 +633,8 @@ function generateEventSourceYAML(config) {
         return generateSlackSourceYAML(config);
     } else if (config.type === 'cron') {
         return generateCronSourceYAML(config);
+    } else if (config.type === 'mqtt') {
+        return generateMqttSourceYAML(config);
     }
     return '# Unknown event source type';
 }
@@ -738,6 +740,28 @@ status:
   # CloudEvent type produced by this source
   observedEventTypes:
     - dev.knative.sources.ping`;
+}
+
+/**
+ * Generate MQTT Source YAML
+ */
+function generateMqttSourceYAML(config) {
+    const sinkYAML = generateEventSourceSinkYAML(config);
+
+    return `apiVersion: sources.knative.dev/v1alpha1
+kind: MqttSource
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  serverUrl: ${config.config.brokerURL}
+  topic: ${config.config.topic}
+  clientId: ${config.config.clientID}
+${sinkYAML}
+status:
+  # CloudEvent type produced by this source
+  observedEventTypes:
+    - dev.knative.sources.mqtt`;
 }
 
 /**
@@ -971,6 +995,11 @@ const RESOURCE_METADATA = {
         kind: 'PingSource',
         apiVersion: 'sources.knative.dev/v1',
         description: 'Produces CloudEvents on a cron schedule. Sends periodic events to the Broker as CloudEvents with type dev.knative.sources.ping, useful for scheduled tasks.'
+    },
+    mqttSource: {
+        kind: 'MqttSource',
+        apiVersion: 'sources.knative.dev/v1alpha1',
+        description: 'Produces CloudEvents from MQTT broker topics. Subscribes to MQTT topics and converts messages to CloudEvents with type dev.knative.sources.mqtt for routing through the Broker.'
     },
     function: {
         kind: 'Function',

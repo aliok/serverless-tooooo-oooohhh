@@ -314,8 +314,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Initialize eventSubscriptions
-        formData.eventSubscriptions = [];
+        // Initialize eventSubscriptions only if creating new (not editing)
+        if (!formData.eventSubscriptions) {
+            formData.eventSubscriptions = [];
+        }
 
         // Save and show detail view
         saveFunction(formData);
@@ -717,10 +719,16 @@ document.addEventListener('DOMContentLoaded', function() {
             networkingConfig: networkingConfig
         };
 
-        // If editing, preserve the ID
+        // If editing, preserve the ID and eventSubscriptions
         const currentEditing = getCurrentEditingFunction();
-        if (currentEditing && currentEditing.id) {
-            formData.id = currentEditing.id;
+        if (currentEditing) {
+            if (currentEditing.id) {
+                formData.id = currentEditing.id;
+            }
+            // Preserve event subscriptions - they are managed separately via the subscription management view
+            if (currentEditing.eventSubscriptions) {
+                formData.eventSubscriptions = currentEditing.eventSubscriptions;
+            }
         }
 
         return formData;
@@ -1331,6 +1339,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: document.getElementById('cronData').value.trim()
             };
             eventTypes = ['dev.knative.sources.ping'];
+        } else if (eventSourceType === 'mqtt') {
+            config = {
+                brokerURL: document.getElementById('mqttBrokerURL').value.trim(),
+                topic: document.getElementById('mqttTopic').value.trim(),
+                clientID: document.getElementById('mqttClientID').value.trim()
+            };
+            eventTypes = ['dev.knative.sources.mqtt'];
         }
 
         // Event sources can only send to brokers
@@ -1393,6 +1408,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset Cron fields
         document.getElementById('cronSchedule').value = '*/5 * * * *';
         document.getElementById('cronData').value = '';
+
+        // Reset MQTT fields
+        document.getElementById('mqttBrokerURL').value = 'tcp://mqtt-broker.iot.svc.cluster.local:1883';
+        document.getElementById('mqttTopic').value = 'smart-meters/#';
+        document.getElementById('mqttClientID').value = 'meter-source-consumer';
     }
 
     /**
@@ -1427,6 +1447,10 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (eventSourceData.type === 'cron') {
             document.getElementById('cronSchedule').value = eventSourceData.config.schedule || '';
             document.getElementById('cronData').value = eventSourceData.config.data || '';
+        } else if (eventSourceData.type === 'mqtt') {
+            document.getElementById('mqttBrokerURL').value = eventSourceData.config.brokerURL || '';
+            document.getElementById('mqttTopic').value = eventSourceData.config.topic || '';
+            document.getElementById('mqttClientID').value = eventSourceData.config.clientID || '';
         }
     }
 
@@ -1826,16 +1850,33 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!edge.label) return '';
 
         // Split event types by comma and render vertically if needed
-        const eventTypes = edge.label.split(', ');
+        const eventTypes = edge.label.split(', ').filter(t => t.trim());
+        if (eventTypes.length === 0) return '';
+
         if (eventTypes.length === 1) {
-            return `<text x="${midX}" y="${midY}" class="edge-label" text-anchor="middle">${edge.label}</text>`;
+            // Single line with background
+            const text = eventTypes[0];
+            const textWidth = Math.max(text.length * 6, 100); // Estimate width
+            return `
+                <rect x="${midX - textWidth/2 - 10}" y="${midY - 10}" width="${textWidth + 20}" height="20" fill="white" fill-opacity="0.95" rx="3" stroke="#ddd" stroke-width="1"/>
+                <text x="${midX}" y="${midY + 4}" class="edge-label" text-anchor="middle" font-size="11px">${text}</text>
+            `;
         } else {
-            let svg = `<text x="${midX}" y="${midY - (eventTypes.length - 1) * 6}" class="edge-label" text-anchor="middle">`;
+            // Multiple lines - render each as separate positioned text element to avoid tspan issues
+            const lineHeight = 16; // Spacing between lines
+            const totalHeight = eventTypes.length * lineHeight;
+            const rectHeight = totalHeight + 8; // Add padding
+            const rectY = midY - totalHeight / 2 - 4;
+            const rectWidth = 220;
+
+            let svg = `<rect x="${midX - rectWidth/2}" y="${rectY}" width="${rectWidth}" height="${rectHeight}" fill="white" fill-opacity="0.95" rx="3" stroke="#ddd" stroke-width="1"/>`;
+
+            // Render each type as a separate text element for proper positioning
             eventTypes.forEach((type, i) => {
-                const dy = i === 0 ? 0 : 12;
-                svg += `<tspan x="${midX}" dy="${dy}">${type}</tspan>`;
+                const y = midY - totalHeight / 2 + (i + 0.5) * lineHeight + 4;
+                svg += `<text x="${midX}" y="${y}" class="edge-label" text-anchor="middle" font-size="11px">${type}</text>`;
             });
-            svg += `</text>`;
+
             return svg;
         }
     }
@@ -2207,6 +2248,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const targetBroker = columns.brokers.nodes.find(b => b.name === source.sinkConfig.broker);
                 if (targetBroker) {
                     edges.push({
+                        fromId: source.id,
+                        toId: targetBroker.id,
                         from: { x: source.x + nodeWidth, y: source.y + nodeHeight / 2 },
                         to: { x: targetBroker.x - arrowPadding, y: targetBroker.y + nodeHeight / 2 },
                         label: source.eventTypes ? source.eventTypes.join(', ') : '',
@@ -2223,6 +2266,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const sourceBroker = columns.brokers.nodes.find(b => b.name === sub.broker);
                     if (sourceBroker) {
                         edges.push({
+                            fromId: sourceBroker.id,
+                            toId: func.id,
                             from: { x: sourceBroker.x + nodeWidth, y: sourceBroker.y + nodeHeight / 2 },
                             to: { x: func.x - arrowPadding, y: func.y + nodeHeight / 2 },
                             label: sub.eventType,
@@ -2240,6 +2285,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const sourceBroker = columns.brokers.nodes.find(b => b.name === sub.broker);
                     if (sourceBroker) {
                         edges.push({
+                            fromId: sourceBroker.id,
+                            toId: sink.id,
                             from: { x: sourceBroker.x + nodeWidth, y: sourceBroker.y + nodeHeight / 2 },
                             to: { x: sink.x - arrowPadding, y: sink.y + nodeHeight / 2 },
                             label: sub.eventType,
@@ -2260,6 +2307,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         const targetBroker = columns.brokers.nodes.find(b => b.name === sub.broker);
                         if (targetBroker) {
                             edges.push({
+                                fromId: func.id,
+                                toId: targetBroker.id,
                                 from: { x: func.x, y: func.y + nodeHeight / 2 + verticalOffset },
                                 to: { x: targetBroker.x + nodeWidth + arrowPadding, y: targetBroker.y + nodeHeight / 2 + verticalOffset },
                                 label: sub.replyEventType,
@@ -2272,8 +2321,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // Consolidate edges before rendering
+        const consolidatedEdges = consolidateEdges(edges);
+
         // Draw edges
-        edges.forEach(edge => {
+        consolidatedEdges.forEach(edge => {
             const path = edge.curved
                 ? `M ${edge.from.x} ${edge.from.y} Q ${edge.from.x + 50} ${edge.from.y - 60}, ${edge.to.x} ${edge.to.y}`
                 : `M ${edge.from.x} ${edge.from.y} L ${edge.to.x} ${edge.to.y}`;
@@ -2298,19 +2350,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const verticalOffset = edge.direction === 'incoming' ? 15 : -10;
                 const midY = (edge.from.y + edge.to.y) / 2 + verticalOffset;
 
-                // Split event types by comma and render vertically
-                const eventTypes = edge.label.split(', ');
-                if (eventTypes.length === 1) {
-                    svg += `<text x="${midX}" y="${midY}" class="edge-label" text-anchor="middle">${edge.label}</text>`;
-                } else {
-                    // Multiple event types - render vertically
-                    svg += `<text x="${midX}" y="${midY - (eventTypes.length - 1) * 6}" class="edge-label" text-anchor="middle">`;
-                    eventTypes.forEach((type, i) => {
-                        const dy = i === 0 ? 0 : 12;
-                        svg += `<tspan x="${midX}" dy="${dy}">${type}</tspan>`;
-                    });
-                    svg += `</text>`;
-                }
+                // Use the unified generateEdgeLabel function for consistent rendering
+                svg += generateEdgeLabel(edge, midX, midY);
             }
         });
 
@@ -3870,6 +3911,18 @@ document.addEventListener('DOMContentLoaded', function() {
      * Render event source detail resources
      */
     function renderEventSourceDetailResources(eventSourceData) {
+        console.log('renderEventSourceDetailResources called', eventSourceData);
+
+        // Get elements fresh (don't rely on globals that might not exist)
+        const platformDesc = document.getElementById('eventSourceDetailPlatformDescription');
+        const resourceCardsContainer = document.getElementById('eventSourceDetailResourceCards');
+
+        // Check if elements exist
+        if (!platformDesc || !resourceCardsContainer) {
+            console.error('Event source detail resource elements not found');
+            return;
+        }
+
         // Determine target description
         const sinkMethod = eventSourceData.sinkMethod || 'broker';
         const sinkConfig = eventSourceData.sinkConfig || {};
@@ -3896,17 +3949,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        eventSourceDetailResourceCount.textContent = '1';
         const typeDisplayName = eventSourceData.type.charAt(0).toUpperCase() + eventSourceData.type.slice(1);
-        eventSourceDetailPlatformDescription.innerHTML = `
+        platformDesc.innerHTML = `
             The UI composed <strong>1</strong> Kubernetes resource from your event source configuration.
             <br>
             This ${typeDisplayName} Source produces CloudEvents and sends them to ${targetDescription}.
         `;
 
-        eventSourceDetailResourceCards.innerHTML = '';
+        resourceCardsContainer.innerHTML = '';
         const card = createResourceCard(resource, eventSourceData.name, 0);
-        eventSourceDetailResourceCards.appendChild(card);
+        resourceCardsContainer.appendChild(card);
     }
 
     // ==================== Event Sinks Functions ====================
@@ -3955,9 +4007,6 @@ document.addEventListener('DOMContentLoaded', function() {
             saveEventSinkBtn.textContent = 'Save Event Sink';
             loadEventSinkIntoForm(getCurrentEditingEventSink());
         }
-
-        // Populate broker dropdown for standalone mode
-        populateEventSinkBrokerDropdown();
 
         // Trigger initial resource preview
         setTimeout(() => {
@@ -4277,58 +4326,60 @@ document.addEventListener('DOMContentLoaded', function() {
         // Render sources (brokers from subscriptions) (deprecated - now shown in graph)
         const eventSinkSourcesList = document.getElementById('eventSinkSourcesList');
         const eventSinkSourceTitle = document.getElementById('eventSinkSourceTitle');
-        if (!eventSinkSourcesList || !eventSinkSourceTitle) return;
-        eventSinkSourcesList.innerHTML = '';
-        eventSinkSourceTitle.textContent = 'Event Sources';
+        if (eventSinkSourcesList && eventSinkSourceTitle) {
+            eventSinkSourcesList.innerHTML = '';
+            eventSinkSourceTitle.textContent = 'Event Sources';
 
-        if (!sinkData.eventSubscriptions || sinkData.eventSubscriptions.length === 0) {
-            const emptyBox = document.createElement('div');
-            emptyBox.className = 'source-box empty';
-            emptyBox.innerHTML = '<div class="source-info"><div class="source-name">No event subscriptions configured</div></div>';
-            eventSinkSourcesList.appendChild(emptyBox);
-        } else {
-            // Group subscriptions by broker
-            const brokerSubscriptions = {};
-            sinkData.eventSubscriptions.forEach(sub => {
-                if (!brokerSubscriptions[sub.broker]) {
-                    brokerSubscriptions[sub.broker] = [];
-                }
-                brokerSubscriptions[sub.broker].push(sub.eventType);
-            });
+            if (!sinkData.eventSubscriptions || sinkData.eventSubscriptions.length === 0) {
+                const emptyBox = document.createElement('div');
+                emptyBox.className = 'source-box empty';
+                emptyBox.innerHTML = '<div class="source-info"><div class="source-name">No event subscriptions configured</div></div>';
+                eventSinkSourcesList.appendChild(emptyBox);
+            } else {
+                // Group subscriptions by broker
+                const brokerSubscriptions = {};
+                sinkData.eventSubscriptions.forEach(sub => {
+                    if (!brokerSubscriptions[sub.broker]) {
+                        brokerSubscriptions[sub.broker] = [];
+                    }
+                    brokerSubscriptions[sub.broker].push(sub.eventType);
+                });
 
-            // Display a box for each broker
-            Object.keys(brokerSubscriptions).forEach(brokerName => {
-                const eventTypes = brokerSubscriptions[brokerName];
-                const sourceBox = document.createElement('div');
-                sourceBox.className = 'source-box';
-                sourceBox.innerHTML = `
-                    <div class="source-icon">📨</div>
-                    <div class="source-info">
-                        <div class="source-name">${brokerName}</div>
-                        <div class="source-details">Broker</div>
-                        <div class="source-details">Event Types: ${eventTypes.join(', ')}</div>
-                    </div>
-                `;
-                eventSinkSourcesList.appendChild(sourceBox);
-            });
+                // Display a box for each broker
+                Object.keys(brokerSubscriptions).forEach(brokerName => {
+                    const eventTypes = brokerSubscriptions[brokerName];
+                    const sourceBox = document.createElement('div');
+                    sourceBox.className = 'source-box';
+                    sourceBox.innerHTML = `
+                        <div class="source-icon">📨</div>
+                        <div class="source-info">
+                            <div class="source-name">${brokerName}</div>
+                            <div class="source-details">Broker</div>
+                            <div class="source-details">Event Types: ${eventTypes.join(', ')}</div>
+                        </div>
+                    `;
+                    eventSinkSourcesList.appendChild(sourceBox);
+                });
+            }
         }
 
         // Render external destination (deprecated - now shown in graph)
         const eventSinkExternalDestination = document.getElementById('eventSinkExternalDestination');
-        if (!eventSinkExternalDestination) return;
-        eventSinkExternalDestination.innerHTML = '';
-        const destBox = document.createElement('div');
-        destBox.className = 'destination-box';
-        const destIcon = getSinkIcon(sinkData.type);
-        const destDisplay = getDestinationDisplay(sinkData.type, sinkData.config);
-        destBox.innerHTML = `
-            <div class="destination-icon">${destIcon}</div>
-            <div class="destination-info">
-                <div class="destination-name">${destDisplay}</div>
-                <div class="destination-details">${sinkData.type.toUpperCase()}</div>
-            </div>
-        `;
-        eventSinkExternalDestination.appendChild(destBox);
+        if (eventSinkExternalDestination) {
+            eventSinkExternalDestination.innerHTML = '';
+            const destBox = document.createElement('div');
+            destBox.className = 'destination-box';
+            const destIcon = getSinkIcon(sinkData.type);
+            const destDisplay = getDestinationDisplay(sinkData.type, sinkData.config);
+            destBox.innerHTML = `
+                <div class="destination-icon">${destIcon}</div>
+                <div class="destination-info">
+                    <div class="destination-name">${destDisplay}</div>
+                    <div class="destination-details">${sinkData.type.toUpperCase()}</div>
+                </div>
+            `;
+            eventSinkExternalDestination.appendChild(destBox);
+        }
 
         // Render resources
         renderEventSinkDetailResources(sinkData);
@@ -4353,6 +4404,17 @@ document.addEventListener('DOMContentLoaded', function() {
      * Render event sink detail resources
      */
     function renderEventSinkDetailResources(sinkData) {
+        console.log('renderEventSinkDetailResources called', sinkData);
+
+        // Check if elements exist
+        const eventSinkDetailPlatformDescription = document.getElementById('eventSinkDetailPlatformDescription');
+        const eventSinkDetailResourceCards = document.getElementById('eventSinkDetailResourceCards');
+
+        if (!eventSinkDetailPlatformDescription || !eventSinkDetailResourceCards) {
+            console.error('Event sink detail resource elements not found');
+            return;
+        }
+
         const resources = [];
         const sinkResourceType = `${sinkData.type}Sink`;
 
@@ -4379,11 +4441,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        const eventSinkDetailResourceCount = document.getElementById('eventSinkDetailResourceCount');
-        const eventSinkDetailPlatformDescription = document.getElementById('eventSinkDetailPlatformDescription');
-        const eventSinkDetailResourceCards = document.getElementById('eventSinkDetailResourceCards');
-
-        eventSinkDetailResourceCount.textContent = resources.length;
         const subscriptionCount = sinkData.eventSubscriptions ? sinkData.eventSubscriptions.length : 0;
         const subscriptionDesc = subscriptionCount > 0
             ? `<br>This sink has <strong>${subscriptionCount}</strong> event subscription${subscriptionCount > 1 ? 's' : ''} and sends events to ${getDestinationDisplay(sinkData.type, sinkData.config)}.`

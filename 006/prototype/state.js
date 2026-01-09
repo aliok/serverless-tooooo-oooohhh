@@ -5,10 +5,10 @@
 // In-memory function storage
 let functions = [
     {
-        id: 'github-webhook-handler',
-        name: 'github-webhook-handler',
+        id: 'reading-normalizer',
+        name: 'reading-normalizer',
         namespace: 'default',
-        image: 'registry.example.com/functions/github-webhook-handler:latest',
+        image: 'registry.example.com/functions/reading-normalizer:latest',
         containerPort: 8080,
         buildMethod: 'none',
         buildConfig: {
@@ -20,27 +20,24 @@ let functions = [
             maxReplicaCount: 10,
             targetValue: 100
         },
-        networkingMethod: 'gateway',
+        networkingMethod: 'none',
         networkingConfig: {
-            method: 'gateway',
-            gatewayName: 'default-gateway',
-            hostname: 'github-webhook.example.com',
-            path: '/'
+            method: 'none'
         },
         eventSubscriptions: [
             {
                 broker: 'default',
-                eventType: 'dev.knative.sources.github.event',
-                replyEventType: 'com.example.github.webhook.processed'
+                eventType: 'com.example.meter.reading.received',
+                replyEventType: 'com.example.meter.reading.normalized'
             }
         ],
         createdAt: new Date().toISOString()
     },
     {
-        id: 'notification-sender',
-        name: 'notification-sender',
+        id: 'anomaly-detector',
+        name: 'anomaly-detector',
         namespace: 'default',
-        image: 'registry.example.com/functions/notification-sender:latest',
+        image: 'registry.example.com/functions/anomaly-detector:latest',
         containerPort: 8080,
         buildMethod: 'none',
         buildConfig: {
@@ -59,8 +56,8 @@ let functions = [
         eventSubscriptions: [
             {
                 broker: 'default',
-                eventType: 'com.example.github.webhook.processed',
-                replyEventType: 'com.example.notification.sent'
+                eventType: 'com.example.meter.reading.normalized',
+                replyEventType: 'com.example.meter.anomaly.evaluated'
             }
         ],
         createdAt: new Date().toISOString()
@@ -85,20 +82,21 @@ let brokers = [
 // In-memory event source storage
 let eventSources = [
     {
-        id: 'github-webhook-1',
-        name: 'github-webhook',
+        id: 'mqtt-meter-source-1',
+        name: 'mqtt-meter-source',
         namespace: 'default',
-        type: 'github',
+        type: 'mqtt',
         sinkMethod: 'broker',
         sinkConfig: {
             method: 'broker',
             broker: 'default'
         },
         config: {
-            repository: 'username/repo',
-            accessTokenSecret: 'github-secret'
+            brokerURL: 'tcp://mqtt-broker.iot.svc.cluster.local:1883',
+            topic: 'smart-meters/#',
+            clientID: 'meter-source-consumer'
         },
-        eventTypes: ['dev.knative.sources.github.event'],
+        eventTypes: ['com.example.meter.reading.received'],
         createdAt: new Date().toISOString()
     }
 ];
@@ -115,18 +113,19 @@ let currentEditingEventSource = null;
 // In-memory event sink storage
 let eventSinks = [
     {
-        id: 'slack-notifier-1',
-        name: 'slack-notifier',
+        id: 'timeseries-db-1',
+        name: 'timeseries-db',
         namespace: 'default',
-        type: 'http',
+        type: 'database',
         config: {
-            url: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXX',
-            headers: { 'Content-Type': 'application/json' }
+            databaseType: 'postgresql',
+            connectionSecret: 'timeseries-db-credentials',
+            table: 'meter_anomalies'
         },
         eventSubscriptions: [
             {
                 broker: 'default',
-                eventType: 'com.example.notification.sent'
+                eventType: 'com.example.meter.anomaly.evaluated'
             }
         ],
         createdAt: new Date().toISOString()
@@ -168,6 +167,7 @@ function saveFunction(functionData) {
         const newFunction = {
             ...functionData,
             id: functionData.name, // Use name as ID for simplicity
+            eventSubscriptions: functionData.eventSubscriptions || [], // Initialize empty subscriptions if not provided
             createdAt: new Date().toISOString()
         };
         functions.push(newFunction);

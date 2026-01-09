@@ -998,7 +998,7 @@ awsRegion: us-east-1"></textarea>
 
                 <div id="eventSourceDetailPlatformView" class="platform-view">
                     <p id="eventSourceDetailPlatformDescription" class="platform-description">
-                        The UI composed <strong id="eventSourceDetailResourceCount">1</strong> Kubernetes resource from your event source configuration.
+                        <!-- Content will be set by JavaScript -->
                     </p>
 
                     <div id="eventSourceDetailResourceCards" class="resource-cards">
@@ -1360,6 +1360,43 @@ awsRegion: us-east-1"></textarea>
                             </div>
                         </div>
                     </div>
+
+                    <!-- MQTT Source Panel -->
+                    <div id="mqttSourcePanel" class="metric-panel">
+                        <label class="panel-header">
+                            <input type="radio" name="eventSourceType" value="mqtt">
+                            <span class="panel-icon">▶</span>
+                            <span class="panel-title">MQTT Source</span>
+                        </label>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="mqttBrokerURL">Broker URL</label>
+                                <input type="text" id="mqttBrokerURL" name="mqttBrokerURL"
+                                       placeholder="tcp://mqtt-broker.iot.svc.cluster.local:1883" value="tcp://mqtt-broker.iot.svc.cluster.local:1883">
+                                <small class="helper-text">MQTT broker URL (e.g., tcp://broker:1883 or ssl://broker:8883)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="mqttTopic">Topic</label>
+                                <input type="text" id="mqttTopic" name="mqttTopic"
+                                       placeholder="smart-meters/#" value="smart-meters/#">
+                                <small class="helper-text">MQTT topic pattern to subscribe to (supports wildcards)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="mqttClientID">Client ID</label>
+                                <input type="text" id="mqttClientID" name="mqttClientID"
+                                       placeholder="meter-source-consumer" value="meter-source-consumer">
+                                <small class="helper-text">MQTT client ID for this connection</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label>CloudEvent Type</label>
+                                <code class="event-type-display">dev.knative.sources.mqtt</code>
+                                <small class="helper-text">This source converts MQTT messages to CloudEvents</small>
+                            </div>
+                        </div>
+                    </div>
                 </fieldset>
 
                 <div class="form-actions">
@@ -1682,7 +1719,7 @@ awsRegion: us-east-1"></textarea>
 
                 <div id="eventSinkDetailPlatformView" class="platform-view">
                     <p id="eventSinkDetailPlatformDescription" class="platform-description">
-                        The UI composed <strong id="eventSinkDetailResourceCount">1</strong> Kubernetes resource from your event sink configuration.
+                        <!-- Content will be set by JavaScript -->
                     </p>
 
                     <div id="eventSinkDetailResourceCards" class="resource-cards">
