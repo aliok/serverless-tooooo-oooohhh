@@ -128,8 +128,11 @@ This repository contains paper prototypes and working implementations exploring 
 ### [006](006) - Interactive Detail View Graphs with Reply CloudEvents
 **Philosophy**: Same as 005, with fully interactive detail views and bi-directional event flow visualization
 
+**Eventing Model**: All events flow through Brokers - no direct Function-to-Function or EventSource-to-Function connections
+
 **How it works**:
 - Same as approach 005 (UI composition, event sinks, event type discovery)
+- **Architecture**: All events must flow through Brokers (Event Source → Broker → Function/Sink)
 - **Addition**: All detail views use interactive SVG graphs with drag-and-drop
 - **Addition**: Reply CloudEvents visualized as green arrows (Function → Broker)
 - **Addition**: Click-through navigation between graph nodes
@@ -172,6 +175,7 @@ This repository contains paper prototypes and working implementations exploring 
 | **User Complexity**         | Single API             | Multiple resources (hidden by UI) | Multiple resources (hidden by UI) | Multiple resources (hidden by UI)       | Multiple resources (hidden by UI)                | Multiple resources (hidden by UI)                          |
 | **Flexibility**             | Limited                | High                              | Medium                            | High                                    | High                                             | High                                                       |
 | **Broker Visibility**       | Configurable           | Visible                           | Hidden                            | Visible                                 | Visible                                          | Visible                                                    |
+| **Event Routing**           | Flexible               | Flexible                          | All through brokers               | Flexible                                | Flexible                                         | ✅ All through brokers (enforced)                           |
 | **Event Sinks**             | Configurable           | Not in spec                       | Not in spec                       | ✅ Supported (destination configuration) | ✅ Supported                                      | ✅ Supported                                                |
 | **Function Chaining**       | Configurable           | Not in spec                       | Not in spec                       | ✅ Supported                             | ✅ Supported                                      | ✅ Supported                                                |
 | **Event Type Discovery**    | Not supported          | Not supported                     | Not supported                     | Not supported                           | ✅ Automatic (by Function controller)             | ✅ Automatic (by Function controller)                       |

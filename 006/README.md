@@ -2,6 +2,8 @@
 
 **Philosophy**: Same as 005, with fully interactive detail view graphs and bi-directional event flow visualization
 
+**Eventing Model**: All events flow through Brokers - no direct connections between Event Sources and Functions, or between Functions.
+
 ## What's New in 006
 
 Building on approach 005, this iteration adds:
@@ -32,6 +34,66 @@ Building on approach 005, this iteration adds:
 5. **Function CR status enhancement**
    - `status.eventing.replyEventTypes` shows what CloudEvents the function sends as replies
    - Visible in YAML preview
+
+## Eventing Architecture
+
+### All Events Flow Through Brokers
+
+In approach 006, **all events must flow through Brokers**. There are no direct connections:
+
+❌ **Not allowed**:
+- Event Source → Function (direct)
+- Function → Function (direct chaining)
+- Event Source → Event Sink (direct)
+
+✅ **Required flow**:
+- Event Source → Broker → Function
+- Event Source → Broker → Event Sink
+- Function → Broker (reply) → Function (subscription)
+- Function → Broker (reply) → Event Sink (subscription)
+
+This ensures:
+- **Consistent routing**: All event routing goes through the broker's delivery guarantees
+- **Observability**: All events are visible in the broker topology
+- **Reliability**: Broker provides retry, dead-letter queues, and delivery guarantees
+- **Decoupling**: Publishers and subscribers don't need to know about each other
+
+### Why Enforce Broker-Only Routing?
+
+This architectural constraint (all events through brokers) provides several benefits:
+
+1. **Single event bus pattern**: Brokers act as the central event bus for the namespace
+2. **Uniform delivery semantics**: All events get the same retry and error handling
+3. **Simplified debugging**: All event flow is visible in one place (the broker)
+4. **Event filtering**: Brokers can filter events by type before delivery
+5. **Multi-subscriber support**: Easily add/remove subscribers without changing producers
+6. **Event replay**: Brokers can support event replay for recovery scenarios
+
+Trade-offs:
+- ❌ Extra hop adds minimal latency (~1-5ms)
+- ❌ Cannot bypass broker for "fast path" scenarios
+- ✅ Consistency and observability benefits outweigh performance cost for most use cases
+
+### Event Flow Patterns
+
+**Pattern 1: Event Source to Function**
+```
+GitHub Source → Broker → Function (processes event)
+                    ↑           ↓
+                    └─────────────── (optional reply)
+```
+
+**Pattern 2: Function Chaining (via Broker)**
+```
+Function A → Broker (reply: processed.v1) → Function B (subscribes to processed.v1)
+```
+
+**Pattern 3: Fan-out to Multiple Subscribers**
+```
+                    ┌→ Function A
+Event Source → Broker ─→ Function B
+                    └→ Event Sink
+```
 
 ## How It Works
 
