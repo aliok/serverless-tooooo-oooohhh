@@ -36,6 +36,22 @@ function generateFunctionYAML(config) {
         subscriptionsYAML = `    subscriptions: []`;
     }
 
+    // Generate status section with reply event types
+    let statusYAML = '';
+    if (eventSubscriptions.length > 0) {
+        const replyEventTypes = eventSubscriptions
+            .filter(sub => sub.replyEventType)
+            .map(sub => sub.replyEventType);
+
+        if (replyEventTypes.length > 0) {
+            const replyTypesYAML = replyEventTypes.map(type => `      - ${type}`).join('\n');
+            statusYAML = `\nstatus:
+  eventing:
+    replyEventTypes:
+${replyTypesYAML}`;
+        }
+    }
+
     return `apiVersion: serverless.openshift.io/v1alpha1
 kind: Function
 metadata:
@@ -43,7 +59,7 @@ metadata:
   namespace: ${config.namespace}
 spec:
   eventing:
-${subscriptionsYAML}`;
+${subscriptionsYAML}${statusYAML}`;
 }
 
 /**
