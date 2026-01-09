@@ -78,21 +78,22 @@ Trade-offs:
 
 **Pattern 1: Event Source to Function**
 ```
-GitHub Source → Broker → Function (processes event)
-                    ↑           ↓
-                    └─────────────── (optional reply)
+GitHub Source → Broker → github-webhook-handler (processes event)
+                    ↑                        ↓
+                    └────────────────────────── (reply: webhook.processed)
 ```
 
 **Pattern 2: Function Chaining (via Broker)**
 ```
-Function A → Broker (reply: processed.v1) → Function B (subscribes to processed.v1)
+github-webhook-handler → Broker (reply: webhook.processed) → notification-sender
+                                                              (subscribes to webhook.processed)
 ```
 
 **Pattern 3: Fan-out to Multiple Subscribers**
 ```
-                    ┌→ Function A
-Event Source → Broker ─→ Function B
-                    └→ Event Sink
+                    ┌→ github-webhook-handler
+Event Source → Broker ─→ notification-sender
+                    └→ http-webhook (Event Sink)
 ```
 
 ## How It Works
@@ -204,13 +205,23 @@ python3 -m http.server 8000
 
 ### Demo Data
 
-The prototype includes example data:
-- 2 Functions (example-function, processor-function) with reply event types
-- 1 Broker (default)
-- 1 Event Source (github-webhook)
-- 1 Event Sink (http-webhook)
+The prototype includes example data showing a realistic event chain:
 
-Both functions send reply CloudEvents back to the default broker.
+**Event Flow Chain**:
+```
+GitHub Source → Broker → github-webhook-handler → Broker → notification-sender → Broker
+                        (reply: webhook.processed)      (reply: notification.sent)
+```
+
+**Resources**:
+- **Functions**:
+  - `github-webhook-handler`: Subscribes to `dev.knative.sources.github.event`, replies with `com.example.github.webhook.processed`
+  - `notification-sender`: Subscribes to `com.example.github.webhook.processed`, replies with `com.example.notification.sent`
+- **Broker**: `default` (routes all events)
+- **Event Source**: `github-webhook` (produces `dev.knative.sources.github.event`)
+- **Event Sink**: `http-webhook` (subscribes to `dev.knative.sources.github.event`)
+
+This demonstrates function chaining via broker: the second function subscribes to the first function's reply event type.
 
 ## Implementation Notes
 

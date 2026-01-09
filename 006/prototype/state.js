@@ -5,10 +5,10 @@
 // In-memory function storage
 let functions = [
     {
-        id: 'example-function',
-        name: 'example-function',
+        id: 'github-webhook-handler',
+        name: 'github-webhook-handler',
         namespace: 'default',
-        image: 'registry.example.com/functions/example-function:latest',
+        image: 'registry.example.com/functions/github-webhook-handler:latest',
         containerPort: 8080,
         buildMethod: 'none',
         buildConfig: {
@@ -24,23 +24,23 @@ let functions = [
         networkingConfig: {
             method: 'gateway',
             gatewayName: 'default-gateway',
-            hostname: 'example-function.example.com',
+            hostname: 'github-webhook.example.com',
             path: '/'
         },
         eventSubscriptions: [
             {
                 broker: 'default',
                 eventType: 'dev.knative.sources.github.event',
-                replyEventType: 'dev.knative.function.processed'
+                replyEventType: 'com.example.github.webhook.processed'
             }
         ],
         createdAt: new Date().toISOString()
     },
     {
-        id: 'processor-function',
-        name: 'processor-function',
+        id: 'notification-sender',
+        name: 'notification-sender',
         namespace: 'default',
-        image: 'registry.example.com/functions/processor:latest',
+        image: 'registry.example.com/functions/notification-sender:latest',
         containerPort: 8080,
         buildMethod: 'none',
         buildConfig: {
@@ -59,8 +59,8 @@ let functions = [
         eventSubscriptions: [
             {
                 broker: 'default',
-                eventType: 'dev.knative.sources.github.event',
-                replyEventType: 'dev.knative.processor.completed'
+                eventType: 'com.example.github.webhook.processed',
+                replyEventType: 'com.example.notification.sent'
             }
         ],
         createdAt: new Date().toISOString()
