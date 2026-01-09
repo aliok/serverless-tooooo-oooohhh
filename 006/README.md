@@ -89,11 +89,10 @@ github-webhook-handler → Broker (reply: webhook.processed) → notification-se
                                                               (subscribes to webhook.processed)
 ```
 
-**Pattern 3: Fan-out to Multiple Subscribers**
+**Pattern 3: Event Sink Integration**
 ```
-                    ┌→ github-webhook-handler
-Event Source → Broker ─→ notification-sender
-                    └→ http-webhook (Event Sink)
+notification-sender → Broker (reply: notification.sent) → slack-notifier
+                                                           (sends to Slack webhook)
 ```
 
 ## How It Works
@@ -209,19 +208,22 @@ The prototype includes example data showing a realistic event chain:
 
 **Event Flow Chain**:
 ```
-GitHub Source → Broker → github-webhook-handler → Broker → notification-sender → Broker
-                        (reply: webhook.processed)      (reply: notification.sent)
+GitHub Source → Broker → github-webhook-handler → Broker → notification-sender → Broker → Slack
+                        (reply: webhook.processed)      (reply: notification.sent)      (sends to Slack)
 ```
 
 **Resources**:
 - **Functions**:
   - `github-webhook-handler`: Subscribes to `dev.knative.sources.github.event`, replies with `com.example.github.webhook.processed`
-  - `notification-sender`: Subscribes to `com.example.github.webhook.processed`, replies with `com.example.notification.sent`
+  - `notification-sender`: Subscribes to `com.example.github.webhook.processed`, prepares notification, replies with `com.example.notification.sent`
 - **Broker**: `default` (routes all events)
 - **Event Source**: `github-webhook` (produces `dev.knative.sources.github.event`)
-- **Event Sink**: `http-webhook` (subscribes to `dev.knative.sources.github.event`)
+- **Event Sink**: `slack-notifier` (subscribes to `com.example.notification.sent`, sends to Slack webhook)
 
-This demonstrates function chaining via broker: the second function subscribes to the first function's reply event type.
+This demonstrates:
+1. **Function chaining via broker**: notification-sender subscribes to github-webhook-handler's reply
+2. **Event Sink integration**: Slack sink subscribes to notification-sender's reply and delivers to external system
+3. **Complete event-driven workflow**: GitHub webhook → process → prepare notification → send to Slack
 
 ## Implementation Notes
 

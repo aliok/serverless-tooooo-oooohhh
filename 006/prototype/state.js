@@ -115,18 +115,18 @@ let currentEditingEventSource = null;
 // In-memory event sink storage
 let eventSinks = [
     {
-        id: 'http-webhook-1',
-        name: 'http-webhook',
+        id: 'slack-notifier-1',
+        name: 'slack-notifier',
         namespace: 'default',
         type: 'http',
         config: {
-            url: 'https://example.com/webhook',
-            headers: { 'Content-Type': 'application/cloudevents+json' }
+            url: 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXX',
+            headers: { 'Content-Type': 'application/json' }
         },
         eventSubscriptions: [
             {
                 broker: 'default',
-                eventType: 'dev.knative.sources.github.event'
+                eventType: 'com.example.notification.sent'
             }
         ],
         createdAt: new Date().toISOString()
