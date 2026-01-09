@@ -204,26 +204,36 @@ python3 -m http.server 8000
 
 ### Demo Data
 
-The prototype includes example data showing a realistic event chain:
+The prototype demonstrates a **Smart Meter IoT Processing Pipeline** with realistic event-driven architecture:
 
 **Event Flow Chain**:
 ```
-GitHub Source → Broker → github-webhook-handler → Broker → notification-sender → Broker → Slack
-                        (reply: webhook.processed)      (reply: notification.sent)      (sends to Slack)
+MQTT Meters → Broker → reading-normalizer → Broker → anomaly-detector → Broker → TimeSeries DB
+                      (reply: reading.normalized)   (reply: anomaly.evaluated)   (stores anomalies)
 ```
 
 **Resources**:
 - **Functions**:
-  - `github-webhook-handler`: Subscribes to `dev.knative.sources.github.event`, replies with `com.example.github.webhook.processed`
-  - `notification-sender`: Subscribes to `com.example.github.webhook.processed`, prepares notification, replies with `com.example.notification.sent`
+  - `reading-normalizer`: Validates, normalizes, and enriches incoming meter readings
+    - Subscribes to: `com.example.meter.reading.received`
+    - Replies with: `com.example.meter.reading.normalized`
+  - `anomaly-detector`: Detects abnormal consumption patterns and evaluates risk
+    - Subscribes to: `com.example.meter.reading.normalized`
+    - Replies with: `com.example.meter.anomaly.evaluated`
 - **Broker**: `default` (routes all events)
-- **Event Source**: `github-webhook` (produces `dev.knative.sources.github.event`)
-- **Event Sink**: `slack-notifier` (subscribes to `com.example.notification.sent`, sends to Slack webhook)
+- **Event Source**: `mqtt-meter-source` (MQTT smart meters via Kafka bridge)
+  - Produces: `com.example.meter.reading.received`
+- **Event Sink**: `timeseries-db` (PostgreSQL database)
+  - Subscribes to: `com.example.meter.anomaly.evaluated`
+  - Stores anomalies in `meter_anomalies` table
+
+**Use Case**: Smart meter data flows from IoT devices through MQTT, gets converted to CloudEvents, validated and normalized, checked for anomalies, and stored in a time-series database for monitoring.
 
 This demonstrates:
-1. **Function chaining via broker**: notification-sender subscribes to github-webhook-handler's reply
-2. **Event Sink integration**: Slack sink subscribes to notification-sender's reply and delivers to external system
-3. **Complete event-driven workflow**: GitHub webhook → process → prepare notification → send to Slack
+1. **IoT event processing**: MQTT → CloudEvents conversion
+2. **Function chaining via broker**: anomaly-detector subscribes to reading-normalizer's reply
+3. **Event Sink integration**: Database stores final processed results
+4. **Complete event-driven workflow**: IoT device → validate → analyze → persist
 
 ## Implementation Notes
 
